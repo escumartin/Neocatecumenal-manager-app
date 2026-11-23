@@ -3,12 +3,13 @@ info:
   title: Neocatecumenal Manager API
   version: 0.0.1
 servers:
-  - url: http://localhost:8080
+  - url: /
 paths:
   /api/health:
     get:
       operationId: getHealth
       summary: Service health
+      security: []
       responses:
         "200":
           description: Service is up

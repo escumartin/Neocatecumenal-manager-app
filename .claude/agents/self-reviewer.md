@@ -1,0 +1,1 @@
+../../.agents/agents/self-reviewer.md

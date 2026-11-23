@@ -17,6 +17,10 @@ Cliente Expo + Expo Router + TypeScript + NativeWind + React Native Reusables. P
 | `api/` | contrato OpenAPI, fuente de verdad del backend y del cliente |
 | `app/` | cliente Expo web y móvil |
 | `.specify/` | plantillas y constitución de spec-kit |
+| `.agents/agents/` | agentes especializados: diseño, crítica, tests, build y revisores |
+| `.agents/scripts/` | scripts de los hooks del harness |
+| `.agents/skills/` | skills del proyecto (convenciones, hexagonal, diseño, Expo) |
+| `.claude/commands/` | comandos de flujo: `flow` y `speckit.*` |
 | `.agents/memory/` | memoria entre sesiones: solo preferencias y estado vivo |
 
 ## Reglas
@@ -28,7 +32,8 @@ Cliente Expo + Expo Router + TypeScript + NativeWind + React Native Reusables. P
 5. **Inglés** en código, tests y commits; castellano en documentación y logs.
 6. **Datos personales.** RGPD: minimizar, consentimiento y borrado; ni datos reales ni secretos en el repo.
 7. **Flujo spec-kit:** `/speckit.specify` → `/speckit.plan` → `/speckit.tasks` → `/speckit.implement`.
-8. **Nada de terceros sin revisar.** Rige `../AGENTS.md` § Reglas comunes.
+8. **Flujo `/flow`.** Orquesta spec → plan → tasks → implementación → gates → revisión con agentes. Para a pedir OK tras la spec, tras el plan y antes del commit; nunca hace commit, push ni PR solo.
+9. **Nada de terceros sin revisar.** Rige `../AGENTS.md` § Reglas comunes.
 
 ## Al empezar
 

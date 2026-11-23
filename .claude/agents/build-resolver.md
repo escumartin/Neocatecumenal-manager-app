@@ -1,0 +1,1 @@
+../../.agents/agents/build-resolver.md
