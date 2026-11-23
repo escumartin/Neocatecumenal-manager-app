@@ -32,4 +32,5 @@
 ## Notes
 
 - Clarifications resolved (FR-013, FR-014, FR-015); revalidated, all items pass.
+- 2026-11-23, tras `/speckit.plan`: decisiones del usuario incorporadas (identidad como dependencia previa, agenda mínima con alta de evento con salón, gestión de salones con US6 y FR-017 a FR-021, identificadores internos con número de comunidad e id de acceso como atributos únicos). Revalidated, all items pass; sin marcadores [NEEDS CLARIFICATION].
 - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`

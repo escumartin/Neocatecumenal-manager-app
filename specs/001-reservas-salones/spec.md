@@ -91,6 +91,27 @@ El moderador puede pedir una reserva que se repite (por ejemplo, una Palabra sem
 3. **Given** una serie aprobada, **When** el moderador cancela una ocurrencia, **Then** solo esa franja queda libre y las demás siguen activas.
 4. **Given** una serie aprobada, **When** el moderador cancela la serie y confirma, **Then** todas las ocurrencias futuras se cancelan.
 5. **Given** un moderador que da de alta un evento con un salón como lugar, **When** guarda el evento, **Then** se crea la solicitud de reserva de ese salón para la fecha y franja del evento, y si el salón está ocupado el evento no se guarda.
+6. **Given** un moderador que da de alta un evento con un salón ocupado en esa franja, **When** guarda el evento, **Then** no se registra ni el evento ni la solicitud y se le informa de la franja en conflicto.
+7. **Given** un evento dado de alta con su solicitud, **When** el moderador lo consulta, **Then** ve el tipo, título, fecha, franja, salón y el estado de su solicitud de reserva.
+
+---
+
+### User Story 6 - Gestionar los salones (Priority: P1)
+
+El administrador da de alta los salones parroquiales que se pueden reservar, corrige su nombre y da de baja los que ya no se usan. Sin salones no hay nada que solicitar.
+
+**Why this priority**: es requisito previo de todas las demás historias; hoy no hay salones en el sistema.
+
+**Independent Test**: el administrador crea un salón, lo renombra y lo da de baja; deja de aparecer al solicitar y su historial de reservas se conserva.
+
+**Acceptance Scenarios**:
+
+1. **Given** un administrador, **When** da de alta un salón con un nombre que no usa otro salón activo, **Then** el salón aparece disponible para solicitar.
+2. **Given** un salón activo, **When** el administrador cambia su nombre, **Then** las solicitudes existentes muestran el nombre nuevo.
+3. **Given** un salón sin reservas activas futuras, **When** el administrador lo da de baja y confirma, **Then** deja de aparecer para solicitar y su historial de reservas se conserva.
+4. **Given** un salón con alguna reserva activa (pendiente o aprobada) de hoy en adelante, **When** el administrador intenta darlo de baja, **Then** el sistema lo impide e indica cuántas reservas debe resolver antes.
+5. **Given** un usuario que no es administrador, **When** intenta dar de alta, editar o dar de baja un salón, **Then** el sistema lo impide.
+6. **Given** un nombre vacío o ya usado por otro salón activo, **When** el administrador guarda, **Then** el sistema lo rechaza con un mensaje claro.
 
 ---
 
@@ -98,7 +119,9 @@ El moderador puede pedir una reserva que se repite (por ejemplo, una Palabra sem
 
 - Franjas contiguas (una termina cuando otra empieza) no se consideran solapadas.
 - Franjas que cruzan la medianoche: no se admiten; una franja pertenece a un único día.
-- Un salón con reservas futuras que el administrador quiere eliminar: debe resolver antes esas reservas.
+- Un salón con reservas activas futuras que el administrador quiere dar de baja: debe resolver antes esas reservas (rechazarlas o cancelarlas); la baja se bloquea mientras tanto.
+- Un salón dado de baja no admite solicitudes nuevas ni vuelve a darse de alta: la baja es definitiva; si hace falta, se crea otro salón.
+- Un evento con salón cuya solicitud se rechaza o cancela: el evento sigue existiendo y muestra el estado de su solicitud.
 - Dos administradores resuelven la misma solicitud a la vez: solo cuenta la primera resolución; la segunda recibe un aviso.
 - Una serie sin fecha fin o con demasiadas ocurrencias: se exige fecha fin dentro de un límite razonable (un año).
 - Un usuario que deja de ser moderador conserva el historial de sus solicitudes, pero no puede crear ni cancelar nuevas.
@@ -123,12 +146,18 @@ El moderador puede pedir una reserva que se repite (por ejemplo, una Palabra sem
 - **FR-014**: Al dar de alta un evento con un salón como lugar, el sistema MUST crear la solicitud de reserva de ese salón para la fecha y franja del evento; si el salón está ocupado, el evento no se guarda.
 - **FR-015**: Las solicitudes MUST admitir una regla de repetición (por ejemplo, semanal con fecha fin); cada ocurrencia MUST comprobarse contra solapes y, si alguna choca, se rechaza la solicitud entera informando de las fechas en conflicto.
 - **FR-016**: Los usuarios con permiso MUST poder cancelar una sola ocurrencia o toda la serie, con confirmación previa.
+- **FR-017**: Solo los administradores MUST poder dar de alta, editar y dar de baja salones; el nombre es obligatorio y único entre los salones activos.
+- **FR-018**: La baja de un salón MUST ser definitiva, conservar el historial de sus reservas y bloquearse mientras el salón tenga reservas activas (pendientes o aprobadas) de hoy en adelante, informando de cuántas son.
+- **FR-019**: Solo los salones activos MUST poder solicitarse y aparecer en la consulta de disponibilidad.
+- **FR-020**: Los moderadores (para su comunidad) y los administradores (para la comunidad que elijan) MUST poder dar de alta un evento de tipo Palabra o Convivencia de un día con tipo, título, fecha, franja y salón; el alta del evento y la de su solicitud de reserva MUST ser una sola operación: o se registran ambas o ninguna.
+- **FR-021**: Los usuarios con permiso MUST poder consultar un evento dado de alta junto con el estado de su solicitud de reserva.
 
 ### Key Entities *(include if feature involves data)*
 
 - **Reserva (solicitud)**: ocupación de un salón en una fecha y franja por una comunidad; atributos: salón, comunidad, solicitante, fecha, hora de inicio, hora de fin, motivo, estado, motivo de rechazo, historial de estados, evento asociado (opcional), serie (opcional).
 - **Serie de reservas**: conjunto de ocurrencias generadas por una regla de repetición (frecuencia y fecha fin); se aprueba o rechaza como un todo y admite cancelar ocurrencias sueltas.
-- **Salón (Lugar)**: salón parroquial reservable; lo gestiona el administrador. Hotel y restaurante, también «Lugar» en el dominio, quedan fuera.
+- **Salón (Lugar)**: salón parroquial reservable con nombre y estado activo o dado de baja; lo gestiona el administrador. Hotel y restaurante, también «Lugar» en el dominio, quedan fuera.
+- **Evento (mínimo)**: Palabra o Convivencia de un día de una comunidad, con título, fecha, franja y salón; tiene una solicitud de reserva asociada.
 - **Comunidad**: propietaria de la solicitud; su responsable (moderador) es quien solicita.
 - **Usuario**: moderador que solicita o administrador que resuelve.
 
@@ -148,12 +177,15 @@ El moderador puede pedir una reserva que se repite (por ejemplo, una Palabra sem
 - El dominio no describe un flujo de solicitud y aprobación (modela la reserva como ocupación de un lugar y el reparto lo hace el ostiario jefe); esta feature lo añade conforme a la descripción, y la regla de solape del dominio se mantiene sin cambios.
 - La franja se define con hora de inicio y fin libres dentro de un día, no con tramos fijos, según la regla de solape del dominio (inicio dentro, fin dentro, envolvente).
 - Solo se reservan salones parroquiales; hoteles y restaurantes (Pasos y Peregrinaciones) quedan fuera.
-- Los salones ya existen, dados de alta por el administrador; esta feature no los gestiona.
-- Los usuarios ya se autentican con el sistema de identidad existente; no hay autorregistro.
+- Esta feature incluye la gestión de salones (alta, edición y baja lógica definitiva) por el administrador.
+- Dependencia previa: la feature «Identidad y acceso» se especifica e implementa antes que esta. Aporta la autenticación, el rol del usuario y su comunidad; no hay autorregistro.
+- Identificadores: cada entidad tiene un identificador interno único; el número de comunidad y el identificador numérico de acceso del usuario son atributos de negocio únicos que gestiona la feature de identidad y comunidades.
+- La lista de comunidades que el administrador elige antes de operar la aporta la feature de identidad y comunidades.
 - Las notificaciones por email o push están fuera de alcance (futuro, según el dominio); el solicitante ve el resultado dentro de la app.
 - Zona horaria única de la parroquia (Murcia).
 - Un salón puede tener cualquier número de reservas por día mientras no se solapen.
-- Dependencia: el alta de eventos pertenece al contexto de Agenda de eventos (`dominio.md`, casos de uso de Agenda: eventos con reserva de lugar); esta feature expone la reserva y la Agenda la solicita al crear un evento.
+- Agenda mínima: esta feature incluye solo el alta de un evento con salón (Palabra o Convivencia de un día) y su consulta. Quedan fuera y van a la feature completa de Agenda: edición y borrado de eventos, listados y consulta por los registrados, Eucaristías, Pasos, Convivencias de fin de semana, eventos periódicos, lecturas, cuerpo y precio, y las reglas de día de la semana de cada tipo.
+- Si la solicitud de un evento se rechaza o se cancela, el evento no cambia; solo muestra el estado de su solicitud.
 - Conflicto en una serie: se rechaza la solicitud entera y se informan las fechas en conflicto; no hay aprobación parcial.
 - La regla de repetición de v1 es semanal con fecha fin; otras frecuencias quedan para después.
 - Aprobar o rechazar una serie se hace como un todo; cancelar admite una ocurrencia o toda la serie.
