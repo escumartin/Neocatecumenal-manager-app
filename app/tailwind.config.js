@@ -20,6 +20,12 @@ module.exports = {
         muted: { DEFAULT: 'var(--muted)', foreground: 'var(--muted-foreground)' },
         border: 'var(--border)',
       },
+      fontFamily: {
+        sans: ['Inter_400Regular', 'System'],
+        'sans-medium': ['Inter_500Medium', 'System'],
+        'sans-semibold': ['Inter_600SemiBold', 'System'],
+        serif: ['SourceSerif4_600SemiBold', 'serif'],
+      },
       fontSize: {
         display: ['32px', { lineHeight: '40px' }],
         title: ['24px', { lineHeight: '32px' }],
