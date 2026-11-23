@@ -1,0 +1,44 @@
+# Neocatecumenal Manager App
+
+Instrucciones para cualquier asistente de IA que trabaje aquí (convención `AGENTS.md`). Aquí van solo las reglas y los
+punteros; los hechos se leen al necesitarlos desde `.agents/context/`. Lo propio de cada herramienta, solo en
+`.agents/TOOLING-MATRIX.md`.
+
+App web y móvil para gestionar comunidades, salones y eventos del Camino Neocatecumenal en una parroquia (reescritura de un
+TFG de 2019 en PHP). Backend Java 21 + Spring Boot 3 + Spring Modulith, hexagonal/DDD, PostgreSQL, OpenAPI contract-first.
+Cliente Expo + Expo Router + TypeScript + NativeWind + React Native Reusables. Proyecto personal, repo git propio.
+
+## Mapa
+
+| Ruta | Qué es |
+|---|---|
+| `.agents/context/dominio.md` | glosario, roles, bounded contexts, reglas de negocio y casos de uso |
+| `backend/` | API en Java (Maven), un módulo Modulith por bounded context |
+| `api/` | contrato OpenAPI, fuente de verdad del backend y del cliente |
+| `app/` | cliente Expo web y móvil |
+| `.specify/` | plantillas y constitución de spec-kit |
+| `.agents/memory/` | memoria entre sesiones: solo preferencias y estado vivo |
+
+## Reglas
+
+1. **Hexagonal y DDD.** El dominio no depende de Spring ni de infraestructura; los puertos viven en el dominio y los adaptadores fuera.
+2. **Contrato primero.** Se cambia `api/` antes que el backend o el cliente; ambos se generan o validan contra él.
+3. **Tests primero.** Cada regla de negocio nace de un test que falla.
+4. **Cero comentarios** en código y configuración; el código se explica solo.
+5. **Inglés** en código, tests y commits; castellano en documentación y logs.
+6. **Datos personales.** RGPD: minimizar, consentimiento y borrado; ni datos reales ni secretos en el repo.
+7. **Flujo spec-kit:** `/speckit.specify` → `/speckit.plan` → `/speckit.tasks` → `/speckit.implement`.
+8. **Nada de terceros sin revisar.** Rige `../AGENTS.md` § Reglas comunes.
+
+## Al empezar
+
+- Dominio, roles o reglas de negocio: `.agents/context/dominio.md`.
+- Automejora: rige `../AGENTS.md` § Automejora.
+
+## Gates locales
+
+- Backend: `cd backend && ./mvnw -B verify` con `JAVA_HOME` en Java 21. Con Rancher Desktop, exportar antes
+  `TESTCONTAINERS_RYUK_DISABLED=true` (Ryuk no arranca); en CI no hace falta.
+- App: `cd app && npm run lint && npm run typecheck && npx expo export -p web`.
+
+@.agents/TOOLING-MATRIX.md

@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: neocatecumenal-manager
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/neocatecumenal}
+    username: ${DATABASE_USER:neocatecumenal}
+    password: ${DATABASE_PASSWORD:neocatecumenal}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
