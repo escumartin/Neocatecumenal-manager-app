@@ -1,0 +1,3 @@
+identity:
+  allowed-origins:
+    - http://localhost:8081
