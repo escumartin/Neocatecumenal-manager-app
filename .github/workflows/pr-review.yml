@@ -18,13 +18,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Check Anthropic key
+      - name: Check Claude token
         id: key
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
-          if [ -z "$ANTHROPIC_API_KEY" ]; then
-            echo "::warning::ANTHROPIC_API_KEY is not configured, skipping the automated review"
+          if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+            echo "::warning::CLAUDE_CODE_OAUTH_TOKEN is not configured, skipping the automated review"
             echo "available=false" >> "$GITHUB_OUTPUT"
           else
             echo "available=true" >> "$GITHUB_OUTPUT"
@@ -36,14 +36,15 @@ jobs:
       - name: Claude Code review (claude-code-action v1.0.286)
         if: steps.key.outputs.available == 'true'
         uses: anthropics/claude-code-action@acfe7992852970efb4fee683d63d628e3e52df67
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          use_sticky_comment: true
           allow_fork_prs: "false"
           claude_args: |
             --max-turns 40
-            --allowedTools "Task,Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(git show:*)"
+            --allowedTools "Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(git show:*),Bash(gh pr comment:*)"
           prompt: |
             REPO: ${{ github.repository }}
             PR: #${{ github.event.pull_request.number }}
@@ -52,7 +53,7 @@ jobs:
             Eres el orquestador de la revisión de esta PR. Solo lees: no apruebes la PR, no edites ficheros, no hagas commit ni push.
 
             1. Lista los ficheros tocados con `git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD` y lee el diff con `git diff origin/${{ github.event.pull_request.base.ref }}...HEAD`.
-            2. Elige los revisores por las rutas tocadas y lánzalos en paralelo como subagentes de `.claude/agents/`:
+            2. Elige los revisores por las rutas tocadas. No lances subagentes: por cada revisor elegido, lee `.claude/agents/<revisor>.md` y aplica tú su rúbrica al diff, de uno en uno:
                - siempre `security-reviewer`;
                - `backend-reviewer` y `observability-reviewer`, si hay cambios en `backend/` (Java de producción para observability);
                - `frontend-reviewer`, si hay cambios en `app/`;
@@ -60,5 +61,5 @@ jobs:
                - `docs-reviewer`, si hay cambios en `docs/`, `.agents/`, `AGENTS.md`, `specs/` o cualquier `.md`;
                - `tdd`, solo lectura, si hay código de producción sin su test.
                No lances `self-reviewer`, `critic`, `qa-backend` ni `build-resolver`.
-            3. Pasa a cada revisor la lista de ficheros y el comando del diff, y pídele solo hallazgos con ruta y línea. Descarta lo que no esté en el diff de la PR.
-            4. Deja un único comentario resumen en castellano, con un hallazgo por línea con el formato `ruta:línea | severidad | mensaje` (severidad: bloqueante, alta, media o baja), ordenado de mayor a menor severidad. Primero una línea con los revisores lanzados. Sin hallazgos: «Sin hallazgos» y nada más.
+            3. Quédate solo con hallazgos con ruta y línea que estén en el diff de la PR.
+            4. Deja un único comentario resumen en castellano, con un hallazgo por línea con el formato `ruta:línea | severidad | mensaje` (severidad: bloqueante, alta, media o baja), ordenado de mayor a menor severidad. Primero una línea con los revisores aplicados. Sin hallazgos: «Sin hallazgos» y nada más. Publícalo con `gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body "<comentario>"`; es tu última acción y la revisión no termina sin él.

@@ -34,6 +34,7 @@ Cliente Expo + Expo Router + TypeScript + NativeWind + React Native Reusables. P
 7. **Flujo spec-kit:** `/speckit.specify` → `/speckit.plan` → `/speckit.tasks` → `/speckit.implement`.
 8. **Flujo `/flow`.** Orquesta spec → plan → tasks → implementación → gates → revisión con agentes. Para a pedir OK tras la spec, tras el plan y antes del commit; nunca hace commit, push ni PR solo.
 9. **Nada de terceros sin revisar.** Rige `../AGENTS.md` § Reglas comunes.
+10. **PRs con automerge.** Tras el OK al commit, el asistente crea la PR y la mergea él mismo en cuanto sus checks están en verde (el merge pasa por el hook de vista previa como el commit), y después actualiza `master` en local. Sustituye aquí a la regla global «las PRs las mergeo yo».
 
 ## Al empezar
 
