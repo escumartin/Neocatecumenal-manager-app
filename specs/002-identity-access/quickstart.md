@@ -82,6 +82,30 @@ con Testcontainers.
    sin crear nada y el fichero no contiene la credencial.
 
 2. Arrancar backend y cliente web (`./mvnw spring-boot:run`, `npx expo start --web`).
+### Arranque local rápido
+
+Con Rancher Desktop (o Docker) en marcha:
+
+```bash
+scripts/local-run.sh
+```
+
+Levanta PostgreSQL con `docker-compose.yml`, arranca el backend con el perfil `local` (log en `.local-run/backend.log`;
+CORS solo para `http://localhost:8081`) y la web Expo en `http://localhost:8081` con
+`EXPO_PUBLIC_API_URL=http://localhost:8080`. Al salir se para el backend; la base sigue y se apaga con
+`docker compose down` (el volumen se conserva). La cookie `__Host-session` es `Secure`: Chrome y Firefox la aceptan en
+`localhost`; Safari no.
+
+Primer administrador, en un terminal interactivo con la base arriba:
+
+```bash
+cd backend && ./mvnw -B -q package -DskipTests
+java -jar target/neocatecumenal-manager-0.0.1-SNAPSHOT.jar --spring.profiles.active=bootstrap,local \
+  --identity.bootstrap.communities=1,2,3 \
+  --identity.bootstrap.administrator-name=Admin \
+  --identity.bootstrap.administrator-community=1
+```
+
 3. Entrar como administrador: aviso de datos, aceptar; cambio de contraseña obligatorio; acceso a la app.
 4. Crear un moderador en la comunidad 2 y un registrado en la 2; apuntar sus contraseñas iniciales.
 5. En otro navegador, entrar como moderador: crear un registrado (≤ 2 min, SC-005); intentar crear un moderador
