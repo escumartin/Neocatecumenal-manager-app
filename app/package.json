@@ -5,19 +5,23 @@
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/source-serif-4": "^0.4.2",
+    "@rn-primitives/alert-dialog": "^1.5.2",
     "@rn-primitives/portal": "^1.5.3",
     "@rn-primitives/slot": "^1.5.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "expo": "~58.0.26",
+    "expo-clipboard": "~58.0.4",
     "expo-constants": "~58.0.16",
     "expo-font": "~58.0.12",
     "expo-linking": "~58.0.17",
     "expo-router": "~58.0.32",
+    "expo-secure-store": "~58.0.3",
     "expo-splash-screen": "~58.0.14",
     "expo-status-bar": "~58.0.5",
     "expo-system-ui": "~58.0.7",
     "nativewind": "^4.2.7",
+    "openapi-fetch": "^0.17.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.1",
@@ -31,9 +35,13 @@
     "tailwind-merge": "^3.7.1"
   },
   "devDependencies": {
+    "@testing-library/react-native": "^14.1.0",
+    "@types/jest": "30.0.0",
     "@types/react": "~19.3.0",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~58.0.4",
+    "jest": "~30.5.2",
+    "jest-expo": "~58.0.15",
     "openapi-typescript": "7.13.0",
     "tailwindcss": "^3.4.19",
     "typescript": "~6.0.3"
@@ -46,12 +54,24 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "api:generate": "openapi-typescript ../api/openapi.yaml -o src/api/schema.d.ts",
-    "api:check": "openapi-typescript ../api/openapi.yaml -o src/api/.schema.check.d.ts && diff src/api/schema.d.ts src/api/.schema.check.d.ts; s=$?; rm -f src/api/.schema.check.d.ts; exit $s"
+    "api:check": "openapi-typescript ../api/openapi.yaml -o src/api/.schema.check.d.ts && diff src/api/schema.d.ts src/api/.schema.check.d.ts; s=$?; rm -f src/api/.schema.check.d.ts; exit $s",
+    "test": "jest --passWithNoTests"
   },
   "private": true,
   "overrides": {
     "openapi-typescript": {
       "typescript": "$typescript"
     }
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!(.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|react-navigation|@react-navigation|@rn-primitives|nativewind|react-native-css-interop))",
+      "/node_modules/react-native-reanimated/plugin/",
+      "/node_modules/@react-native/babel-preset/"
+    ]
   }
 }

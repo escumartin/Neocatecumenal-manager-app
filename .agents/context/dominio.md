@@ -38,6 +38,7 @@ Herencia: no identificado < registrado < moderador < administrador.
 | Administrador | ostiario jefe | todo, en cualquier comunidad, más CRUD de comunidades y lugares |
 
 No hay autorregistro: el alta la hace un administrador o un moderador. Login con identificador numérico y contraseña.
+El identificador de acceso es de 6 dígitos (100000–999999), lo genera el sistema y es inmutable. En el primer acceso la sesión queda restringida: primero se acepta el aviso de datos y después se cambia la contraseña inicial. No hay recuperación por email: la contraseña se reasigna por el moderador (registrados de su comunidad) o por un administrador.
 
 ## Bounded contexts propuestos
 
@@ -57,6 +58,8 @@ No hay autorregistro: el alta la hace un administrador o un moderador. Login con
 - El administrador elige comunidad antes de operar.
 - Borrar es definitivo y pide confirmación.
 - Cada comunidad tiene un responsable obligatorio.
+- Una comunidad no puede quedarse sin ningún moderador (por borrado, cambio de rol o cambio de comunidad).
+- El último administrador no puede borrarse ni perder el rol.
 
 ## Casos de uso (resumen)
 

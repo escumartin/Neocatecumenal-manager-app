@@ -7,6 +7,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { SessionProvider } from '@/hooks/session/use-session';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -31,7 +32,9 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar style="auto" />
-      <Stack screenOptions={{ headerShown: false }} />
+      <SessionProvider>
+        <Stack screenOptions={{ headerShown: false }} />
+      </SessionProvider>
       <PortalHost />
     </>
   );

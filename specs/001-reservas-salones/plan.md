@@ -30,8 +30,8 @@ Enfoque técnico:
 - Generación: `openapi-generator-maven-plugin` (generador `spring`, `interfaceOnly`), nuevo en `backend/pom.xml`.
 - Cliente: Expo 58, Expo Router, NativeWind, React Native Reusables; `openapi-typescript` y `openapi-fetch`, nuevos.
 
-**Storage**: PostgreSQL 17 con la extensión `btree_gist` (restricción de exclusión); migraciones Flyway `V2__spaces.sql`
-y `V3__agenda.sql`. Claves internas UUID (R11)
+**Storage**: PostgreSQL 17 con la extensión `btree_gist` (restricción de exclusión); migraciones Flyway `V3__spaces.sql`
+y `V4__agenda.sql`. Claves internas UUID (R11)
 
 **Testing**:
 
@@ -155,7 +155,7 @@ backend/
     │       └── infrastructure/
     │           ├── in/rest/                      # EventsController, CurrentActorProvider (puerto), mappers
     │           └── out/persistence/              # entidad JPA, repo, adaptador
-    ├── main/resources/db/migration/V2__spaces.sql, V3__agenda.sql
+    ├── main/resources/db/migration/V3__spaces.sql, V4__agenda.sql
     └── test/java/io/github/escumartin/neocatecumenal/{spaces,agenda}/
         ├── domain/
         ├── application/                          # servicios con fakes en memoria
