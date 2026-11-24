@@ -42,6 +42,7 @@ module.exports = {
         6: '24px',
         8: '32px',
         12: '48px',
+        13: '52px',
       },
       borderRadius: {
         sm: '6px',
@@ -51,6 +52,7 @@ module.exports = {
       },
       borderWidth: {
         hairline: hairlineWidth(),
+        field: '1.5px',
       },
     },
   },

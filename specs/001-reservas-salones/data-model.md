@@ -122,7 +122,7 @@ Hoteles y restaurantes quedan fuera del modelo ([research.md](./research.md) R10
 - Eventos: `BookingRequestApproved`, `BookingRequestRejected`, `BookingRequestCancelled` (`bookingRequestId`,
   `eventId?`, `roomId`). Sin datos personales.
 
-## Persistencia (PostgreSQL, Flyway `V2__spaces.sql`)
+## Persistencia (PostgreSQL, Flyway `V3__spaces.sql`)
 
 ```text
 room
@@ -212,7 +212,7 @@ event
   created_at         timestamptz  not null
 ```
 
-Migración propia de `agenda` (`V3__agenda.sql`); sin FK hacia tablas de `spaces` (contextos separados, solo ids).
+Migración propia de `agenda` (`V4__agenda.sql`); sin FK hacia tablas de `spaces` (contextos separados, solo ids).
 
 ## Transiciones
 

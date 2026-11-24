@@ -60,7 +60,8 @@ NativeWind: `text-display`, `text-title`, `text-heading`, `text-body`, `text-sma
 
 ## Spacing, radii, elevation
 
-- Base unit 4 px. Scale: 4, 8, 12, 16, 24, 32, 48. Screen padding 16 (compact) / 24 (regular). Gap between sections 32.
+- Base unit 4 px. Scale: 4, 8, 12, 16, 24, 32, 48, and 13 = 52 for the control height (`min-h-13`). Screen padding 16 (compact) / 24 (regular). Gap between sections 32.
+- Border widths: `hairline` (device hairline), `field` 1.5 px (field outline, `border-field`).
 - Radii: `sm` 6, `md` 10 (buttons, inputs), `lg` 14 (cards), `xl` 20 (sheets), `full` (avatars, badges).
 - Elevation by tone and hairline border, not heavy shadows; one soft shadow for sheets only.
 

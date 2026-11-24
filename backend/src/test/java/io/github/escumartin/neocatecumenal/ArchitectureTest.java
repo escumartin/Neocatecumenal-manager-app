@@ -20,4 +20,20 @@ class ArchitectureTest {
                 .allowEmptyShould(true)
                 .check(CLASSES);
     }
+
+    @Test
+    void domainDoesNotDependOnJackson() {
+        noClasses().that().resideInAPackage("..domain..")
+                .should().dependOnClassesThat().resideInAnyPackage("com.fasterxml..", "tools.jackson..")
+                .allowEmptyShould(true)
+                .check(CLASSES);
+    }
+
+    @Test
+    void applicationDoesNotDependOnInfrastructure() {
+        noClasses().that().resideInAPackage("..application..")
+                .should().dependOnClassesThat().resideInAPackage("..infrastructure..")
+                .allowEmptyShould(true)
+                .check(CLASSES);
+    }
 }

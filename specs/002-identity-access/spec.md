@@ -8,6 +8,16 @@
 
 **Input**: User description: "Identidad y acceso: los hermanos inician y cierran sesión con su identificador numérico y contraseña; el sistema sabe quién es el usuario actual y su rol (registrado, moderador, administrador); el administrador y el moderador dan de alta, editan y borran usuarios; sin autorregistro"
 
+## Clarifications
+
+### Session 2026-11-24
+
+- Q: ¿Cómo se aplica el bloqueo temporal tras fallos de acceso? → A: por identificador y origen: 5 fallos seguidos desde el mismo origen bloquean ese identificador 15 minutos en ese origen; además, un tope de fallos por origen frena los barridos de identificadores.
+- Q: ¿Cuánto dura la sesión? → A: se renueva con cada uso y caduca tras 30 días sin uso, con un máximo absoluto de 90 días.
+- Q: ¿Quién fija el identificador numérico de acceso de un usuario nuevo? → A: lo genera el sistema: número aleatorio de 6 dígitos, único e inmutable.
+- Q: ¿Qué contraseña mínima se exige? → A: entre 8 y 64 caracteres, sin reglas de composición; se rechazan las de una lista de contraseñas comunes y las que contienen el identificador.
+- Q: ¿Qué impide Identidad al borrar o cambiar a un moderador? → A: que una comunidad se quede sin ningún moderador; el responsable como persona concreta pertenece a «Comunidades y hermanos».
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Iniciar y cerrar sesión (Priority: P1)
@@ -55,12 +65,12 @@ El administrador da de alta, edita y borra usuarios de cualquier comunidad. El m
 
 **Acceptance Scenarios**:
 
-1. **Given** un moderador, **When** da de alta a un hermano de su comunidad, **Then** el usuario queda creado con rol registrado y un identificador numérico único.
+1. **Given** un moderador, **When** da de alta a un hermano de su comunidad, **Then** el usuario queda creado con rol registrado y el sistema le asigna un identificador numérico único de 6 dígitos.
 2. **Given** un moderador, **When** intenta dar de alta un usuario con rol moderador o administrador, o en otra comunidad, **Then** el sistema lo deniega.
 3. **Given** un administrador, **When** da de alta un usuario en cualquier comunidad con cualquier rol, **Then** queda creado.
-4. **Given** un alta con datos inválidos o un identificador ya en uso, **When** se envía, **Then** se rechaza con un mensaje claro y no se crea nada.
+4. **Given** un alta con datos inválidos, **When** se envía, **Then** se rechaza con un mensaje claro y no se crea nada.
 5. **Given** un usuario existente, **When** quien tiene permiso lo borra y confirma, **Then** deja de poder iniciar sesión y se aplica la política de borrado de datos.
-6. **Given** un administrador o moderador, **When** pide borrar su propia cuenta o dejar a una comunidad sin responsable, **Then** el sistema lo impide.
+6. **Given** un administrador o moderador, **When** pide borrar su propia cuenta, o borrar, degradar o cambiar de comunidad al último moderador de una comunidad, **Then** el sistema lo impide.
 
 ---
 
@@ -83,11 +93,11 @@ Un usuario cambia su propia contraseña. La contraseña inicial que recibe de qu
 
 ### Edge Cases
 
-- Dos altas simultáneas con el mismo identificador numérico: solo una se crea y la otra recibe un aviso.
+- Dos altas simultáneas que reciben el mismo identificador generado: el sistema genera otro para una de ellas y ambas se crean con identificadores distintos.
 - Sesión caducada durante una acción: se pide volver a entrar y la acción no se ejecuta.
 - Usuario borrado con sesión abierta: su siguiente acción se deniega y se le lleva a iniciar sesión.
-- Moderador que cambia de comunidad o de rol: pierde de inmediato los permisos de la anterior.
-- Usuario de 90 años con poca práctica: identificador y contraseña largos admitidos, mensajes de error claros y opción de mostrar u ocultar la contraseña.
+- Moderador que cambia de comunidad o de rol: pierde de inmediato los permisos de la anterior; si era el último moderador de su comunidad, el cambio se impide.
+- Usuario de 90 años con poca práctica: contraseña de hasta 64 caracteres, mensajes de error claros y opción de mostrar u ocultar la contraseña.
 - Último administrador: no puede borrarse ni perder el rol.
 - Usuario con datos asociados en otras features (reservas, eventos): su historial se conserva anonimizado al borrarlo (FR-023).
 
@@ -97,37 +107,40 @@ Un usuario cambia su propia contraseña. La contraseña inicial que recibe de qu
 
 - **FR-001**: Los usuarios MUST poder iniciar sesión con su identificador numérico y su contraseña, y cerrar sesión.
 - **FR-002**: El sistema MUST responder con el mismo mensaje genérico a un identificador inexistente y a una contraseña incorrecta.
-- **FR-003**: El sistema MUST limitar los intentos de acceso fallidos y bloquear temporalmente la cuenta al superar el límite, informando del tiempo de espera.
+- **FR-003**: El origen de un intento es su dirección IP. El sistema MUST bloquear 15 minutos un identificador en un origen tras 5 fallos seguidos desde ese origen, y MUST bloquear 15 minutos un origen tras 20 fallos en 15 minutos, sea cual sea el identificador; en ambos casos informa del tiempo de espera. Los fallos desde otro origen no bloquean al titular. Los identificadores inexistentes cuentan y se responden igual que los existentes, para no revelar cuáles existen (FR-002).
 - **FR-004**: El sistema MUST ofrecer a las demás features, para cada petición, el usuario actual (clave interna, identificador, nombre), su rol y su comunidad, o la condición de visitante.
 - **FR-005**: El sistema MUST distinguir cuatro niveles con herencia: no identificado < registrado < moderador < administrador.
 - **FR-006**: El sistema MUST denegar toda acción protegida a quien no tenga el rol exigido, y toda acción sobre datos de otra comunidad a un moderador.
 - **FR-007**: El administrador MUST elegir una comunidad antes de operar sobre ella y MUST poder operar sobre cualquiera.
 - **FR-008**: Los cambios de rol o de comunidad de un usuario MUST aplicarse en su siguiente acción.
 - **FR-009**: El administrador MUST poder dar de alta, editar y borrar usuarios de cualquier comunidad y con cualquier rol.
-- **FR-010**: El moderador MUST poder dar de alta, editar y borrar solo usuarios con rol registrado de su comunidad.
+- **FR-010**: El moderador MUST poder dar de alta, editar y borrar solo usuarios con rol registrado de su comunidad. El moderador edita el nombre y reasigna la contraseña inicial; cambiar el rol o la comunidad de un usuario es solo del administrador.
 - **FR-011**: El sistema MUST NOT ofrecer autorregistro: un usuario solo se crea por el alta de un administrador o moderador.
-- **FR-012**: Cada usuario MUST tener una clave interna inmutable y un identificador numérico de acceso único; cada comunidad MUST tener un número único. Ambos números son atributos de negocio, no la clave interna.
-- **FR-013**: El alta MUST validar los datos obligatorios y la unicidad del identificador, y rechazar el alta inválida sin crear nada.
+- **FR-012**: Cada usuario MUST tener una clave interna inmutable y un identificador numérico de acceso único, que el sistema genera al dar de alta (aleatorio entre 100000 y 999999, inmutable); cada comunidad MUST tener un número único. Ambos números son atributos de negocio, no la clave interna.
+- **FR-013**: El alta MUST validar los datos obligatorios, garantizar la unicidad del identificador generado y rechazar el alta inválida sin crear nada.
 - **FR-014**: La contraseña inicial MUST cambiarse en el primer acceso; el usuario MUST poder cambiarla después indicando la actual.
-- **FR-015**: Las contraseñas MUST guardarse de forma que ni administradores ni moderadores puedan leerlas, MUST cumplir una longitud mínima y MUST rechazar contraseñas triviales.
+- **FR-015**: Las contraseñas MUST guardarse de forma que ni administradores ni moderadores puedan leerlas, MUST tener entre 8 y 64 caracteres sin reglas de composición y MUST rechazar las de una lista de contraseñas comunes y las que contengan el identificador.
 - **FR-016**: Los usuarios MUST NOT poder editar su propio rol, comunidad ni identificador. La edición de datos de contacto (teléfono fijo, móvil, email) queda fuera de esta feature y pertenece a «Comunidades y hermanos».
 - **FR-017**: El borrado de un usuario MUST pedir confirmación, ser definitivo e impedir su acceso de inmediato.
-- **FR-018**: El sistema MUST impedir borrar la propia cuenta, quitar el rol al último administrador y dejar a una comunidad sin responsable (moderador).
+- **FR-018**: El sistema MUST impedir borrar la propia cuenta, quitar el rol al último administrador y dejar a una comunidad sin ningún moderador (por borrado, cambio de rol o cambio de comunidad).
 - **FR-019**: Los datos personales MUST limitarse a lo que justifica cada campo, MUST NOT aparecer en registros técnicos y MUST poder consultarse, rectificarse y borrarse a petición del titular.
-- **FR-020**: Se MUST informar al usuario, en el primer acceso, del tratamiento de sus datos y registrar su aceptación.
+- **FR-020**: Se MUST informar al usuario, en el primer acceso, del tratamiento de sus datos y registrar su aceptación. Si no acepta, no puede usar ninguna acción protegida, su sesión se cierra y el aviso se le vuelve a mostrar en el siguiente acceso.
 - **FR-021**: Las pantallas de acceso y gestión de usuarios MUST cumplir los requisitos de accesibilidad y uso móvil del proyecto (texto legible, objetivos táctiles amplios, contraste AA, etiquetas en todos los controles).
-- **FR-022**: Un usuario que olvida su contraseña MUST recuperar el acceso porque su moderador (para usuarios de su comunidad) o un administrador le asigna una contraseña inicial nueva, que debe cambiar al entrar. No hay recuperación por email.
+- **FR-022**: Un usuario que olvida su contraseña MUST recuperar el acceso porque su moderador (para usuarios con rol registrado de su comunidad) o un administrador le asigna una contraseña inicial nueva, que debe cambiar al entrar. La reasignación MUST cerrar todas las sesiones abiertas del usuario. No hay recuperación por email.
 - **FR-023**: Al borrar un usuario, su historial en otras features (p. ej. solicitudes de reserva) MUST anonimizarse: se conserva sin datos personales.
 - **FR-024**: Este contexto MUST guardar de cada usuario solo los datos de acceso (identificador, nombre, rol, comunidad) y la aceptación del aviso de datos; los datos de contacto pertenecen a «Comunidades y hermanos».
 - **FR-025**: El sistema MUST ofrecer a las demás features una lista de solo lectura de las comunidades (clave interna UUID y número) para que el administrador elija sobre cuál operar (FR-007).
+- **FR-026**: La sesión MUST renovarse con cada uso y caducar tras 30 días sin uso, con un máximo absoluto de 90 días desde el inicio de sesión.
+- **FR-027**: Cuando un usuario cambia su propia contraseña, MUST cerrarse el resto de sus sesiones abiertas y conservarse la actual.
+- **FR-028**: Base legal del tratamiento: art. 9.2.d RGPD (datos de miembros tratados por una entidad religiosa en su actividad legítima, sin comunicarlos fuera de ella sin consentimiento) y art. 6.1.f. Justificación de cada dato: identificador y contraseña, para el acceso; nombre, para que el moderador reconozca al hermano; rol y comunidad, para los permisos (FR-005, FR-006); aceptación del aviso, para acreditar que se informó al titular (FR-020); IP de los intentos fallidos, para frenar ataques de fuerza bruta (FR-003, art. 6.1.f), conservada solo mientras dura su ventana de bloqueo de 15 minutos.
 
 ### Key Entities *(include if feature involves data)*
 
-- **Usuario**: persona con acceso a la app; atributos: clave interna inmutable, identificador numérico de acceso (único), nombre, rol, comunidad, estado (activo o bloqueado), contraseña inicial pendiente de cambio, aceptación del tratamiento de datos. Sin datos de contacto (FR-024).
+- **Usuario**: persona con acceso a la app; atributos: clave interna inmutable, identificador numérico de acceso (único), nombre, rol, comunidad, contraseña inicial pendiente de cambio, aceptación del tratamiento de datos. El bloqueo por fallos de acceso no es un estado del usuario: se aplica al par identificador y origen (FR-003). Sin datos de contacto (FR-024).
 - **Rol**: registrado, moderador o administrador, con herencia; el visitante es la ausencia de sesión.
 - **Comunidad (referencia)**: UUID y número único; el usuario pertenece a una. Identidad solo expone la lista de solo lectura; el alta, la edición y el responsable de la comunidad pertenecen a «Comunidades y hermanos».
-- **Sesión**: periodo en que un usuario está identificado; termina al cerrar sesión, por caducidad o por borrado del usuario.
-- **Intento de acceso**: resultado de un inicio de sesión, usado para el bloqueo temporal; sin más datos personales que el identificador.
+- **Sesión**: periodo en que un usuario está identificado; termina al cerrar sesión, por caducidad (FR-026), por borrado del usuario, por no aceptar el aviso de datos (FR-020) o por cambio o reasignación de contraseña (FR-022, FR-027).
+- **Intento de acceso**: resultado de un inicio de sesión fallido, usado para el bloqueo temporal; guarda el identificador y la IP de origen, y se descarta al vencer la ventana de 15 minutos (FR-003, FR-028).
 
 ## Success Criteria *(mandatory)*
 
@@ -150,7 +163,6 @@ Un usuario cambia su propia contraseña. La contraseña inicial que recibe de qu
 - La gestión de comunidades (alta, número, responsable) pertenece a «Comunidades y hermanos»; esta feature solo referencia la comunidad por su número y asume que existe.
 - Se usan una clave interna UUID y dos atributos de negocio con unicidad: identificador numérico de acceso y número de comunidad.
 - El primer administrador se crea en la puesta en marcha, fuera de la app.
-- La sesión se renueva con el uso y caduca tras un periodo largo de inactividad.
-- El bloqueo temporal se activa tras pocos fallos consecutivos (del orden de 5) y dura minutos.
+- La sesión se renueva con el uso y caduca tras 30 días sin uso, con un máximo absoluto de 90 días.
 - Los usuarios tienen entre 14 y 90 años; el consentimiento de tutores de menores se gestiona fuera de la app.
 - Textos de la interfaz en castellano, mediante ficheros de recursos.

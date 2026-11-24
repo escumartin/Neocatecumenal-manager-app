@@ -21,6 +21,192 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Log in with access id and password */
+        post: operations["logIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Close the current session */
+        delete: operations["logOut"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Current user and every identity datum stored about them
+         * @description Allowed with pending steps
+         */
+        get: operations["getMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change own password; closes every other session of the user
+         * @description Allowed with the PASSWORD_CHANGE pending step once the privacy notice is accepted. The fifth consecutive wrong current password closes every session of the user and answers 401
+         */
+        put: operations["changeMyPassword"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/privacy-notice-acceptance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record acceptance of the current privacy notice version */
+        post: operations["acceptPrivacyNotice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/privacy-notice-rejection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject the privacy notice; the current session is closed and any recorded acceptance is withdrawn */
+        post: operations["rejectPrivacyNotice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/communities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read-only list of communities ordered by number */
+        get: operations["listCommunities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Users of a community (moderators see only their own; administrators must pass communityId) */
+        get: operations["listUsers"];
+        put?: never;
+        /** Create a user; the system generates the access id and the initial password */
+        post: operations["createUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * One user visible to the caller
+         * @description A moderator asking for a user of another community gets 403; 404 only when the user does not exist
+         */
+        get: operations["getUser"];
+        /** Replace name, role and community; moderators may only change the name */
+        put: operations["updateUser"];
+        post?: never;
+        /** Delete a user permanently; the client asks for confirmation first */
+        delete: operations["deleteUser"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{userId}/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Assign a new generated initial password; closes every session of the user */
+        post: operations["resetUserPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -29,9 +215,170 @@ export interface components {
             /** @example UP */
             status: string;
         };
+        /** @example 482913 */
+        AccessId: number;
+        /** @description Length policy (8 to 64 code points) is checked by the server and reported as a validation code */
+        Password: string;
+        /** @enum {string} */
+        Role: "REGISTERED" | "MODERATOR" | "ADMINISTRATOR";
+        /** @enum {string} */
+        PendingStep: "PRIVACY_NOTICE" | "PASSWORD_CHANGE";
+        LoginRequest: {
+            accessId: components["schemas"]["AccessId"];
+            password: components["schemas"]["Password"];
+            /**
+             * @default BODY
+             * @enum {string}
+             */
+            tokenDelivery: "BODY" | "COOKIE";
+        };
+        LoginResponse: {
+            /** @description Present only when tokenDelivery is BODY */
+            token?: string;
+            me: components["schemas"]["Me"];
+        };
+        Me: {
+            /** Format: uuid */
+            userId: string;
+            accessId: components["schemas"]["AccessId"];
+            name: string;
+            role: components["schemas"]["Role"];
+            /** Format: uuid */
+            communityId: string;
+            communityNumber: number;
+            pendingSteps: components["schemas"]["PendingStep"][];
+            currentPrivacyNoticeVersion: string;
+            privacyNoticeAcceptance?: components["schemas"]["PrivacyNoticeAcceptanceRecord"];
+        };
+        PrivacyNoticeAcceptanceRecord: {
+            version: string;
+            /** Format: date-time */
+            acceptedAt: string;
+        };
+        PrivacyNoticeAcceptance: {
+            /** @description Must equal currentPrivacyNoticeVersion; otherwise 409 PRIVACY_NOTICE_OUTDATED */
+            version: string;
+        };
+        PasswordChange: {
+            currentPassword: components["schemas"]["Password"];
+            newPassword: components["schemas"]["Password"];
+        };
+        Community: {
+            /** Format: uuid */
+            id: string;
+            number: number;
+        };
+        UserInput: {
+            name: string;
+            role: components["schemas"]["Role"];
+            /** Format: uuid */
+            communityId: string;
+        };
+        User: {
+            /** Format: uuid */
+            id: string;
+            accessId: components["schemas"]["AccessId"];
+            name: string;
+            role: components["schemas"]["Role"];
+            /** Format: uuid */
+            communityId: string;
+            passwordChangePending: boolean;
+        };
+        CreatedUser: components["schemas"]["User"] & {
+            initialPassword: string;
+        };
+        InitialPassword: {
+            initialPassword: string;
+        };
+        UserPage: {
+            items: components["schemas"]["User"][];
+            page: number;
+            size: number;
+            totalItems: number;
+        };
+        Problem: {
+            /** Format: uri-reference */
+            type: string;
+            title: string;
+            status: number;
+            detail?: string;
+            /**
+             * @description Stable error code the client maps to a localised message
+             * @enum {string}
+             */
+            code: "UNAUTHENTICATED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_FAILED" | "INVALID_CREDENTIALS" | "LOGIN_TEMPORARILY_BLOCKED" | "PRIVACY_NOTICE_PENDING" | "PRIVACY_NOTICE_OUTDATED" | "PASSWORD_CHANGE_REQUIRED" | "LAST_ADMINISTRATOR" | "LAST_MODERATOR" | "SELF_ACTION_FORBIDDEN" | "CONCURRENT_MODIFICATION" | "BAD_REQUEST" | "METHOD_NOT_ALLOWED" | "NOT_ACCEPTABLE" | "UNSUPPORTED_MEDIA_TYPE" | "INTERNAL_ERROR";
+        };
+        ValidationProblem: components["schemas"]["Problem"] & {
+            errors: {
+                field: string;
+                /** @enum {string} */
+                code: "REQUIRED" | "TOO_LONG" | "INVALID_FORMAT" | "COMMUNITY_REQUIRED" | "COMMUNITY_NOT_FOUND" | "PASSWORD_TOO_SHORT" | "PASSWORD_TOO_LONG" | "PASSWORD_TOO_COMMON" | "PASSWORD_CONTAINS_ACCESS_ID" | "CURRENT_PASSWORD_INCORRECT";
+            }[];
+        };
+        LoginBlockedProblem: components["schemas"]["Problem"] & {
+            retryAfterSeconds: number;
+        };
     };
-    responses: never;
-    parameters: never;
+    responses: {
+        /** @description Not authenticated, session expired or user deleted */
+        Unauthorized: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Role, community or pending first-access steps do not allow this action; a moderator acting on a user of another community always gets 403 */
+        Forbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description User does not exist */
+        NotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description The change would break an invariant or the user changed concurrently */
+        StateConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Invalid input; nothing is changed */
+        ValidationFailed: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["ValidationProblem"];
+            };
+        };
+        /** @description Too many failed attempts from this origin */
+        LoginBlocked: {
+            headers: {
+                "Retry-After"?: number;
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["LoginBlockedProblem"];
+            };
+        };
+    };
+    parameters: {
+        UserId: string;
+    };
     requestBodies: never;
     headers: never;
     pathItems: never;
@@ -56,6 +403,336 @@ export interface operations {
                     "application/json": components["schemas"]["Health"];
                 };
             };
+        };
+    };
+    logIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Session created; pendingSteps tells the client what must be done before using the app */
+            201: {
+                headers: {
+                    /** @description Session cookie, only when tokenDelivery is COOKIE */
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoginResponse"];
+                };
+            };
+            /** @description Unknown access id or wrong password; same response for both */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+            429: components["responses"]["LoginBlocked"];
+        };
+    };
+    logOut: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session closed; the session cookie is cleared if present */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    changeMyPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChange"];
+            };
+        };
+        responses: {
+            /** @description Password changed; the current session stays open */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    acceptPrivacyNotice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrivacyNoticeAcceptance"];
+            };
+        };
+        responses: {
+            /** @description Acceptance recorded */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["StateConflict"];
+        };
+    };
+    rejectPrivacyNotice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Session closed; the notice is shown again on the next login */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listCommunities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Communities */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Community"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listUsers: {
+        parameters: {
+            query?: {
+                communityId?: string;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of users ordered by name */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    createUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserInput"];
+            };
+        };
+        responses: {
+            /** @description User created; the initial password is shown only in this response */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedUser"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    updateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserInput"];
+            };
+        };
+        responses: {
+            /** @description User updated; a role or community change applies on the user's next request */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["StateConflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    deleteUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User deleted; every session is closed and UserDeleted is published */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["StateConflict"];
+        };
+    };
+    resetUserPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: components["parameters"]["UserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description New initial password, shown only in this response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InitialPassword"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["StateConflict"];
         };
     };
 }

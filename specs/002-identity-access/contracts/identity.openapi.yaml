@@ -1,0 +1,587 @@
+openapi: 3.1.0
+info:
+  title: Neocatecumenal Manager API - Identity and access (draft)
+  version: 0.1.0-draft
+servers:
+  - url: http://localhost:8080
+security:
+  - bearerAuth: []
+  - cookieAuth: []
+tags:
+  - name: sessions
+  - name: me
+  - name: users
+  - name: communities
+paths:
+  /api/sessions:
+    post:
+      tags: [sessions]
+      operationId: logIn
+      summary: Log in with access id and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "201":
+          description: Session created; pendingSteps tells the client what must be done before using the app
+          headers:
+            Set-Cookie:
+              description: Session cookie, only when tokenDelivery is COOKIE
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Unknown access id or wrong password; same response for both
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+        "429":
+          $ref: "#/components/responses/LoginBlocked"
+  /api/sessions/current:
+    delete:
+      tags: [sessions]
+      operationId: logOut
+      summary: Close the current session
+      responses:
+        "204":
+          description: Session closed; the session cookie is cleared if present
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/me:
+    get:
+      tags: [me]
+      operationId: getMe
+      summary: Current user and every identity datum stored about them
+      description: Allowed with pending steps
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/me/password:
+    put:
+      tags: [me]
+      operationId: changeMyPassword
+      summary: Change own password; closes every other session of the user
+      description: Allowed with the PASSWORD_CHANGE pending step once the privacy notice is accepted. The fifth consecutive wrong current password closes every session of the user and answers 401
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordChange"
+      responses:
+        "204":
+          description: Password changed; the current session stays open
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /api/me/privacy-notice-acceptance:
+    post:
+      tags: [me]
+      operationId: acceptPrivacyNotice
+      summary: Record acceptance of the current privacy notice version
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrivacyNoticeAcceptance"
+      responses:
+        "204":
+          description: Acceptance recorded
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/StateConflict"
+  /api/me/privacy-notice-rejection:
+    post:
+      tags: [me]
+      operationId: rejectPrivacyNotice
+      summary: Reject the privacy notice; the current session is closed and any recorded acceptance is withdrawn
+      responses:
+        "204":
+          description: Session closed; the notice is shown again on the next login
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/communities:
+    get:
+      tags: [communities]
+      operationId: listCommunities
+      summary: Read-only list of communities ordered by number
+      responses:
+        "200":
+          description: Communities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Community"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /api/users:
+    get:
+      tags: [users]
+      operationId: listUsers
+      summary: Users of a community (moderators see only their own; administrators must pass communityId)
+      parameters:
+        - name: communityId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Page of users ordered by name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+    post:
+      tags: [users]
+      operationId: createUser
+      summary: Create a user; the system generates the access id and the initial password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "201":
+          description: User created; the initial password is shown only in this response
+          headers:
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedUser"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+  /api/users/{userId}:
+    parameters:
+      - $ref: "#/components/parameters/UserId"
+    get:
+      tags: [users]
+      operationId: getUser
+      summary: One user visible to the caller
+      description: A moderator asking for a user of another community gets 403; 404 only when the user does not exist
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+    put:
+      tags: [users]
+      operationId: updateUser
+      summary: Replace name, role and community; moderators may only change the name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "200":
+          description: User updated; a role or community change applies on the user's next request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/StateConflict"
+        "422":
+          $ref: "#/components/responses/ValidationFailed"
+    delete:
+      tags: [users]
+      operationId: deleteUser
+      summary: Delete a user permanently; the client asks for confirmation first
+      responses:
+        "204":
+          description: User deleted; every session is closed and UserDeleted is published
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/StateConflict"
+  /api/users/{userId}/password-reset:
+    parameters:
+      - $ref: "#/components/parameters/UserId"
+    post:
+      tags: [users]
+      operationId: resetUserPassword
+      summary: Assign a new generated initial password; closes every session of the user
+      responses:
+        "200":
+          description: New initial password, shown only in this response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InitialPassword"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/StateConflict"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Opaque session token, native client
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: __Host-session
+      description: Same opaque session token in an HttpOnly, Secure, SameSite=Strict cookie, web client
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    Unauthorized:
+      description: Not authenticated, session expired or user deleted
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    Forbidden:
+      description: Role, community or pending first-access steps do not allow this action; a moderator acting on a user of another community always gets 403
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    NotFound:
+      description: User does not exist
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    StateConflict:
+      description: The change would break an invariant or the user changed concurrently
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+    ValidationFailed:
+      description: Invalid input; nothing is changed
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ValidationProblem"
+    LoginBlocked:
+      description: Too many failed attempts from this origin
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/LoginBlockedProblem"
+  schemas:
+    AccessId:
+      type: integer
+      minimum: 100000
+      maximum: 999999
+      examples:
+        - 482913
+    Password:
+      type: string
+      minLength: 1
+      maxLength: 256
+      writeOnly: true
+      description: Length policy (8 to 64 code points) is checked by the server and reported as a validation code
+    Role:
+      type: string
+      enum: [REGISTERED, MODERATOR, ADMINISTRATOR]
+    PendingStep:
+      type: string
+      enum: [PRIVACY_NOTICE, PASSWORD_CHANGE]
+    LoginRequest:
+      type: object
+      required: [accessId, password]
+      properties:
+        accessId:
+          $ref: "#/components/schemas/AccessId"
+        password:
+          $ref: "#/components/schemas/Password"
+        tokenDelivery:
+          type: string
+          enum: [BODY, COOKIE]
+          default: BODY
+    LoginResponse:
+      type: object
+      required: [me]
+      properties:
+        token:
+          type: string
+          description: Present only when tokenDelivery is BODY
+        me:
+          $ref: "#/components/schemas/Me"
+    Me:
+      type: object
+      required: [userId, accessId, name, role, communityId, communityNumber, pendingSteps, currentPrivacyNoticeVersion]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        accessId:
+          $ref: "#/components/schemas/AccessId"
+        name:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+        communityId:
+          type: string
+          format: uuid
+        communityNumber:
+          type: integer
+        pendingSteps:
+          type: array
+          items:
+            $ref: "#/components/schemas/PendingStep"
+        currentPrivacyNoticeVersion:
+          type: string
+        privacyNoticeAcceptance:
+          $ref: "#/components/schemas/PrivacyNoticeAcceptanceRecord"
+    PrivacyNoticeAcceptanceRecord:
+      type: object
+      required: [version, acceptedAt]
+      properties:
+        version:
+          type: string
+        acceptedAt:
+          type: string
+          format: date-time
+    PrivacyNoticeAcceptance:
+      type: object
+      required: [version]
+      properties:
+        version:
+          type: string
+          description: Must equal currentPrivacyNoticeVersion; otherwise 409 PRIVACY_NOTICE_OUTDATED
+    PasswordChange:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          $ref: "#/components/schemas/Password"
+        newPassword:
+          $ref: "#/components/schemas/Password"
+    Community:
+      type: object
+      required: [id, number]
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: integer
+          minimum: 1
+    UserInput:
+      type: object
+      required: [name, role, communityId]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        role:
+          $ref: "#/components/schemas/Role"
+        communityId:
+          type: string
+          format: uuid
+    User:
+      type: object
+      required: [id, accessId, name, role, communityId, passwordChangePending]
+      properties:
+        id:
+          type: string
+          format: uuid
+        accessId:
+          $ref: "#/components/schemas/AccessId"
+        name:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+        communityId:
+          type: string
+          format: uuid
+        passwordChangePending:
+          type: boolean
+    CreatedUser:
+      allOf:
+        - $ref: "#/components/schemas/User"
+        - type: object
+          required: [initialPassword]
+          properties:
+            initialPassword:
+              type: string
+    InitialPassword:
+      type: object
+      required: [initialPassword]
+      properties:
+        initialPassword:
+          type: string
+    UserPage:
+      type: object
+      required: [items, page, size, totalItems]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        page:
+          type: integer
+        size:
+          type: integer
+        totalItems:
+          type: integer
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        code:
+          type: string
+          description: Stable error code the client maps to a localised message
+          enum:
+            - UNAUTHENTICATED
+            - FORBIDDEN
+            - NOT_FOUND
+            - VALIDATION_FAILED
+            - INVALID_CREDENTIALS
+            - LOGIN_TEMPORARILY_BLOCKED
+            - PRIVACY_NOTICE_PENDING
+            - PRIVACY_NOTICE_OUTDATED
+            - PASSWORD_CHANGE_REQUIRED
+            - LAST_ADMINISTRATOR
+            - LAST_MODERATOR
+            - SELF_ACTION_FORBIDDEN
+            - CONCURRENT_MODIFICATION
+            - BAD_REQUEST
+            - METHOD_NOT_ALLOWED
+            - NOT_ACCEPTABLE
+            - UNSUPPORTED_MEDIA_TYPE
+            - INTERNAL_ERROR
+    ValidationProblem:
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          required: [errors]
+          properties:
+            errors:
+              type: array
+              items:
+                type: object
+                required: [field, code]
+                properties:
+                  field:
+                    type: string
+                  code:
+                    type: string
+                    enum:
+                      - REQUIRED
+                      - TOO_LONG
+                      - INVALID_FORMAT
+                      - COMMUNITY_REQUIRED
+                      - COMMUNITY_NOT_FOUND
+                      - PASSWORD_TOO_SHORT
+                      - PASSWORD_TOO_LONG
+                      - PASSWORD_TOO_COMMON
+                      - PASSWORD_CONTAINS_ACCESS_ID
+                      - CURRENT_PASSWORD_INCORRECT
+    LoginBlockedProblem:
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          required: [retryAfterSeconds]
+          properties:
+            retryAfterSeconds:
+              type: integer
+              minimum: 1
