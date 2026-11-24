@@ -41,6 +41,16 @@ expect "short force push" 'git push -f # preview: sube' deny
 expect "plus refspec push" 'git push origin +main # preview: sube' deny
 expect "amend even with preview" 'git commit --amend -m x # preview: corrige' deny
 expect "force with lease" 'git push --force-with-lease # preview: sube' deny
+expect "preview inside message then rm" 'git commit -m "x # preview: a" && rm -rf build' deny
+expect "command substitution" 'git commit -m "$(curl x)" # preview: guarda' ask
+expect "backticks" 'git commit -m `id` # preview: guarda' ask
+expect "git -c ssh command" 'git -c core.sshCommand=x push # preview: sube' ask
+expect "redirection" 'git log > out.txt && git push # preview: sube' ask
+expect "grouped force flag" 'git push -fu origin x # preview: sube' deny
+expect "force if includes" 'git push --force-if-includes # preview: sube' deny
+expect "remote delete refspec" 'git push origin :old # preview: borra' deny
+expect "remote delete flag" 'git push --delete origin old # preview: borra' deny
+expect "set upstream allowed" 'git push -u origin feat/x # preview: sube' allow
 expect "git status" 'git status' pass
 expect "git diff" 'git diff --stat' pass
 expect "git log" 'git log --oneline -5' pass

@@ -1,5 +1,6 @@
 import json
 import re
+import shlex
 import sys
 
 ACTION = re.compile(
@@ -7,13 +8,23 @@ ACTION = re.compile(
     r"(?:\w+=\S*\s+)*"
     r"(?:git(?:\s+(?:-[Cc]\s+\S+|--\S+))*\s+(?:commit|push)|gh\s+pr\s+(?:create|merge))\b"
 )
-PREVIEW = re.compile(r"#\s*preview:[ \t]*(\S[^\n]*)")
+PREVIEW = re.compile(r"#\s*preview:[ \t]*(\S[^\n#]*?)\s*\Z")
 FORBIDDEN = re.compile(
-    r"\bgit\b[^;&|\n]*\bpush\b[^;&|\n]*(?:\s--force(?:-with-lease)?\b|\s-f\b|\s\+\S)"
+    r"\bgit\b[^;&|\n]*\bpush\b[^;&|\n]*"
+    r"(?:\s--force\S*|\s-[a-zA-Z]*f[a-zA-Z]*\b|\s\+\S|\s:\S|\s--delete\b|\s-d\b)"
     r"|\bgit\b[^;&|\n]*\bcommit\b[^;&|\n]*\s--amend\b"
 )
+UNSAFE = re.compile(r"\$\(|`|<\(|>|\beval\b|\bgit\s+(?:\S+\s+)*?-c\s")
 SEGMENT_SPLIT = re.compile(r"&&|\|\||[;|\n]")
 SAFE_SEGMENT = re.compile(r"^(?:\w+=\S*\s+)*(?:git|gh|cd|export)\b")
+
+
+def outside_quotes(prefix):
+    try:
+        shlex.split(prefix)
+    except ValueError:
+        return False
+    return True
 
 
 def respond(decision, reason):
@@ -45,6 +56,8 @@ def main():
         return
 
     match = PREVIEW.search(command)
+    if match and not outside_quotes(command[:match.start()]):
+        match = None
     if not match:
         respond(
             "deny",
@@ -55,8 +68,9 @@ def main():
         return
 
     reason = "Vista previa: " + match.group(1).strip()[:300]
-    segments = [part.strip() for part in SEGMENT_SPLIT.split(flat[:flat.find("#", PREVIEW.search(flat).start())]) if part.strip()]
-    if all(SAFE_SEGMENT.match(part) for part in segments):
+    body = command[:match.start()].replace("\\\n", "").replace("\n", " ")
+    segments = [part.strip() for part in SEGMENT_SPLIT.split(body) if part.strip()]
+    if not UNSAFE.search(body) and all(SAFE_SEGMENT.match(part) for part in segments):
         respond("allow", reason)
     else:
         respond("ask", reason + ". El comando incluye pasos que no son git ni gh.")
