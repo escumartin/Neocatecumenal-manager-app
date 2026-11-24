@@ -9,7 +9,7 @@ argument-hint: <descripción o feature>
 
 ## Reglas
 
-- Nunca hagas `git commit`, `git push` ni `gh pr create|merge` por tu cuenta. El hook de vista previa los deniega salvo que el comando termine en `# preview: <texto>`, y entonces pide aprobación.
+- Nunca hagas `git commit`, `git push` ni `gh pr create|merge` por tu cuenta.
 - Delega cada paso especializado en su agente, uno nuevo por invocación. Los agentes de revisión son de solo lectura: los arreglos los hace `tdd` o `build-resolver`.
 - Las paradas de OK son obligatorias: tras la spec, tras el plan y antes del commit. Espera la respuesta del usuario y no sigas sin ella.
 - Responde en castellano. Código, tests y mensajes de commit en inglés, sin comentarios.
@@ -39,4 +39,4 @@ argument-hint: <descripción o feature>
     - `docs-reviewer`, si toca documentación, `AGENTS.md` o `.agents/`;
     - `qa-backend`, si hay endpoints nuevos o modificados.
     Corrige los hallazgos con `tdd` y repite gates y revisión hasta que no queden hallazgos bloqueantes.
-13. **Resumen y Parada 3.** Muestra qué ha cambiado (ficheros y motivo), el resultado real de los gates y los pendientes. Propón el mensaje de commit en inglés y espera el OK del usuario. Solo con el OK se hace el commit, con el comando terminado en `# preview: <texto>`. Si algo queda parcial o en rojo, no propongas commit y dilo.
+13. **Resumen y Parada 3.** Muestra qué ha cambiado (ficheros y motivo), el resultado real de los gates y los pendientes. Propón el mensaje de commit en inglés y espera el OK del usuario. Con el OK: commit, push, PR y automerge según la regla 10 de `AGENTS.md`. Si algo queda parcial o en rojo, no propongas commit y dilo.

@@ -32,9 +32,9 @@ Cliente Expo + Expo Router + TypeScript + NativeWind + React Native Reusables. P
 5. **Inglés** en código, tests y commits; castellano en documentación y logs.
 6. **Datos personales.** RGPD: minimizar, consentimiento y borrado; ni datos reales ni secretos en el repo.
 7. **Flujo spec-kit:** `/speckit.specify` → `/speckit.plan` → `/speckit.tasks` → `/speckit.implement`.
-8. **Flujo `/flow`.** Orquesta spec → plan → tasks → implementación → gates → revisión con agentes. Para a pedir OK tras la spec, tras el plan y antes del commit; nunca hace commit, push ni PR sin ese OK, que se da en el chat; el hook de vista previa solo deja constancia y no lo sustituye. El merge de la PR sigue la regla 10.
+8. **Flujo `/flow`.** Orquesta spec → plan → tasks → implementación → gates → revisión con agentes. Para a pedir OK tras la spec, tras el plan y antes del commit; nunca hace commit, push ni PR sin ese OK, que se da en el chat. El merge de la PR sigue la regla 10.
 9. **Nada de terceros sin revisar.** Rige `../AGENTS.md` § Reglas comunes.
-10. **PRs con automerge.** Tras el OK al commit, el asistente crea la PR y la mergea él mismo en cuanto sus checks están en verde, incluida la revisión automática, que falla con hallazgos bloqueantes o altos (el merge pasa por el hook de vista previa como el commit), y después actualiza `master` en local. Sustituye aquí a la regla global «las PRs las mergeo yo».
+10. **PRs con automerge.** Tras el OK al commit, el asistente crea la PR y la mergea él mismo en cuanto sus checks están en verde, incluida la revisión automática, que falla con hallazgos bloqueantes o altos, y después actualiza `master` en local. Sustituye aquí a la regla global «las PRs las mergeo yo».
 
 ## Al empezar
 
