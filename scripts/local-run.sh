@@ -5,7 +5,12 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 log_dir="${LOCAL_RUN_LOG_DIR:-$root/.local-run}"
 mkdir -p "$log_dir"
 
-export JAVA_HOME="${JAVA_HOME:-$HOME/.sdkman/candidates/java/21-tem}"
+sdk_java="$(sed -n 's/^java=//p' "$root/.sdkmanrc")"
+if [ -n "$sdk_java" ] && [ -x "$HOME/.sdkman/candidates/java/$sdk_java/bin/java" ]; then
+  export JAVA_HOME="$HOME/.sdkman/candidates/java/$sdk_java"
+else
+  export JAVA_HOME="$(/usr/libexec/java_home -v 25)"
+fi
 export EXPO_PUBLIC_API_URL="${EXPO_PUBLIC_API_URL:-http://localhost:8080}"
 
 docker compose -f "$root/docker-compose.yml" up -d --wait postgres

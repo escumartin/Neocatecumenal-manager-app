@@ -31,7 +31,7 @@ Zero comments in code and configuration; names carry the meaning. Code, tests, i
 
 ## Additional Constraints
 
-- Stack: Java 21, Spring Boot 3, Spring Modulith, PostgreSQL with Flyway migrations, Maven; Expo, Expo Router, TypeScript strict, NativeWind, React Native Reusables.
+- Stack: Java 25, Spring Boot 4, Spring Modulith, PostgreSQL with Flyway migrations, Maven; Expo, Expo Router, TypeScript strict, NativeWind, React Native Reusables.
 - Secrets never enter the repository.
 
 ## Development Workflow

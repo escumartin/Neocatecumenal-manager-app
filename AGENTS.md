@@ -5,7 +5,7 @@ punteros; los hechos se leen al necesitarlos desde `.agents/context/`. Lo propio
 `.agents/TOOLING-MATRIX.md`.
 
 App web y móvil para gestionar comunidades, salones y eventos del Camino Neocatecumenal en una parroquia (reescritura de un
-TFG de 2019 en PHP). Backend Java 21 + Spring Boot 3 + Spring Modulith, hexagonal/DDD, PostgreSQL, OpenAPI contract-first.
+TFG de 2019 en PHP). Backend Java 25 + Spring Boot 4 + Spring Modulith, hexagonal/DDD, PostgreSQL, OpenAPI contract-first.
 Cliente Expo + Expo Router + TypeScript + NativeWind + React Native Reusables. Proyecto personal, repo git propio.
 
 ## Mapa
@@ -43,7 +43,7 @@ Cliente Expo + Expo Router + TypeScript + NativeWind + React Native Reusables. P
 
 ## Gates locales
 
-- Backend: `cd backend && ./mvnw -B verify` con `JAVA_HOME` en Java 21. Con Rancher Desktop, exportar antes
+- Backend: `cd backend && ./mvnw -B verify` con `JAVA_HOME` en Java 25. Con Rancher Desktop, exportar antes
   `TESTCONTAINERS_RYUK_DISABLED=true` (Ryuk no arranca); en CI no hace falta.
 - App: `cd app && npm run lint && npm run typecheck && npx expo export -p web`.
 

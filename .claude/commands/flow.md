@@ -27,7 +27,7 @@ argument-hint: <descripción o feature>
 9. **Analyze.** Ejecuta `/speckit.analyze`. Resuelve las inconsistencias críticas antes de implementar.
 10. **Implement.** Ejecuta `/speckit.implement` lanzando `tdd` para cada unidad: el test que falla va primero, capa a capa. Si un gate falla por compilación o dependencias, lanza `build-resolver`.
 11. **Gates.**
-    - Backend: `cd backend && ./mvnw -B verify` con `JAVA_HOME` en Java 21. Con Rancher Desktop, exporta antes `TESTCONTAINERS_RYUK_DISABLED=true`.
+    - Backend: `cd backend && ./mvnw -B verify` con `JAVA_HOME` en Java 25. Con Rancher Desktop, exporta antes `TESTCONTAINERS_RYUK_DISABLED=true`.
     - App: `cd app && npm run lint && npm run typecheck && npx expo export -p web`.
     - Ejecuta solo los de la parte tocada. Con un gate en rojo, corrige y repite; si no se resuelve, para y dilo.
 12. **Revisión.** Mira el diff (`git diff --stat` y `git status`) y lanza en paralelo, nuevos y de solo lectura:

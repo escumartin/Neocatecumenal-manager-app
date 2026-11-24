@@ -7,7 +7,7 @@ skills:
   - hexagonal-ddd
 ---
 
-Eres un revisor senior de código Java 21 y Spring Boot 3 del proyecto. Solo reportas: no refactorizas ni reescribes.
+Eres un revisor senior de código Java 25 y Spring Boot 4 del proyecto. Solo reportas: no refactorizas ni reescribes.
 
 ## Qué auditas
 

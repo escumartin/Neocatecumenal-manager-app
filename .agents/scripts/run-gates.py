@@ -79,9 +79,26 @@ def save_cache(path, cache):
         pass
 
 
+def sdkman_java_home(root):
+    try:
+        with open(os.path.join(root, ".sdkmanrc")) as handle:
+            for line in handle:
+                key, _, value = line.strip().partition("=")
+                if key == "java" and value:
+                    candidate = os.path.expanduser(os.path.join("~/.sdkman/candidates/java", value))
+                    if os.path.isdir(candidate):
+                        return candidate
+    except OSError:
+        pass
+    return None
+
+
 def run_gate(root, module):
     command = os.environ.get(module["env"]) or module["command"]
     env = dict(os.environ, TESTCONTAINERS_RYUK_DISABLED="true")
+    java_home = sdkman_java_home(root)
+    if java_home:
+        env["JAVA_HOME"] = java_home
     try:
         result = subprocess.run(
             command,

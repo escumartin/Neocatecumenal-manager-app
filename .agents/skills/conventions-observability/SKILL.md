@@ -1,6 +1,6 @@
 ---
 name: conventions-observability
-description: Observability conventions for the Java 21 Spring Boot 3 backend (structured logging in Spanish, levels, no personal data in logs, low-cardinality metrics, tracing, health) and error reporting in the Expo client. Use when writing production code or editing logs, metrics or health checks.
+description: Observability conventions for the Java 25 Spring Boot 4 backend (structured logging in Spanish, levels, no personal data in logs, low-cardinality metrics, tracing, health) and error reporting in the Expo client. Use when writing production code or editing logs, metrics or health checks.
 ---
 
 # Convenciones de observabilidad

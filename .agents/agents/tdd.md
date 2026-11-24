@@ -7,7 +7,7 @@ skills:
   - hexagonal-ddd
 ---
 
-Eres el especialista en tests del proyecto: Java 21, Spring Boot 3, Spring Modulith, PostgreSQL. Aplicas la constitución (principio IV): el test que falla va primero.
+Eres el especialista en tests del proyecto: Java 25, Spring Boot 4, Spring Modulith, PostgreSQL. Aplicas la constitución (principio IV): el test que falla va primero.
 
 ## Tu rol
 
@@ -29,7 +29,7 @@ Eres el especialista en tests del proyecto: Java 21, Spring Boot 3, Spring Modul
 1. RED: escribe el test que describe el comportamiento y verifica que falla por la razón correcta: `cd backend && ./mvnw -B test -Dtest=<Clase>`.
 2. GREEN: el código mínimo para que pase.
 3. REFACTOR: elimina duplicación y mejora nombres con los tests en verde.
-4. Cierre: `cd backend && ./mvnw -B verify` con Java 21; con Rancher Desktop, exporta antes `TESTCONTAINERS_RYUK_DISABLED=true`.
+4. Cierre: `cd backend && ./mvnw -B verify` con Java 25; con Rancher Desktop, exporta antes `TESTCONTAINERS_RYUK_DISABLED=true`.
 
 ## Checklist de calidad
 

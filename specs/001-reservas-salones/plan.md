@@ -22,15 +22,15 @@ Enfoque técnico:
 
 ## Technical Context
 
-**Language/Version**: Java 21 (backend); TypeScript strict (cliente)
+**Language/Version**: Java 25 (backend); TypeScript strict (cliente)
 
 **Primary Dependencies**:
 
-- Backend: Spring Boot 3.5, Spring Modulith 1.4, Spring Data JPA, Flyway, Bean Validation.
+- Backend: Spring Boot 4.2, Spring Modulith 2.x, Spring Data JPA, Flyway, Bean Validation.
 - Generación: `openapi-generator-maven-plugin` (generador `spring`, `interfaceOnly`), nuevo en `backend/pom.xml`.
 - Cliente: Expo 58, Expo Router, NativeWind, React Native Reusables; `openapi-typescript` y `openapi-fetch`, nuevos.
 
-**Storage**: PostgreSQL 17 con la extensión `btree_gist` (restricción de exclusión); migraciones Flyway `V3__spaces.sql`
+**Storage**: PostgreSQL 18 con la extensión `btree_gist` (restricción de exclusión); migraciones Flyway `V3__spaces.sql`
 y `V4__agenda.sql`. Claves internas UUID (R11)
 
 **Testing**:
