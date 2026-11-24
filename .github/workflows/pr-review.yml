@@ -39,11 +39,10 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          use_sticky_comment: true
           allow_fork_prs: "false"
           claude_args: |
             --max-turns 40
-            --allowedTools "Task,Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(git show:*)"
+            --allowedTools "Task,Read,Grep,Glob,Bash(git diff:*),Bash(git log:*),Bash(git status:*),Bash(git show:*),Bash(gh pr comment:*)"
           prompt: |
             REPO: ${{ github.repository }}
             PR: #${{ github.event.pull_request.number }}
@@ -61,4 +60,4 @@ jobs:
                - `tdd`, solo lectura, si hay código de producción sin su test.
                No lances `self-reviewer`, `critic`, `qa-backend` ni `build-resolver`.
             3. Pasa a cada revisor la lista de ficheros y el comando del diff, y pídele solo hallazgos con ruta y línea. Descarta lo que no esté en el diff de la PR.
-            4. Deja un único comentario resumen en castellano, con un hallazgo por línea con el formato `ruta:línea | severidad | mensaje` (severidad: bloqueante, alta, media o baja), ordenado de mayor a menor severidad. Primero una línea con los revisores lanzados. Sin hallazgos: «Sin hallazgos» y nada más.
+            4. Deja un único comentario resumen en castellano, con un hallazgo por línea con el formato `ruta:línea | severidad | mensaje` (severidad: bloqueante, alta, media o baja), ordenado de mayor a menor severidad. Primero una línea con los revisores lanzados. Sin hallazgos: «Sin hallazgos» y nada más. Publícalo con `gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body "<comentario>"`; es tu última acción y la revisión no termina sin él.
