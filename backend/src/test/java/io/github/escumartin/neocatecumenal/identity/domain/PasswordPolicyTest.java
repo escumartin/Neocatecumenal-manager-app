@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 class PasswordPolicyTest {
 
     private static final AccessId ACCESS_ID = new AccessId(123456);
-    private static final Set<String> COMMON = Set.of("password1", "contraseña");
+    private static final Set<String> COMMON = Set.of("password1", "password", "contraseña", "hacker");
     private static final CommonPasswords COMMONS = COMMON::contains;
 
     private static List<String> check(String password) {
@@ -77,6 +77,45 @@ class PasswordPolicyTest {
     void rejectsACommonPasswordIgnoringCase() {
         assertThat(check("PassWord1")).containsExactly("PASSWORD_TOO_COMMON");
         assertThat(check("CONTRASEÑA")).containsExactly("PASSWORD_TOO_COMMON");
+    }
+
+    @Test
+    void rejectsACommonPasswordFollowedByTrailingDigits() {
+        assertThat(check("password123")).containsExactly("PASSWORD_TOO_COMMON");
+    }
+
+    @Test
+    void rejectsACommonPasswordWrittenWithLeetSubstitutions() {
+        assertThat(check("p@ssw0rd")).containsExactly("PASSWORD_TOO_COMMON");
+        assertThat(check("P@$$w0rd")).containsExactly("PASSWORD_TOO_COMMON");
+        assertThat(check("h4ck3r!!")).containsExactly("PASSWORD_TOO_COMMON");
+    }
+
+    @Test
+    void rejectsACommonPasswordWithLeetSubstitutionsAndTrailingSymbols() {
+        assertThat(check("p@ssw0rd2024!")).containsExactly("PASSWORD_TOO_COMMON");
+    }
+
+    @Test
+    void rejectsACommonPasswordWithAccentsFollowedByYearAndSymbol() {
+        assertThat(check("Contraseña2024!")).containsExactly("PASSWORD_TOO_COMMON");
+    }
+
+    @Test
+    void rejectsADecomposedCommonPasswordWithTrailingDigits() {
+        assertThat(check("contrasen\u0303a2024")).containsExactly("PASSWORD_TOO_COMMON");
+    }
+
+    @Test
+    void rejectsACommonPasswordPrecededByDigitsOrSymbols() {
+        assertThat(check("123password")).containsExactly("PASSWORD_TOO_COMMON");
+        assertThat(check("!password!!")).containsExactly("PASSWORD_TOO_COMMON");
+        assertThat(check("#p@ssw0rd")).containsExactly("PASSWORD_TOO_COMMON");
+    }
+
+    @Test
+    void acceptsALongPassphrase() {
+        assertThat(check("caballo correcto pila grapa")).isEmpty();
     }
 
     @Test

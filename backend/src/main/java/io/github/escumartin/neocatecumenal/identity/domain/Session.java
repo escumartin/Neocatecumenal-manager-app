@@ -8,6 +8,7 @@ public record Session(UUID id, UserId userId, byte[] tokenHash, Instant createdA
 
     public static final Duration IDLE_TIMEOUT = Duration.ofDays(30);
     public static final Duration ABSOLUTE_TIMEOUT = Duration.ofDays(90);
+    public static final int MAX_PER_USER = 10;
     public static final Duration TOUCH_INTERVAL = Duration.ofMinutes(5);
 
     public static Session open(UserId userId, byte[] tokenHash, Instant now) {

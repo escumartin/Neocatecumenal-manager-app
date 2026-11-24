@@ -79,6 +79,7 @@ public class LogInService implements LogIn {
                 () -> throttle.deletePair(command.accessId(), command.clientIp()));
         throttle.save(command.clientIp(), settled.ip());
         IssuedSessionToken issued = tokens.issue();
+        sessions.retainMostRecentlyUsed(user.get().id(), Session.MAX_PER_USER - 1);
         sessions.save(Session.open(user.get().id(), issued.hash(), now));
         log.atInfo().addKeyValue("userId", user.get().id().value()).log("Inicio de sesión correcto");
         return new LoginResult.LoggedIn(issued.token(), profiles.assemble(user.get()));

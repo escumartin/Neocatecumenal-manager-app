@@ -48,6 +48,13 @@ public class SessionPersistenceAdapter implements SessionRepository {
 
     @Override
     @Transactional
+    public void retainMostRecentlyUsed(UserId userId, int maxSessions) {
+        repository.lockUser(userId.value());
+        repository.deleteAllByUserIdBeyondMostRecentlyUsed(userId.value(), maxSessions);
+    }
+
+    @Override
+    @Transactional
     public void deleteAllOf(UserId userId) {
         repository.deleteAllByUserId(userId.value());
     }

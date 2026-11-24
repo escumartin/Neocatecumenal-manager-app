@@ -22,6 +22,7 @@ import io.github.escumartin.neocatecumenal.identity.domain.PasswordHash;
 import io.github.escumartin.neocatecumenal.identity.domain.PendingStep;
 import io.github.escumartin.neocatecumenal.identity.domain.PlainPassword;
 import io.github.escumartin.neocatecumenal.identity.domain.PrivacyConsent;
+import io.github.escumartin.neocatecumenal.identity.domain.Session;
 import io.github.escumartin.neocatecumenal.identity.domain.User;
 import io.github.escumartin.neocatecumenal.identity.domain.UserId;
 import io.github.escumartin.neocatecumenal.identity.domain.UserRole;
@@ -102,6 +103,75 @@ class LogInServiceTest {
         assertThat(session.tokenHash()).isEqualTo(new FakeTokens().hash("token-1"));
         assertThat(session.createdAt()).isEqualTo(NOW);
         assertThat(session.lastUsedAt()).isEqualTo(NOW);
+    }
+
+    private void openSessionsLastUsedAt(Instant firstLastUse, int count) {
+        for (int i = 0; i < count; i++) {
+            Instant lastUse = firstLastUse.plusSeconds(i);
+            sessions.save(new Session(UUID.randomUUID(), user.id(), new byte[] {(byte) i}, lastUse, lastUse));
+        }
+    }
+
+    @Test
+    void tenthSessionIsOpenedWithoutRevokingAnyOther() {
+        openSessionsLastUsedAt(NOW.minusSeconds(1000), 9);
+
+        attempt(PASSWORD);
+
+        assertThat(sessions.sessions).hasSize(10);
+    }
+
+    @Test
+    void eleventhSessionRevokesTheLeastRecentlyUsedOne() {
+        openSessionsLastUsedAt(NOW.minusSeconds(1000), 10);
+        byte[] oldest = new byte[] {0};
+
+        attempt(PASSWORD);
+
+        assertThat(sessions.sessions).hasSize(10);
+        assertThat(sessions.findByTokenHash(oldest)).isEmpty();
+        assertThat(sessions.findByTokenHash(new byte[] {1})).isPresent();
+        assertThat(sessions.findByTokenHash(new FakeTokens().hash("token-1"))).isPresent();
+    }
+
+    @Test
+    void revokedSessionIsTheLeastRecentlyUsedEvenWhenOpenedLast() {
+        Instant recent = NOW.minusSeconds(10);
+        for (int i = 0; i < 9; i++) {
+            sessions.save(new Session(UUID.randomUUID(), user.id(), new byte[] {(byte) i}, recent, recent));
+        }
+        Instant stale = NOW.minusSeconds(5000);
+        sessions.save(new Session(UUID.randomUUID(), user.id(), new byte[] {99}, stale, stale));
+
+        attempt(PASSWORD);
+
+        assertThat(sessions.findByTokenHash(new byte[] {99})).isEmpty();
+        assertThat(sessions.sessions).hasSize(10);
+    }
+
+    @Test
+    void sessionsOfOtherUsersAreNotCountedNorRevoked() {
+        User other = users.save(User.restore(new UserId(UUID.randomUUID()), new AccessId(654321),
+                new DisplayName("Other User"), UserRole.MODERATOR, user.communityId(),
+                hasher.hash(new PlainPassword(PASSWORD)), false, new PrivacyConsent("v2", NOW.minusSeconds(3600)), 1L));
+        for (int i = 0; i < 10; i++) {
+            Instant lastUse = NOW.minusSeconds(1000 + i);
+            sessions.save(new Session(UUID.randomUUID(), other.id(), new byte[] {(byte) i}, lastUse, lastUse));
+        }
+
+        attempt(PASSWORD);
+
+        assertThat(sessions.sessions).hasSize(11);
+    }
+
+    @Test
+    void failedLoginRevokesNoSession() {
+        openSessionsLastUsedAt(NOW.minusSeconds(1000), 10);
+
+        attempt("wrong-password");
+
+        assertThat(sessions.sessions).hasSize(10);
+        assertThat(sessions.findByTokenHash(new byte[] {0})).isPresent();
     }
 
     @Test

@@ -180,6 +180,18 @@ final class Fakes {
         }
 
         @Override
+        public void retainMostRecentlyUsed(UserId userId, int maxSessions) {
+            List<Session> surplus = sessions.values().stream()
+                    .filter(session -> session.userId().equals(userId))
+                    .sorted(Comparator.comparing(Session::lastUsedAt).reversed()
+                            .thenComparing(Comparator.comparing(Session::createdAt).reversed())
+                            .thenComparing(Session::id))
+                    .skip(maxSessions)
+                    .toList();
+            sessions.values().removeAll(surplus);
+        }
+
+        @Override
         public int purgeExpired(Instant now) {
             List<Session> expired = sessions.values().stream().filter(session -> !session.isValid(now)).toList();
             sessions.values().removeAll(expired);
