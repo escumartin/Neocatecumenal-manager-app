@@ -29,7 +29,6 @@ jobs:
           else
             echo "available=true" >> "$GITHUB_OUTPUT"
           fi
-          echo "started=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
         if: steps.key.outputs.available == 'true'
         with:
@@ -63,21 +62,20 @@ jobs:
                - `tdd`, solo lectura, si hay código de producción sin su test.
                No lances `self-reviewer`, `critic`, `qa-backend` ni `build-resolver`.
             3. Quédate solo con hallazgos con ruta y línea que estén en el diff de la PR.
-            4. Deja un único comentario resumen en castellano, con un hallazgo por línea con el formato `ruta:línea | severidad | mensaje` (severidad: bloqueante, alta, media o baja), ordenado de mayor a menor severidad. Primero una línea con los revisores aplicados. Sin hallazgos: «Sin hallazgos» y nada más. Publícalo con `gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body "<comentario>"`; es tu última acción y la revisión no termina sin él.
+            4. Deja un único comentario resumen en castellano, con un hallazgo por línea con el formato `ruta:línea | severidad | mensaje` (severidad: bloqueante, alta, media o baja), ordenado de mayor a menor severidad. Primero una línea con los revisores aplicados. Sin hallazgos: «Sin hallazgos» y nada más. Termina el comentario con la línea `<!-- review-run: ${{ github.run_id }}-${{ github.run_attempt }} -->`. Publícalo con `gh pr comment ${{ github.event.pull_request.number }} --edit-last --create-if-none --body "<comentario>"`; es tu última acción y la revisión no termina sin él.
       - name: Fail on blocking or high findings
         if: steps.key.outputs.available == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ github.event.pull_request.number }}
-          STARTED: ${{ steps.key.outputs.started }}
+          RUN: ${{ github.run_id }}-${{ github.run_attempt }}
         run: |
-          comment=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate --jq '[.[] | select(.user.login == "github-actions[bot]")] | last')
-          updated=$(jq -r '.updated_at // empty' <<< "$comment")
-          if [ -z "$updated" ] || [[ "$updated" < "$STARTED" ]]; then
+          body=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate --jq ".[] | select(.body | contains(\"<!-- review-run: $RUN -->\")) | .body")
+          if [ -z "$body" ]; then
             echo "::error::The review did not publish its summary comment"
             exit 1
           fi
-          if jq -r '.body' <<< "$comment" | grep -qE '\| (bloqueante|alta) \|'; then
+          if grep -qE '\| (bloqueante|alta) \|' <<< "$body"; then
             echo "::error::The review found blocking or high severity findings"
             exit 1
           fi
