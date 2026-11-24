@@ -38,7 +38,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.HttpHeaders;
@@ -46,7 +46,7 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -61,7 +61,7 @@ class SessionsControllerTest {
 
     @Container
     @ServiceConnection
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17");
+    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18");
 
     @Autowired
     private MockMvc mockMvc;
@@ -176,6 +176,20 @@ class SessionsControllerTest {
     @Test
     void aNumericPasswordIsAValidationProblem() throws Exception {
         mockMvc.perform(login("{\"accessId\":123456,\"password\":12345678}", "10.0.0.1"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+    }
+
+    @Test
+    void aDecimalPasswordIsAValidationProblem() throws Exception {
+        mockMvc.perform(login("{\"accessId\":123456,\"password\":1234.5678}", "10.0.0.1"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+    }
+
+    @Test
+    void aBooleanPasswordIsAValidationProblem() throws Exception {
+        mockMvc.perform(login("{\"accessId\":123456,\"password\":true}", "10.0.0.1"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
     }

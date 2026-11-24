@@ -6,7 +6,7 @@ Guía para comprobar de punta a punta que la feature funciona. No contiene imple
 
 ## Requisitos previos
 
-- Java 21 en `JAVA_HOME`, Node LTS, Docker (Rancher Desktop vale).
+- Java 25 en `JAVA_HOME`, Node LTS, Docker (Rancher Desktop vale).
 - Contrato fusionado en `api/openapi.yaml` y código generado (`./mvnw -B generate-sources`).
 - Con Rancher Desktop: `export TESTCONTAINERS_RYUK_DISABLED=true`.
 - Feature «Identidad y acceso» implementada: un administrador y un moderador por comunidad (A y B) con datos

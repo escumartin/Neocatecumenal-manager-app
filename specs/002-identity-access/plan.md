@@ -26,11 +26,11 @@ Enfoque técnico:
 
 ## Technical Context
 
-**Language/Version**: Java 21 (backend); TypeScript strict (cliente)
+**Language/Version**: Java 25 (backend); TypeScript strict (cliente)
 
 **Primary Dependencies**:
 
-- Backend: Spring Boot 3.5, Spring Modulith 1.4, Spring Data JPA, Flyway, Bean Validation.
+- Backend: Spring Boot 4.2, Spring Modulith 2.x, Spring Data JPA, Flyway, Bean Validation.
 - Nuevas: `spring-boot-starter-security`, `org.bouncycastle:bcprov-jdk18on` (Argon2id); en test,
   `spring-security-test`. Sin registro persistente de eventos (R9).
 - Generación: `openapi-generator-maven-plugin` (ya en `pom.xml`; generador `spring`, `interfaceOnly`).
@@ -38,7 +38,7 @@ Enfoque técnico:
   `openapi-fetch` y `expo-secure-store`.
 - Cliente, tests: `jest-expo` y `@testing-library/react-native` (con `jest`), script `npm test`.
 
-**Storage**: PostgreSQL 17; migración `V2__identity.sql`. Claves internas UUID.
+**Storage**: PostgreSQL 18; migración `V2__identity.sql`. Claves internas UUID.
 
 **Testing**:
 

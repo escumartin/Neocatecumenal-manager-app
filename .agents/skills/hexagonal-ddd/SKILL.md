@@ -1,6 +1,6 @@
 ---
 name: hexagonal-ddd
-description: Hexagonal architecture and DDD conventions for the Java 21 Spring Boot 3 Spring Modulith backend. Use when creating or changing a bounded context, domain model, use case, port, REST or JPA adapter, domain event or architecture test.
+description: Hexagonal architecture and DDD conventions for the Java 25 Spring Boot 4 Spring Modulith backend. Use when creating or changing a bounded context, domain model, use case, port, REST or JPA adapter, domain event or architecture test.
 ---
 
 # Hexagonal + DDD with Spring Modulith
@@ -50,7 +50,7 @@ class ArchitectureTest {
         JavaClasses classes = new ClassFileImporter().importPackages("io.github.escumartin.neocatecumenal");
         noClasses().that().resideInAPackage("..domain..")
             .should().dependOnClassesThat()
-            .resideInAnyPackage("org.springframework..", "jakarta.persistence..", "com.fasterxml..")
+            .resideInAnyPackage("org.springframework..", "jakarta.persistence..", "com.fasterxml..", "tools.jackson..")
             .check(classes);
     }
 

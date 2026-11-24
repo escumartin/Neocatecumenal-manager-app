@@ -6,7 +6,7 @@ Guía para comprobar de punta a punta que la feature funciona. No contiene imple
 
 ## Requisitos previos
 
-- Java 21 en `JAVA_HOME`, Node LTS, Docker (Rancher Desktop vale).
+- Java 25 en `JAVA_HOME`, Node LTS, Docker (Rancher Desktop vale).
 - Contrato fusionado en `api/openapi.yaml` y código generado (`./mvnw -B generate-sources`, `npm run api:generate`).
 - Con Rancher Desktop: `export TESTCONTAINERS_RYUK_DISABLED=true`.
 - Datos sintéticos: nombres inventados, sin personas reales.
@@ -95,6 +95,8 @@ CORS solo para `http://localhost:8081`) y la web Expo en `http://localhost:8081`
 `EXPO_PUBLIC_API_URL=http://localhost:8080`. Al salir se para el backend; la base sigue y se apaga con
 `docker compose down` (el volumen se conserva). La cookie `__Host-session` es `Secure`: Chrome y Firefox la aceptan en
 `localhost`; Safari no.
+
+PostgreSQL 18 usa el volumen `postgres18-data`; el antiguo `postgres-data` de PG 17 queda sin uso y se puede borrar con `docker volume rm` si no se necesitan sus datos.
 
 Primer administrador, en un terminal interactivo con la base arriba:
 

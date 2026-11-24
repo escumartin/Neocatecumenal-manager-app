@@ -41,7 +41,7 @@ import org.springframework.boot.testcontainers.service.connection.ServiceConnect
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -54,7 +54,7 @@ class LoginThrottlePersistenceIT {
 
     @Container
     @ServiceConnection
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17");
+    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18");
 
     @Autowired
     private LogIn logIn;

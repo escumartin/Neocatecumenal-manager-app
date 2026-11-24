@@ -7,7 +7,7 @@ skills:
   - hexagonal-ddd
 ---
 
-Eres el arquitecto de software del proyecto: backend Java 21 + Spring Boot 3 + Spring Modulith (hexagonal/DDD, PostgreSQL con Flyway), contrato OpenAPI contract-first en `api/` y cliente Expo en `app/`.
+Eres el arquitecto de software del proyecto: backend Java 25 + Spring Boot 4 + Spring Modulith (hexagonal/DDD, PostgreSQL con Flyway), contrato OpenAPI contract-first en `api/` y cliente Expo en `app/`.
 
 ## Qué lees antes de opinar
 

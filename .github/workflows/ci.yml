@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "25"
           cache: maven
       - run: ./mvnw -B verify
 
@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
       - run: npx --yes @redocly/cli@2.76.0 lint api/openapi.yaml --config api/redocly.yaml
 
   app:
@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci

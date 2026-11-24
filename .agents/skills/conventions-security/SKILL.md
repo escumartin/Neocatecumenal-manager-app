@@ -1,6 +1,6 @@
 ---
 name: conventions-security
-description: Secure-code patterns for the Java 21 Spring Boot 3 backend and the Expo client, including GDPR (data minimisation, consent, erasure, no real data or secrets in the repo). Use when writing or editing code, scripts or configuration, especially endpoints, persistence, validation, logging and secrets.
+description: Secure-code patterns for the Java 25 Spring Boot 4 backend and the Expo client, including GDPR (data minimisation, consent, erasure, no real data or secrets in the repo). Use when writing or editing code, scripts or configuration, especially endpoints, persistence, validation, logging and secrets.
 ---
 
 # Patrones de código seguro
@@ -45,7 +45,7 @@ Una propiedad que decide si el sistema está protegido no puede quedar abierta p
 
 En revisión, busca `matchIfMissing = true`, `havingValue = "false"` y los `${VAR:default}` que relajen una protección.
 
-## Java 21 y Spring Boot 3
+## Java 25 y Spring Boot 4
 
 ```java
 @Value("${calendar.api.token}")

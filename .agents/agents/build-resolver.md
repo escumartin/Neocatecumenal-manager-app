@@ -11,9 +11,9 @@ skills:
 
 Corriges errores de build con cambios mínimos y quirúrgicos. Sin refactoring ni cambios de arquitectura.
 
-## Backend (Java 21, Maven)
+## Backend (Java 25, Maven)
 
-Desde `backend/`, con `JAVA_HOME` en Java 21; con Rancher Desktop, `TESTCONTAINERS_RYUK_DISABLED=true`.
+Desde `backend/`, con `JAVA_HOME` en Java 25; con Rancher Desktop, `TESTCONTAINERS_RYUK_DISABLED=true`.
 
 ```bash
 ./mvnw -B compile 2>&1 | head -100

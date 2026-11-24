@@ -38,7 +38,7 @@ import org.springframework.boot.context.event.ApplicationPreparedEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.web.context.WebApplicationContext;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -49,7 +49,7 @@ class BootstrapRunnerIT {
     private static final Pattern PASSWORD = Pattern.compile("Contraseña inicial: (\\S+)");
 
     @Container
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17");
+    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18");
 
     private final ListAppender<ILoggingEvent> appender = new ListAppender<>();
     private final ByteArrayOutputStream standardOutput = new ByteArrayOutputStream();

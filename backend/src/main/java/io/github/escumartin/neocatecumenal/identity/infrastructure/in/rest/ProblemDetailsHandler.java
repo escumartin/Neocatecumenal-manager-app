@@ -1,6 +1,5 @@
 package io.github.escumartin.neocatecumenal.identity.infrastructure.in.rest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -34,6 +33,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import tools.jackson.databind.ObjectMapper;
 import io.github.escumartin.neocatecumenal.identity.infrastructure.in.security.OriginNotAllowedException;
 
 @Component
