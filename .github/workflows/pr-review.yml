@@ -70,7 +70,7 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
           RUN: ${{ github.run_id }}-${{ github.run_attempt }}
         run: |
-          body=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate --jq ".[] | select(.body | contains(\"<!-- review-run: $RUN -->\")) | .body")
+          body=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate --jq ".[] | select(.user.login == \"github-actions[bot]\" and (.body | contains(\"<!-- review-run: $RUN -->\"))) | .body")
           if [ -z "$body" ]; then
             echo "::error::The review did not publish its summary comment"
             exit 1

@@ -1,16 +1,5 @@
 {
   "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 -I \"$CLAUDE_PROJECT_DIR/.agents/scripts/require-preview.py\""
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "hooks": [

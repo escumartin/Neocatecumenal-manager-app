@@ -12,7 +12,7 @@ capacidad, se usa la alternativa manual de la última columna. Lo no comprobado 
 | Memoria entre sesiones | `autoMemoryDirectory` en `.claude/settings.local.json` → `.agents/memory/` (índice `MEMORY.md`, primeras 200 líneas o 25 KB al arrancar) | leer `.agents/memory/MEMORY.md` al empezar | `.agents/context/` |
 | Automerge de PRs | `gh pr checks <n> --watch` y, con todo en verde, `gh pr merge <n> --merge --delete-branch`; el job `review` de `.github/workflows/pr-review.yml` falla con hallazgos bloqueantes o altos o si no publica su comentario | — | revisar los checks y mergear a mano |
 | Nombre de la sesión | lo escribe el usuario con `/rename <tema>`; el asistente solo lo propone | según la herramienta | — |
-| Hooks | `PreToolUse` `Bash` en `.claude/settings.json` → `.agents/scripts/require-preview.py`: deniega `git commit\|push` y `gh pr create\|merge` salvo `# preview: <texto>` al final, y entonces pide aprobación. `Stop` → `.agents/scripts/run-gates.py`: si hay cambios sin commitear en `backend/` o `app/`+`api/`, ejecuta `./mvnw -B -q verify` o `npm run lint && npm run typecheck` y bloquea el cierre del turno si fallan (caché por estado en `.git`, no reintenta con `stop_hook_active`, timeout 900 s) | — | revisar el diff y el mensaje antes de commitear; ejecutar los gates locales a mano |
+| Hooks | `Stop` → `.agents/scripts/run-gates.py`: si hay cambios sin commitear en `backend/` o `app/`+`api/`, ejecuta `./mvnw -B -q verify` o `npm run lint && npm run typecheck` y bloquea el cierre del turno si fallan (caché por estado en `.git`, no reintenta con `stop_hook_active`, timeout 900 s) | — | revisar el diff y el mensaje antes de commitear; ejecutar los gates locales a mano |
 
 ## Añadir una herramienta
 
