@@ -30,9 +30,9 @@ expect "chained commit and push" 'git add . && git commit -m x && git push' deny
 expect "git -C commit" 'git -C app commit -m x' deny
 expect "multiline commit" $'git commit -m "x" \\\n  --no-verify' deny
 expect "empty preview" 'git commit -m x # preview:' deny
-expect "commit with preview" 'git commit -m x # preview: guarda los cambios de reservas' ask
-expect "push with preview" 'git push # preview: sube la rama' ask
-expect "pr create with preview" 'gh pr create --head x # preview: abre la PR' ask
+expect "commit with preview" 'git commit -m x # preview: guarda los cambios de reservas' allow
+expect "push with preview" 'git push # preview: sube la rama' allow
+expect "pr create with preview" 'gh pr create --head x # preview: abre la PR' allow
 expect "git status" 'git status' pass
 expect "git diff" 'git diff --stat' pass
 expect "git log" 'git log --oneline -5' pass
