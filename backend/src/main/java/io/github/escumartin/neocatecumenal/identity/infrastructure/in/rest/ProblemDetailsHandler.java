@@ -123,8 +123,13 @@ public class ProblemDetailsHandler implements AuthenticationEntryPoint, AccessDe
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> unexpected(Exception exception) {
         if (exception instanceof ErrorResponse errorResponse) {
-            ResponseEntity<Map<String, Object>> problem = forStatus(HttpStatus.valueOf(
-                    errorResponse.getStatusCode().value()));
+            HttpStatus status = HttpStatus.valueOf(errorResponse.getStatusCode().value());
+            if (status.is5xxServerError()) {
+                logUnexpected(exception, status);
+                return ResponseEntity.status(status).headers(errorResponse.getHeaders())
+                        .contentType(MediaType.APPLICATION_PROBLEM_JSON).body(problemFor(status));
+            }
+            ResponseEntity<Map<String, Object>> problem = forStatus(status);
             return ResponseEntity.status(problem.getStatusCode()).headers(errorResponse.getHeaders())
                     .contentType(MediaType.APPLICATION_PROBLEM_JSON).body(problem.getBody());
         }
@@ -164,11 +169,15 @@ public class ProblemDetailsHandler implements AuthenticationEntryPoint, AccessDe
 
     private ResponseEntity<Map<String, Object>> internalError(Exception cause) {
         if (cause != null) {
-            log.atError().setCause(cause).addKeyValue("code", "INTERNAL_ERROR").addKeyValue("status", 500)
-                    .log("Error no controlado");
+            logUnexpected(cause, HttpStatus.INTERNAL_SERVER_ERROR);
         }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).contentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .body(body(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno", "INTERNAL_ERROR"));
+    }
+
+    private void logUnexpected(Exception cause, HttpStatus status) {
+        log.atError().setCause(cause).addKeyValue("code", "INTERNAL_ERROR").addKeyValue("status", status.value())
+                .log("Error no controlado");
     }
 
     @ExceptionHandler(UserNotFoundException.class)

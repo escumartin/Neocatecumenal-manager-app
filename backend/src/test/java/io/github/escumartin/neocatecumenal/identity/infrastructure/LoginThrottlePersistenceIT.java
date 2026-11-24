@@ -9,6 +9,7 @@ import io.github.escumartin.neocatecumenal.identity.application.port.out.Communi
 import io.github.escumartin.neocatecumenal.identity.application.port.out.LoginThrottleStore;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.PasswordHasher;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.UserRepository;
+import io.github.escumartin.neocatecumenal.identity.domain.Session;
 import io.github.escumartin.neocatecumenal.identity.domain.AccessId;
 import io.github.escumartin.neocatecumenal.identity.domain.Community;
 import io.github.escumartin.neocatecumenal.identity.domain.CommunityId;
@@ -282,6 +283,20 @@ class LoginThrottlePersistenceIT {
 
         assertThat(results).allMatch(LoginResult.LoggedIn.class::isInstance);
         assertThat(attempt(100001, PASSWORD, IP)).isInstanceOf(LoginResult.LoggedIn.class);
-        assertThat(count("identity_session")).isEqualTo(26);
+        assertThat(count("identity_session")).isEqualTo(Session.MAX_PER_USER);
+    }
+
+    @Test
+    void simultaneousLoginsOfOneUserFromDifferentIpsNeverLeaveMoreThanTheSessionLimit() throws Exception {
+        List<Callable<LoginResult>> attempts = new ArrayList<>();
+        for (int i = 0; i < 25; i++) {
+            String ip = "10.30.0." + (i + 1);
+            attempts.add(() -> attempt(100001, PASSWORD, ip));
+        }
+
+        List<LoginResult> results = concurrently(attempts);
+
+        assertThat(results).allMatch(LoginResult.LoggedIn.class::isInstance);
+        assertThat(count("identity_session")).isLessThanOrEqualTo(Session.MAX_PER_USER);
     }
 }

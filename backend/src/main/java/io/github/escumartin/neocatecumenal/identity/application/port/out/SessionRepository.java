@@ -18,5 +18,7 @@ public interface SessionRepository {
 
     void deleteAllOfExcept(UserId userId, UUID sessionId);
 
+    void retainMostRecentlyUsed(UserId userId, int maxSessions);
+
     int purgeExpired(Instant now);
 }

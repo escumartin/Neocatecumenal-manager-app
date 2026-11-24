@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.escumartin.neocatecumenal.identity.application.port.out.IssuedSessionToken;
 import io.github.escumartin.neocatecumenal.identity.domain.AccessId;
+import io.github.escumartin.neocatecumenal.identity.domain.PasswordPolicy;
 import io.github.escumartin.neocatecumenal.identity.domain.PlainPassword;
+import io.github.escumartin.neocatecumenal.identity.infrastructure.out.security.ClasspathCommonPasswords;
 import io.github.escumartin.neocatecumenal.identity.infrastructure.out.security.RandomInitialPasswordGenerator;
 import io.github.escumartin.neocatecumenal.identity.infrastructure.out.security.SecureRandomAccessIdGenerator;
 import io.github.escumartin.neocatecumenal.identity.infrastructure.out.security.Sha256SessionTokenIssuer;
@@ -104,6 +106,17 @@ class GeneratorsTest {
         PlainPassword password = new RandomInitialPasswordGenerator(new SecureRandom()).next();
 
         assertThat(password.value().codePointCount(0, password.value().length())).isBetween(8, 64);
+    }
+
+    @Test
+    void initialPasswordAlwaysSatisfiesThePasswordPolicy() {
+        RandomInitialPasswordGenerator generator = new RandomInitialPasswordGenerator(new SecureRandom());
+        ClasspathCommonPasswords commonPasswords = new ClasspathCommonPasswords();
+        AccessId accessId = new AccessId(100000);
+
+        for (int i = 0; i < 20000; i++) {
+            assertThat(PasswordPolicy.check(generator.next(), accessId, commonPasswords)).isEmpty();
+        }
     }
 
     @Test

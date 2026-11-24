@@ -255,6 +255,39 @@ class PersistenceAdaptersIT {
     }
 
     @Test
+    void retainingMostRecentlyUsedDeletesTheOldestSurplusSessionsOfThatUserOnly() {
+        Community community = newCommunity(925);
+        User owner = users.save(newUser(community, 225555));
+        User other = users.save(newUser(community, 225556));
+        Instant base = Instant.parse("2026-03-01T10:00:00Z");
+        for (int i = 0; i < 4; i++) {
+            Instant lastUse = base.plusSeconds(i * 100L);
+            sessions.save(new Session(UUID.randomUUID(), owner.id(), new byte[] {8, (byte) i}, base, lastUse));
+        }
+        sessions.save(new Session(UUID.randomUUID(), other.id(), new byte[] {8, 9}, base, base.minusSeconds(900)));
+
+        sessions.retainMostRecentlyUsed(owner.id(), 2);
+
+        assertThat(sessions.findByTokenHash(new byte[] {8, 0})).isEmpty();
+        assertThat(sessions.findByTokenHash(new byte[] {8, 1})).isEmpty();
+        assertThat(sessions.findByTokenHash(new byte[] {8, 2})).isPresent();
+        assertThat(sessions.findByTokenHash(new byte[] {8, 3})).isPresent();
+        assertThat(sessions.findByTokenHash(new byte[] {8, 9})).isPresent();
+    }
+
+    @Test
+    void retainingMostRecentlyUsedKeepsEverythingBelowTheLimit() {
+        Community community = newCommunity(926);
+        User owner = users.save(newUser(community, 226666));
+        Instant now = Instant.parse("2026-03-01T10:00:00Z");
+        sessions.save(new Session(UUID.randomUUID(), owner.id(), new byte[] {4, 0}, now, now));
+
+        sessions.retainMostRecentlyUsed(owner.id(), 5);
+
+        assertThat(sessions.findByTokenHash(new byte[] {4, 0})).isPresent();
+    }
+
+    @Test
     void touchedSessionKeepsItsIdentityAndStoresTheNewLastUse() {
         Community community = newCommunity(924);
         User owner = users.save(newUser(community, 224444));
