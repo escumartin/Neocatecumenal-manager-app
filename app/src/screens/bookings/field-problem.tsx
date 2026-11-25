@@ -1,13 +1,17 @@
 import { Text } from '@/components/ui/text';
 
-type Props = { message: string | null | undefined };
+type Props = { message: string | null | undefined; live?: boolean };
 
-export function FieldProblem({ message }: Props) {
+export function FieldProblem({ message, live = false }: Props) {
   if (!message) {
     return null;
   }
   return (
-    <Text role="alert" accessibilityLiveRegion="assertive" className="text-destructive">
+    <Text
+      {...(live ? {} : { role: 'alert' as const })}
+      accessibilityLiveRegion={live ? 'polite' : 'assertive'}
+      className="text-destructive"
+    >
       {`⚠ ${message}`}
     </Text>
   );

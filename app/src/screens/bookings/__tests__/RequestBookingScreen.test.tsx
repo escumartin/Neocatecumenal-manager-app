@@ -376,6 +376,28 @@ describe('request booking screen with a weekly repetition', () => {
     expect(create).not.toHaveBeenCalled();
   });
 
+  it('drops the stored end date message once a valid end date is picked', async () => {
+    const { create } = await openSeries();
+    await fireEvent.press(screen.getByRole('button', { name: bookingsText.request.submit }));
+    expect(await screen.findByText(`⚠ ${bookingsText.recurrence.fieldErrors.REQUIRED}`)).toBeOnTheScreen();
+
+    await pickValue(bookingsText.recurrence.until, '2030-07-02');
+
+    expect(screen.queryByText(`⚠ ${bookingsText.recurrence.fieldErrors.REQUIRED}`)).not.toBeOnTheScreen();
+    expect(screen.getByLabelText(bookingsText.recurrence.until).props.accessibilityHint).toBeUndefined();
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('announces the live end date hint politely and the submitted problem assertively', async () => {
+    await openSeries();
+    await pickValue(bookingsText.recurrence.until, '2030-07-02');
+    await pickValue(bookingsText.request.date, '2030-08-10');
+
+    const live = screen.getByText(`⚠ ${bookingsText.recurrence.fieldErrors.RECURRENCE_UNTIL_BEFORE_DATE}`);
+    expect(live.props.accessibilityLiveRegion).toBe('polite');
+    expect(live.props.role).not.toBe('alert');
+  });
+
   it('stops sending the recurrence when the repetition is switched off again', async () => {
     const { create } = await openSeries();
     await pickValue(bookingsText.recurrence.until, '2030-07-02');
@@ -395,11 +417,51 @@ describe('request booking screen with a weekly repetition', () => {
     });
     await openSeries(create);
 
-    await pickValue(bookingsText.recurrence.until, '2032-07-02');
+    await pickValue(bookingsText.recurrence.until, '2030-07-02');
     await fireEvent.press(screen.getByRole('button', { name: bookingsText.request.submit }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(`⚠ ${bookingsText.recurrence.fieldErrors[code]}`);
-    expect(screen.getByLabelText(bookingsText.recurrence.until).props.accessibilityValue).toEqual({ text: '2 de julio de 2032' });
+    expect(screen.getByLabelText(bookingsText.recurrence.until).props.accessibilityValue).toEqual({ text: '2 de julio de 2030' });
+  });
+
+  it('keeps the end date and hints when the first date moves past it', async () => {
+    await openSeries();
+    await pickValue(bookingsText.recurrence.until, '2030-07-02');
+
+    await pickValue(bookingsText.request.date, '2030-08-10');
+
+    const until = screen.getByLabelText(bookingsText.recurrence.until);
+    expect(until.props.accessibilityValue).toEqual({ text: '2 de julio de 2030' });
+    expect(until.props['aria-invalid']).toBe(true);
+    expect(until.props.accessibilityHint).toBe(bookingsText.recurrence.fieldErrors.RECURRENCE_UNTIL_BEFORE_DATE);
+  });
+
+  it('hints when the first date moves more than a year before the end date', async () => {
+    await openSeries();
+    await pickValue(bookingsText.recurrence.until, '2031-05-11');
+
+    await pickValue(bookingsText.request.date, '2030-05-12');
+    expect(screen.getByLabelText(bookingsText.recurrence.until).props.accessibilityHint).toBeUndefined();
+
+    await pickValue(bookingsText.request.date, '2030-05-10');
+    expect(screen.getByLabelText(bookingsText.recurrence.until).props.accessibilityHint).toBe(
+      bookingsText.recurrence.fieldErrors.RECURRENCE_TOO_LONG,
+    );
+  });
+
+  it.each([
+    ['2030-08-10', 'RECURRENCE_UNTIL_BEFORE_DATE'],
+    ['2029-05-10', 'RECURRENCE_TOO_LONG'],
+  ])('blocks the submission when the first date becomes %s', async (newDate, code) => {
+    const { create } = await openSeries();
+    await pickValue(bookingsText.recurrence.until, '2030-07-02');
+    await pickValue(bookingsText.request.date, newDate);
+
+    await fireEvent.press(screen.getByRole('button', { name: bookingsText.request.submit }));
+
+    expect(await screen.findByText(`⚠ ${bookingsText.recurrence.fieldErrors[code]}`)).toBeOnTheScreen();
+    expect(create).not.toHaveBeenCalled();
+    expect(hapticFailure).toHaveBeenCalledTimes(1);
   });
 
   it('lists every conflicting date when the series collides and keeps the form filled', async () => {

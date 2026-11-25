@@ -17,7 +17,7 @@ import type { BookingRequestsApi } from '@/lib/api/booking-requests-api';
 import type { CommunitiesApi } from '@/lib/api/communities-api';
 import type { RoomsApi } from '@/lib/api/rooms-api';
 import { startOfDay } from '@/lib/bookings/date-value';
-import { firstInvalidSlotField, isDate } from '@/lib/bookings/validation';
+import { firstInvalidSlotField, isDate, recurrenceUntilProblem } from '@/lib/bookings/validation';
 import { OccupiedSlots } from '@/screens/rooms/occupied-slots';
 import { RoomChoice } from '@/screens/rooms/room-choice';
 import { CommunityPicker } from '@/screens/users/community-picker';
@@ -51,6 +51,7 @@ export function RequestBookingScreen({ api = bookingRequestsApi, roomsApi, commu
   const { submitting, create } = useCreateBookingRequest(api);
 
   const day = date.trim();
+  const untilCode = repeats ? recurrenceUntilProblem(date, until) : null;
   const occupancyQuery =
     isModerator && roomId !== null && isDate(day) && !(canChooseCommunity && communityId === null)
       ? {
@@ -99,10 +100,20 @@ export function RequestBookingScreen({ api = bookingRequestsApi, roomsApi, commu
     if (repeats && !isDate(until)) {
       return { field: 'until', message: bookingsText.recurrence.fieldErrors.INVALID_FORMAT };
     }
+    if (untilCode !== null) {
+      return { field: 'until', message: bookingsText.recurrence.fieldErrors[untilCode] };
+    }
     return null;
   }
 
   const problemOf = (field: Field) => (problem?.field === field ? problem.message : null);
+  const liveUntilProblem = untilCode !== null ? bookingsText.recurrence.fieldErrors[untilCode] : null;
+  const untilProblem = liveUntilProblem ?? problemOf('until');
+
+  function changeUntil(value: string) {
+    setUntil(value);
+    setProblem((current) => (current?.field === 'until' ? null : current));
+  }
 
   async function submit() {
     const invalid = validationProblem();
@@ -193,10 +204,11 @@ export function RequestBookingScreen({ api = bookingRequestsApi, roomsApi, commu
         enabled={repeats}
         until={until}
         firstDate={day}
-        invalid={problemOf('until') !== null}
-        problem={problemOf('until')}
+        invalid={untilProblem !== null}
+        problem={untilProblem}
+        problemIsLive={liveUntilProblem !== null}
         onToggle={setRepeats}
-        onChangeUntil={setUntil}
+        onChangeUntil={changeUntil}
       />
       {occupancyQuery ? (
         <View className="gap-3">
