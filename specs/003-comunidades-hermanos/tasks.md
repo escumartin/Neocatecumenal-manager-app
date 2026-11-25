@@ -188,34 +188,34 @@
 
 ### Tests de dominio
 
-- [ ] T063 [P] [US2] Tests de `Community.designateResponsible`, `isResponsible` y `hasResponsible` en `BT/community/domain/CommunityResponsibleTest.java`: designar a un hermano propio, sustituir en una sola escritura, `MEMBER_NOT_IN_COMMUNITY` con uno de otra comunidad, sin operación para quitarlo; y `MemberAccessPolicy` (solo administrador, moderador `CommunityForbidden`) (FR-006, FR-007; data-model.md `Community.responsibleMemberId`)
+- [x] T063 [P] [US2] Tests de `Community.designateResponsible`, `isResponsible` y `hasResponsible` en `BT/community/domain/CommunityResponsibleTest.java`: designar a un hermano propio, sustituir en una sola escritura, `MEMBER_NOT_IN_COMMUNITY` con uno de otra comunidad, sin operación para quitarlo; y `MemberAccessPolicy` (solo administrador, moderador `CommunityForbidden`) (FR-006, FR-007; data-model.md `Community.responsibleMemberId`)
 
 ### Implementación de dominio
 
-- [ ] T064 [US2] `Community.designateResponsible`, `hasResponsible` e `isResponsible` y la regla de designar en `MemberAccessPolicy`, en `B/community/domain/` (data-model.md `Community.responsibleMemberId`)
+- [x] T064 [US2] `Community.designateResponsible`, `hasResponsible` e `isResponsible` y la regla de designar en `MemberAccessPolicy`, en `B/community/domain/` (data-model.md `Community.responsibleMemberId`)
 
 ### Tests de aplicación
 
-- [ ] T065 [P] [US2] Tests de `DesignateResponsibleService` en `BT/community/application/ResponsibleServicesTest.java`: bloquea la comunidad antes que el hermano, designa a un hermano propio, `MEMBER_NOT_IN_COMMUNITY`, moderador `CommunityForbidden`; `GetCommunity` calcula `responsibleIsModerator` con `UserDirectory.user` del usuario vinculado y no bloquea ninguna operación si es falso (FR-006, FR-007, FR-008; data-model.md `Community.responsibleMemberId`)
+- [x] T065 [P] [US2] Tests de `DesignateResponsibleService` en `BT/community/application/ResponsibleServicesTest.java`: bloquea la comunidad antes que el hermano, designa a un hermano propio, `MEMBER_NOT_IN_COMMUNITY`, moderador `CommunityForbidden`; `GetCommunity` calcula `responsibleIsModerator` con `UserDirectory.user` del usuario vinculado y no bloquea ninguna operación si es falso (FR-006, FR-007, FR-008; data-model.md `Community.responsibleMemberId`)
 
 ### Implementación de aplicación
 
-- [ ] T066 [US2] Puerto de entrada `DesignateResponsible`, `DesignateResponsibleService`, y `CommunityRepository`/`MemberRepository` con la comprobación de responsable bajo el bloqueo de la fila de la comunidad en `B/community/application/` (R3, R15)
+- [x] T066 [US2] Puerto de entrada `DesignateResponsible`, `DesignateResponsibleService`, y `CommunityRepository`/`MemberRepository` con la comprobación de responsable bajo el bloqueo de la fila de la comunidad en `B/community/application/` (R3, R15)
 
 ### Tests de adaptadores
 
-- [ ] T067 [P] [US2] Tests Testcontainers en `BT/community/infrastructure/ResponsiblePersistenceIT.java`: la FK compuesta rechaza al de otra comunidad, actualizar a mano `responsible_member_id` a uno ajeno viola la FK, borrar al hermano responsable viola la FK (el `409 RESPONSIBLE_REQUIRED` de borrar y trasladar se prueba en T089 y T100) (FR-006, FR-007; data-model.md `Community.responsibleMemberId`)
-- [ ] T068 [P] [US2] Test de concurrencia del cambio de responsable en `BT/community/infrastructure/ResponsibleChangeConcurrencyIT.java`: secuencias de designar y sustituir con dos hilos y lectores concurrentes; en ninguna lectura aparece la comunidad sin responsable una vez designado (SC-006, FR-007; data-model.md `Community.responsibleMemberId`)
-- [ ] T069 [P] [US2] Tests MockMvc en `BT/community/infrastructure/ResponsibleControllerTest.java`: `PUT /api/communities/{id}/responsible` `200` con uno propio, `422 MEMBER_NOT_IN_COMMUNITY` con uno ajeno, moderador y registrado `403`; «sin responsable» visible en `GET` y alta de hermano `201` en ese estado (FR-006, FR-007; data-model.md `Community.responsibleMemberId`)
+- [x] T067 [P] [US2] Tests Testcontainers en `BT/community/infrastructure/ResponsiblePersistenceIT.java`: la FK compuesta rechaza al de otra comunidad, actualizar a mano `responsible_member_id` a uno ajeno viola la FK, borrar al hermano responsable viola la FK (el `409 RESPONSIBLE_REQUIRED` de borrar y trasladar se prueba en T089 y T100) (FR-006, FR-007; data-model.md `Community.responsibleMemberId`)
+- [x] T068 [P] [US2] Test de concurrencia del cambio de responsable en `BT/community/infrastructure/ResponsibleChangeConcurrencyIT.java`: secuencias de designar y sustituir con dos hilos y lectores concurrentes; en ninguna lectura aparece la comunidad sin responsable una vez designado (SC-006, FR-007; data-model.md `Community.responsibleMemberId`)
+- [x] T069 [P] [US2] Tests MockMvc en `BT/community/infrastructure/ResponsibleControllerTest.java`: `PUT /api/communities/{id}/responsible` `200` con uno propio, `422 MEMBER_NOT_IN_COMMUNITY` con uno ajeno, moderador y registrado `403`; «sin responsable» visible en `GET` y alta de hermano `201` en ese estado (FR-006, FR-007; data-model.md `Community.responsibleMemberId`)
 
 ### Implementación de adaptadores
 
-- [ ] T070 [US2] `designateResponsible` en `CommunitiesController` y persistencia de `responsible_member_id` en `B/community/infrastructure/in/rest/` y `B/community/infrastructure/out/persistence/` (data-model.md `Community.responsibleMemberId`)
+- [x] T070 [US2] `designateResponsible` en `CommunitiesController` y persistencia de `responsible_member_id` en `B/community/infrastructure/in/rest/` y `B/community/infrastructure/out/persistence/` (data-model.md `Community.responsibleMemberId`)
 
 ### Cliente
 
-- [ ] T071 [P] [US2] Tests de componente en `A/screens/communities/__tests__/ResponsibleScreen.test.tsx`: la ficha muestra «Sin responsable» de forma explícita, la pantalla de responsable lista solo hermanos de esa comunidad con `RadioSection`, aviso (no bloqueo) si el responsable no tiene rol de moderador, error de `MEMBER_NOT_IN_COMMUNITY` y `RESPONSIBLE_REQUIRED` localizados, controles con rol y etiqueta, objetivos ≥ 48 px (FR-006, FR-007, FR-008, FR-024)
-- [ ] T072 [US2] Hook `use-community-responsible`, pantalla `A/screens/communities/responsible.tsx`, ruta `A/app/(app)/(tabs)/gestion/comunidades/responsable.tsx`, estado «Sin responsable» en lista y ficha y mensajes en `A/i18n/es/communities.ts`, solo con tokens de `design-system`
+- [x] T071 [P] [US2] Tests de componente en `A/screens/communities/__tests__/ResponsibleScreen.test.tsx`: la ficha muestra «Sin responsable» de forma explícita, la pantalla de responsable lista solo hermanos de esa comunidad con `RadioSection`, aviso (no bloqueo) si el responsable no tiene rol de moderador, error de `MEMBER_NOT_IN_COMMUNITY` y `RESPONSIBLE_REQUIRED` localizados, controles con rol y etiqueta, objetivos ≥ 48 px (FR-006, FR-007, FR-008, FR-024)
+- [x] T072 [US2] Hook `use-community-responsible`, pantalla `A/screens/communities/responsible.tsx`, ruta `A/app/(app)/(tabs)/gestion/comunidades/responsable.tsx`, estado «Sin responsable» en lista y ficha y mensajes en `A/i18n/es/communities.ts`, solo con tokens de `design-system`
 
 **Checkpoint**: US2 funcional; SC-001 (comunidad con responsable en menos de 3 minutos) comprobable en la prueba manual.
 

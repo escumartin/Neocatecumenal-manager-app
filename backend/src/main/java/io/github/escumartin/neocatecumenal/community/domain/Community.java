@@ -9,7 +9,7 @@ public final class Community {
     private CommunityNumber number;
     private CommunityName name;
     private CommunityStatus status;
-    private final MemberId responsibleMemberId;
+    private MemberId responsibleMemberId;
 
     private Community(CommunityId id, CommunityNumber number, CommunityName name, CommunityStatus status,
             MemberId responsibleMemberId) {
@@ -46,6 +46,17 @@ public final class Community {
 
     public void reactivate() {
         this.status = CommunityStatus.ACTIVE;
+    }
+
+    public void designateResponsible(Member member) {
+        if (!member.communityId().equals(id)) {
+            throw new CommunityDomainException("MEMBER_NOT_IN_COMMUNITY");
+        }
+        this.responsibleMemberId = member.id();
+    }
+
+    public boolean isResponsible(MemberId memberId) {
+        return responsibleMemberId != null && responsibleMemberId.equals(memberId);
     }
 
     public void checkAcceptsNewMembers() {

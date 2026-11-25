@@ -39,6 +39,17 @@ export function useCommunity(communityId: string, api: CommunityManagementApi = 
     await load();
   }, [load]);
 
+  const refresh = useCallback(async () => {
+    try {
+      const result = await api.get(communityId);
+      if (result.ok) {
+        setState({ status: 'ready', community: result.community });
+      }
+    } catch {
+      return;
+    }
+  }, [api, communityId]);
+
   const refreshAfter = useCallback(
     async (outcome: CommunityOutcome) => {
       if (outcome.ok) {
@@ -61,5 +72,5 @@ export function useCommunity(communityId: string, api: CommunityManagementApi = 
 
   const remove = useCallback(() => api.remove(communityId), [api, communityId]);
 
-  return { status: state.status, community: state.community, reload, deactivate, reactivate, remove };
+  return { status: state.status, community: state.community, reload, refresh, deactivate, reactivate, remove };
 }

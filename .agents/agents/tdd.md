@@ -58,3 +58,4 @@ Como revisor no escribes ni editas: aplicas el checklist al diff (incluida la au
 
 - Código y tests en inglés, sin comentarios.
 - Sin commit, push ni PR.
+- Nunca `prettier --write` ni otro formateador sobre el repo: no tiene configuración de formato y reformatea ficheros ajenos. Se respeta el estilo de cada fichero a mano.

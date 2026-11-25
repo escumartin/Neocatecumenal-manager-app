@@ -69,3 +69,4 @@ Tus correcciones no deben violar `hexagonal-ddd` (dominio sin Spring ni JPA ni J
 
 - Cero comentarios en código y configuración.
 - Sin commit, push ni PR. Ante una duda, para y devuélvela.
+- Nunca `prettier --write` ni otro formateador sobre el repo: no tiene configuración de formato y reformatea ficheros ajenos.

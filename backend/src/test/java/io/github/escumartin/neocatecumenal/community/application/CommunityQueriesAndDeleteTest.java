@@ -37,7 +37,7 @@ class CommunityQueriesAndDeleteTest {
     private final DeleteCommunityService delete = new DeleteCommunityService(communities, members, users, history,
             catalog);
     private final ListCommunitiesService list = new ListCommunitiesService(communities);
-    private final GetCommunityService get = new GetCommunityService(communities);
+    private final GetCommunityService get = new GetCommunityService(communities, members, users);
     private final ProvisionCommunityService provision = new ProvisionCommunityService(communities, catalog);
     private final Actor administrator = actor(ActorRole.ADMINISTRATOR, UUID.randomUUID());
 
@@ -187,15 +187,15 @@ class CommunityQueriesAndDeleteTest {
         Community without = existing(1);
         Community with = existingWithResponsible(2);
 
-        assertThat(get.get(administrator, without.id()).hasResponsible()).isFalse();
-        assertThat(get.get(administrator, with.id()).hasResponsible()).isTrue();
+        assertThat(get.get(administrator, without.id()).community().hasResponsible()).isFalse();
+        assertThat(get.get(administrator, with.id()).community().hasResponsible()).isTrue();
     }
 
     @Test
     void getLetsAModeratorReadTheirOwnCommunity() {
         Community community = existing(1);
 
-        assertThat(get.get(actor(ActorRole.MODERATOR, community.id().value()), community.id())).isSameAs(community);
+        assertThat(get.get(actor(ActorRole.MODERATOR, community.id().value()), community.id()).community()).isSameAs(community);
     }
 
     @Test

@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
 import { FormScroll } from '@/components/ui/form-scroll';
 import { Input } from '@/components/ui/input';
+import { ListRow } from '@/components/ui/list-row';
 import { ListSection } from '@/components/ui/list-section';
 import { StateView } from '@/components/ui/state-view';
 import { Text } from '@/components/ui/text';
 import { useCommunity } from '@/hooks/communities/use-community';
+import { useReloadOnFocus } from '@/hooks/navigation/use-reload-on-focus';
 import { useCommunitySave } from '@/hooks/communities/use-community-save';
 import { communitiesText, messageForCommunitiesFailure } from '@/i18n/es/communities';
 import type { CommunitiesApi, CommunityDetail, CommunityManagementApi } from '@/lib/api/communities-api';
@@ -22,21 +24,31 @@ type Props = {
   api?: Api;
   onSaved: () => void;
   onDeleted?: () => void;
+  onChooseResponsible?: (communityId: string) => void;
 };
 
 type Problem = { field: 'number' | 'name' | null; message: string };
 
-export function CommunityEdit({ communityId, api, onSaved, onDeleted }: Props) {
+export function CommunityEdit({ communityId, api, onSaved, onDeleted, onChooseResponsible }: Props) {
   if (communityId) {
-    return <ExistingCommunity communityId={communityId} api={api} onSaved={onSaved} onDeleted={onDeleted} />;
+    return (
+      <ExistingCommunity
+        communityId={communityId}
+        api={api}
+        onSaved={onSaved}
+        onDeleted={onDeleted}
+        onChooseResponsible={onChooseResponsible}
+      />
+    );
   }
   return <CommunityFields initial={null} api={api} onSaved={onSaved} />;
 }
 
 type ExistingProps = Omit<Props, 'communityId'> & { communityId: string };
 
-function ExistingCommunity({ communityId, api, onSaved, onDeleted }: ExistingProps) {
-  const { status, community, reload, deactivate, reactivate, remove } = useCommunity(communityId, api);
+function ExistingCommunity({ communityId, api, onSaved, onDeleted, onChooseResponsible }: ExistingProps) {
+  const { status, community, reload, refresh, deactivate, reactivate, remove } = useCommunity(communityId, api);
+  useReloadOnFocus(refresh);
 
   if (status === 'loading') {
     return (
@@ -60,7 +72,7 @@ function ExistingCommunity({ communityId, api, onSaved, onDeleted }: ExistingPro
   }
 
   return (
-    <CommunityFields initial={community} api={api} onSaved={onSaved}>
+    <CommunityFields initial={community} api={api} onSaved={onSaved} onChooseResponsible={onChooseResponsible}>
       <CommunityActions
         community={community}
         deactivate={deactivate}
@@ -76,10 +88,17 @@ type FieldsProps = {
   initial: CommunityDetail | null;
   api?: Api;
   onSaved: () => void;
+  onChooseResponsible?: (communityId: string) => void;
   children?: React.ReactNode;
 };
 
-function CommunityFields({ initial, api, onSaved, children }: FieldsProps) {
+function responsibleName(community: CommunityDetail): string | null {
+  return community.responsible
+    ? [community.responsible.givenName, community.responsible.surnames].filter(Boolean).join(' ')
+    : null;
+}
+
+function CommunityFields({ initial, api, onSaved, onChooseResponsible, children }: FieldsProps) {
   const { save } = useCommunitySave(initial?.id, api);
   const [number, setNumber] = useState(initial ? String(initial.number) : '');
   const [name, setName] = useState(initial?.name ?? '');
@@ -124,6 +143,9 @@ function CommunityFields({ initial, api, onSaved, children }: FieldsProps) {
     <FormScroll>
       <Text variant="title">{editing ? communitiesText.form.editTitle : communitiesText.form.createTitle}</Text>
       {initial?.hasResponsible === false ? <Text>{communitiesText.list.noResponsible}</Text> : null}
+      {initial?.hasResponsible && !initial.responsibleIsModerator ? (
+        <Text>{communitiesText.responsible.notModerator}</Text>
+      ) : null}
       {initial?.status === 'DEACTIVATED' ? <Text>{communitiesText.file.statusDeactivated}</Text> : null}
       <ListSection title={communitiesText.form.number}>
         <FormField description={communitiesText.form.numberHint}>
@@ -180,6 +202,15 @@ function CommunityFields({ initial, api, onSaved, children }: FieldsProps) {
               : communitiesText.form.create}
         </Text>
       </Button>
+      {initial && onChooseResponsible ? (
+        <ListSection>
+          <ListRow
+            title={initial.hasResponsible ? communitiesText.responsible.changeRow : communitiesText.responsible.designateRow}
+            subtitle={responsibleName(initial) ?? undefined}
+            onPress={() => onChooseResponsible(initial.id)}
+          />
+        </ListSection>
+      ) : null}
       {children}
     </FormScroll>
   );

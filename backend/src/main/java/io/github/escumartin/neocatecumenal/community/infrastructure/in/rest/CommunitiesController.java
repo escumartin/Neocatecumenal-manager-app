@@ -9,17 +9,20 @@ import io.github.escumartin.neocatecumenal.generated.model.ResponsibleDesignatio
 import io.github.escumartin.neocatecumenal.community.application.port.in.CreateCommunity;
 import io.github.escumartin.neocatecumenal.community.application.port.in.DeactivateCommunity;
 import io.github.escumartin.neocatecumenal.community.application.port.in.DeleteCommunity;
+import io.github.escumartin.neocatecumenal.community.application.port.in.DesignateResponsible;
 import io.github.escumartin.neocatecumenal.community.application.port.in.GetCommunity;
 import io.github.escumartin.neocatecumenal.community.application.port.in.ListCommunities;
 import io.github.escumartin.neocatecumenal.community.application.port.in.ReactivateCommunity;
 import io.github.escumartin.neocatecumenal.community.application.port.in.UpdateCommunity;
 import io.github.escumartin.neocatecumenal.community.domain.Actor;
+import io.github.escumartin.neocatecumenal.community.domain.CommunityDomainException;
+import io.github.escumartin.neocatecumenal.community.domain.CommunityFieldInvalid;
 import io.github.escumartin.neocatecumenal.community.domain.CommunityId;
+import io.github.escumartin.neocatecumenal.community.domain.MemberId;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -36,11 +39,12 @@ public class CommunitiesController implements CommunitiesApi {
     private final DeleteCommunity deleteCommunity;
     private final DeactivateCommunity deactivateCommunity;
     private final ReactivateCommunity reactivateCommunity;
+    private final DesignateResponsible designateResponsible;
 
     CommunitiesController(ActorResolver actors, TransactionRetry retry, ListCommunities listCommunities,
             CreateCommunity createCommunity, GetCommunity getCommunity, UpdateCommunity updateCommunity,
             DeleteCommunity deleteCommunity, DeactivateCommunity deactivateCommunity,
-            ReactivateCommunity reactivateCommunity) {
+            ReactivateCommunity reactivateCommunity, DesignateResponsible designateResponsible) {
         this.actors = actors;
         this.retry = retry;
         this.listCommunities = listCommunities;
@@ -50,6 +54,7 @@ public class CommunitiesController implements CommunitiesApi {
         this.deleteCommunity = deleteCommunity;
         this.deactivateCommunity = deactivateCommunity;
         this.reactivateCommunity = reactivateCommunity;
+        this.designateResponsible = designateResponsible;
     }
 
     @Override
@@ -107,6 +112,16 @@ public class CommunitiesController implements CommunitiesApi {
     @Override
     public ResponseEntity<CommunityDetail> designateResponsible(UUID communityId,
             ResponsibleDesignation responsibleDesignation) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        Actor actor = actors.currentActor();
+        MemberId memberId = new MemberId(responsibleDesignation.getMemberId());
+        try {
+            return ResponseEntity.ok(CommunitiesMapper.toDetail(retry.execute(() -> designateResponsible.designate(
+                    actor, new CommunityId(communityId), memberId))));
+        } catch (CommunityDomainException rule) {
+            if ("MEMBER_NOT_IN_COMMUNITY".equals(rule.code())) {
+                throw new CommunityFieldInvalid("memberId", rule.code());
+            }
+            throw rule;
+        }
     }
 }

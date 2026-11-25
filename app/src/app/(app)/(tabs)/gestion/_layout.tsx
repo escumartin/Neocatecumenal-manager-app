@@ -31,6 +31,7 @@ export default function GestionLayout() {
       />
       <Stack.Screen name="comunidades/nueva" options={formSheetOptions(navigationText.newCommunity)} />
       <Stack.Screen name="comunidades/[communityId]" options={formSheetOptions(navigationText.editCommunity)} />
+      <Stack.Screen name="comunidades/responsable" options={formSheetOptions(navigationText.communityResponsible)} />
       <Stack.Screen
         name="hermanos/index"
         options={{

@@ -25,6 +25,7 @@ export type CommunityManagementApi = {
   remove: (communityId: string) => Promise<CommunityOutcome>;
   deactivate: (communityId: string, confirmed: boolean) => Promise<CommunityOutcome>;
   reactivate: (communityId: string) => Promise<CommunityOutcome>;
+  designateResponsible: (communityId: string, memberId: string) => Promise<CommunityResult>;
 };
 
 function failure(error: unknown, response: Response): CommunitiesFailure {
@@ -74,6 +75,13 @@ export function createCommunitiesApi(client: ApiClient): CommunitiesApi & Commun
         body: { confirmed },
       });
       return response.ok ? { ok: true } : failure(error, response);
+    },
+    async designateResponsible(communityId, memberId) {
+      const { data, error, response } = await client.PUT('/api/communities/{communityId}/responsible', {
+        params: { path: { communityId } },
+        body: { memberId },
+      });
+      return data ? { ok: true, community: data } : failure(error, response);
     },
     async reactivate(communityId) {
       const { error, response } = await client.POST('/api/communities/{communityId}/reactivation', {

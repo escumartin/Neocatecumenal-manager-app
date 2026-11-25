@@ -36,7 +36,6 @@ public class CommunityProblemHandler {
             Map.entry("MEMBER_ALREADY_LINKED", "El hermano ya tiene un usuario vinculado"),
             Map.entry("USER_ALREADY_LINKED", "El usuario ya está vinculado a otro hermano"),
             Map.entry("USER_LINKED_TO_MEMBER", "El usuario está vinculado a un hermano"),
-            Map.entry("CONSENT_MANAGED_BY_MEMBER", "El consentimiento lo gestiona el propio hermano"),
             Map.entry("MEMBER_NOT_LINKED", "El hermano no tiene usuario vinculado"),
             Map.entry("CONCURRENT_MODIFICATION", "Los datos han cambiado mientras se editaban"),
             Map.entry("SELF_ACTION_FORBIDDEN", "Acción no permitida sobre uno mismo"),
@@ -58,6 +57,8 @@ public class CommunityProblemHandler {
         String code = exception.code();
         return switch (code) {
             case "FORBIDDEN" -> respond(HttpStatus.FORBIDDEN, "Acceso denegado", code);
+            case "CONSENT_MANAGED_BY_MEMBER" ->
+                    respond(HttpStatus.FORBIDDEN, "El consentimiento lo gestiona el propio hermano", code);
             case "NOT_FOUND" -> respond(HttpStatus.NOT_FOUND, "Recurso no encontrado", code);
             case "UNAUTHENTICATED" -> respond(HttpStatus.UNAUTHORIZED, "Autenticación requerida", code);
             default -> CONFLICT_TITLES.containsKey(code)

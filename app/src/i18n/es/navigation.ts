@@ -16,6 +16,7 @@ export const navigationText = {
   createdUser: 'Usuario creado',
   newCommunity: 'Nueva comunidad',
   editCommunity: 'Comunidad',
+  communityResponsible: 'Responsable',
   newMember: 'Nuevo hermano',
   editMember: 'Hermano',
   memberContact: 'Datos de contacto',

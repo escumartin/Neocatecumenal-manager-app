@@ -106,7 +106,7 @@ class CommunityProblemHandlerTest {
     @CsvSource({
         "COMMUNITY_HAS_RESPONSIBLE", "COMMUNITY_NOT_EMPTY", "COMMUNITY_HAS_HISTORY",
         "COMMUNITY_HAS_PRIVILEGED_USERS", "COMMUNITY_DEACTIVATED", "RESPONSIBLE_REQUIRED", "MEMBER_ALREADY_LINKED",
-        "USER_ALREADY_LINKED", "USER_LINKED_TO_MEMBER", "CONSENT_MANAGED_BY_MEMBER", "MEMBER_NOT_LINKED",
+        "USER_ALREADY_LINKED", "USER_LINKED_TO_MEMBER", "MEMBER_NOT_LINKED",
         "CONCURRENT_MODIFICATION"
     })
     void businessConflictsAreAConflictWithTheirStableCode(String code) throws Exception {
@@ -115,6 +115,15 @@ class CommunityProblemHandlerTest {
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
                 .andExpect(jsonPath("$.code").value(code))
                 .andExpect(jsonPath("$.status").value(409));
+    }
+
+    @Test
+    void consentManagedByTheMemberIsForbiddenWithItsStableCode() throws Exception {
+        mockMvc.perform(get("/test/domain/CONSENT_MANAGED_BY_MEMBER"))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.code").value("CONSENT_MANAGED_BY_MEMBER"))
+                .andExpect(jsonPath("$.status").value(403));
     }
 
     @Test

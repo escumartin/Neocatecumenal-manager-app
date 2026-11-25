@@ -54,6 +54,7 @@ export function fakeCommunitiesApi(
     remove: jest.fn().mockResolvedValue({ ok: true }),
     deactivate: jest.fn().mockResolvedValue({ ok: true }),
     reactivate: jest.fn().mockResolvedValue({ ok: true }),
+    designateResponsible: jest.fn().mockResolvedValue({ ok: true, community: detailOf(twelve) }),
     ...overrides,
   };
 }

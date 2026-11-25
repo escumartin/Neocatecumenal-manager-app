@@ -5,6 +5,7 @@ import io.github.escumartin.neocatecumenal.community.application.port.in.CreateC
 import io.github.escumartin.neocatecumenal.community.application.port.in.CreateMember;
 import io.github.escumartin.neocatecumenal.community.application.port.in.DeactivateCommunity;
 import io.github.escumartin.neocatecumenal.community.application.port.in.DeleteCommunity;
+import io.github.escumartin.neocatecumenal.community.application.port.in.DesignateResponsible;
 import io.github.escumartin.neocatecumenal.community.application.port.in.GetCommunity;
 import io.github.escumartin.neocatecumenal.community.application.port.in.GetMember;
 import io.github.escumartin.neocatecumenal.community.application.port.in.ListCommunities;
@@ -23,6 +24,7 @@ import io.github.escumartin.neocatecumenal.community.application.service.CreateC
 import io.github.escumartin.neocatecumenal.community.application.service.CreateMemberService;
 import io.github.escumartin.neocatecumenal.community.application.service.DeactivateCommunityService;
 import io.github.escumartin.neocatecumenal.community.application.service.DeleteCommunityService;
+import io.github.escumartin.neocatecumenal.community.application.service.DesignateResponsibleService;
 import io.github.escumartin.neocatecumenal.community.application.service.GetCommunityService;
 import io.github.escumartin.neocatecumenal.community.application.service.GetMemberService;
 import io.github.escumartin.neocatecumenal.community.application.service.ListCommunitiesService;
@@ -71,8 +73,14 @@ class CommunityConfig {
     }
 
     @Bean
-    GetCommunity getCommunity(CommunityRepository communities) {
-        return new GetCommunityService(communities);
+    GetCommunity getCommunity(CommunityRepository communities, MemberRepository members, UserDirectory users) {
+        return new GetCommunityService(communities, members, users);
+    }
+
+    @Bean
+    DesignateResponsible designateResponsible(CommunityRepository communities, MemberRepository members,
+            UserDirectory users) {
+        return new DesignateResponsibleService(communities, members, users);
     }
 
     @Bean
