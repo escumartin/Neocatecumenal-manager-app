@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { PendingRequestsScreen } from '../pending-requests';
 import {
   chapel,
@@ -13,6 +13,7 @@ import {
 import { fontSizeOf, minHeightOf } from '../support/layout-checks';
 import { bookingsText } from '@/i18n/es/bookings';
 import { useReloadOnFocus } from '@/hooks/navigation/use-reload-on-focus';
+import { hapticFailure, hapticSuccess } from '@/lib/haptics';
 
 const pendingPage = {
   ok: true,
@@ -32,6 +33,11 @@ async function openRejection(roomName: string) {
 }
 
 jest.mock('@/hooks/navigation/use-reload-on-focus', () => ({ useReloadOnFocus: jest.fn() }));
+jest.mock('@/lib/haptics', () => ({ hapticSuccess: jest.fn(), hapticFailure: jest.fn() }));
+
+afterEach(() => {
+  jest.clearAllMocks();
+});
 
 const mockedReloadOnFocus = jest.mocked(useReloadOnFocus);
 
@@ -49,7 +55,7 @@ describe('pending requests screen', () => {
 
     expect(await screen.findByRole('heading', { name: hall.name })).toBeOnTheScreen();
     expect(screen.getByRole('heading', { name: chapel.name })).toBeOnTheScreen();
-    expect(screen.getByRole('heading', { name: bookingsText.resolve.title })).toBeOnTheScreen();
+    expect(screen.queryByText(bookingsText.resolve.title)).not.toBeOnTheScreen();
     expect(screen.getByText(bookingsText.resolve.community(1))).toBeOnTheScreen();
     expect(screen.getByText(bookingsText.resolve.community(2))).toBeOnTheScreen();
     expect(screen.getByText(bookingsText.list.when(pending))).toBeOnTheScreen();
@@ -268,5 +274,57 @@ describe('pending requests screen', () => {
     await regainFocus();
 
     expect(api.list).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not repeat the pending status on every card of the pending list', async () => {
+    const { element } = screenWith();
+    await renderAs('ADMINISTRATOR', element);
+    await screen.findByRole('heading', { name: hall.name });
+
+    expect(screen.queryAllByText(bookingsText.status.PENDING)).toHaveLength(0);
+    expect(screen.queryAllByTestId('status-badge-glyph', { includeHiddenElements: true })).toHaveLength(0);
+  });
+
+  it('reloads the rooms too on pull to refresh', async () => {
+    const roomsApi = fakeRoomsApi();
+    const api = fakeBookingRequestsApi({ list: jest.fn().mockResolvedValue(pendingPage) });
+    await renderAs(
+      'ADMINISTRATOR',
+      <PendingRequestsScreen api={api} roomsApi={roomsApi} communitiesApi={fakeCommunitiesApi()} />,
+    );
+    await screen.findByRole('heading', { name: hall.name });
+
+    await act(async () => {
+      await screen.getByTestId('pending-requests-list').props.refreshControl.props.onRefresh();
+    });
+
+    expect(roomsApi.list).toHaveBeenCalledTimes(2);
+  });
+
+  it('reloads the requests on pull to refresh', async () => {
+    const { element, api } = screenWith();
+    await renderAs('ADMINISTRATOR', element);
+    await screen.findByRole('heading', { name: hall.name });
+
+    await act(async () => {
+      await screen.getByTestId('pending-requests-list').props.refreshControl.props.onRefresh();
+    });
+
+    expect(api.list).toHaveBeenCalledTimes(2);
+  });
+
+  it('gives haptic feedback when a request is approved and when approving fails', async () => {
+    const approve = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 500 })
+      .mockResolvedValueOnce({ ok: true, request: { ...pending, status: 'APPROVED' } });
+    const { element } = screenWith({ approve });
+    await renderAs('ADMINISTRATOR', element);
+
+    await fireEvent.press(await screen.findByRole('button', { name: bookingsText.resolve.approveFor(hall.name) }));
+    await waitFor(() => expect(hapticFailure).toHaveBeenCalledTimes(1));
+    await fireEvent.press(screen.getByRole('button', { name: bookingsText.resolve.approveFor(hall.name) }));
+
+    await waitFor(() => expect(hapticSuccess).toHaveBeenCalledTimes(1));
   });
 });

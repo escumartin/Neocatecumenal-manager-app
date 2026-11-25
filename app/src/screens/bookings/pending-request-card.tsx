@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { bookingsText, messageForResolutionFailure } from '@/i18n/es/bookings';
 import type { BookingRequest, BookingRequestResult } from '@/lib/api/booking-requests-api';
+import { hapticFailure, hapticSuccess } from '@/lib/haptics';
 import { ReasonField } from './reason-field';
 
 type Props = {
@@ -25,10 +26,14 @@ export function PendingRequestCard({ request, roomName, communityNumber, onAppro
     setProblem(null);
     try {
       const result = await action();
-      if (!result.ok && result.code !== 'BOOKING_REQUEST_ALREADY_RESOLVED') {
+      if (result.ok) {
+        hapticSuccess();
+      } else if (result.code !== 'BOOKING_REQUEST_ALREADY_RESOLVED') {
+        hapticFailure();
         setProblem(messageForResolutionFailure(result));
       }
     } catch {
+      hapticFailure();
       setProblem(bookingsText.errors.UNKNOWN);
     } finally {
       setWorking(false);
@@ -41,7 +46,7 @@ export function PendingRequestCard({ request, roomName, communityNumber, onAppro
   }
 
   return (
-    <View className="gap-2 rounded-md border-2 border-input p-4">
+    <View className="gap-2 rounded-lg border-hairline border-border bg-card p-4">
       <Text variant="heading">{roomName}</Text>
       {communityNumber !== undefined ? <Text>{bookingsText.resolve.community(communityNumber)}</Text> : null}
       <Text>{bookingsText.list.when(request)}</Text>

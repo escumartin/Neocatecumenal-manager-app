@@ -25,6 +25,7 @@ module.exports = {
         'sans-medium': ['Inter_500Medium', 'System'],
         'sans-semibold': ['Inter_600SemiBold', 'System'],
         serif: ['SourceSerif4_600SemiBold', 'serif'],
+        'serif-regular': ['SourceSerif4_400Regular', 'serif'],
       },
       fontSize: {
         display: ['32px', { lineHeight: '40px' }],

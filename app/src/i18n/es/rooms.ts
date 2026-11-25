@@ -4,6 +4,8 @@ export const roomsText = {
   loadError: 'No hemos podido cargar los salones.',
   retry: 'Reintentar',
   empty: 'Todavía no hay salones. Añade el primero.',
+  deactivateHint: 'Mantén pulsado para dar de baja.',
+  deactivateTip: 'Para dar de baja un salón, ábrelo y pulsa «Dar de baja», o mantén pulsado su nombre.',
   forbidden: 'Solo los administradores pueden gestionar los salones.',
   add: {
     title: 'Nuevo salón',

@@ -1,9 +1,11 @@
 import { View } from 'react-native';
 import { Button } from '@/components/ui/button';
+import { StateView } from '@/components/ui/state-view';
 import { Text } from '@/components/ui/text';
 import type { RoomOccupancyStatus } from '@/hooks/rooms/use-room-occupancy';
 import { bookingsText } from '@/i18n/es/bookings';
 import type { OccupiedSlot } from '@/lib/api/rooms-api';
+import { BookingStatusBadge } from '@/screens/bookings/booking-status-badge';
 
 type Props = {
   status: RoomOccupancyStatus;
@@ -19,26 +21,19 @@ export function OccupiedSlots({ status, occupied, onReload }: Props) {
   }
 
   if (status === 'loading') {
-    return <Text role="status">{text.loading}</Text>;
+    return <StateView kind="loading" message={text.loading} />;
   }
 
   if (status === 'error') {
     return (
-      <View className="gap-3">
-        <Text role="alert" accessibilityLiveRegion="assertive" className="text-destructive">
-          {`⚠ ${text.loadError}`}
-        </Text>
-        <Button variant="outline" accessibilityLabel={text.retry} onPress={onReload}>
-          <Text>{text.retry}</Text>
-        </Button>
-      </View>
+      <StateView kind="error" message={text.loadError} retryLabel={text.retry} onRetry={onReload} />
     );
   }
 
   return (
     <View className="gap-3">
       {occupied.length === 0 ? (
-        <Text>{text.empty}</Text>
+        <StateView kind="empty" icon="calendar" message={text.empty} />
       ) : (
         <View role="list" accessibilityLabel={text.listLabel} className="gap-3">
           {occupied.map((slot) => (
@@ -47,10 +42,10 @@ export function OccupiedSlots({ status, occupied, onReload }: Props) {
               role="listitem"
               accessible
               accessibilityLabel={text.slotLabel(slot)}
-              className="gap-1 rounded-md border border-border p-3"
+              className="gap-1 rounded-lg border-hairline border-border bg-card p-4"
             >
               <Text variant="strong">{text.slotText(slot)}</Text>
-              <Text>{bookingsText.status[slot.status]}</Text>
+              <BookingStatusBadge status={slot.status} />
               <Text>{slot.ownCommunity ? text.ownCommunity : text.otherCommunity}</Text>
             </View>
           ))}

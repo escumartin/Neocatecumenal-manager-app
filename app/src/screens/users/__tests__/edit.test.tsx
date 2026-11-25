@@ -1,8 +1,17 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { Alert, Platform } from 'react-native';
 import { UserEdit } from '../edit';
 import { ana, communities, communitiesApi, fakeUsersApi, renderAs } from '../support/test-support';
 import { communitiesText } from '@/i18n/es/communities';
 import { usersText } from '@/i18n/es/users';
+import { hapticFailure, hapticSuccess } from '@/lib/haptics';
+
+jest.mock('@/lib/haptics', () => ({ hapticSuccess: jest.fn(), hapticFailure: jest.fn() }));
+
+afterEach(() => {
+  jest.clearAllMocks();
+  jest.restoreAllMocks();
+});
 
 const created = { ...ana, initialPassword: 'abcd234567' };
 
@@ -11,6 +20,7 @@ function form(props: { userId?: string; api?: ReturnType<typeof fakeUsersApi> } 
   const onCreated = jest.fn();
   const onSaved = jest.fn();
   const onPasswordReset = jest.fn();
+  const onDeleted = jest.fn();
   const element = (
     <UserEdit
       userId={props.userId}
@@ -19,9 +29,10 @@ function form(props: { userId?: string; api?: ReturnType<typeof fakeUsersApi> } 
       onCreated={onCreated}
       onSaved={onSaved}
       onPasswordReset={onPasswordReset}
+      onDeleted={onDeleted}
     />
   );
-  return { element, api, onCreated, onSaved, onPasswordReset };
+  return { element, api, onCreated, onSaved, onPasswordReset, onDeleted };
 }
 
 describe('user edit', () => {
@@ -320,6 +331,166 @@ describe('user edit', () => {
       await open('ADMINISTRATOR', { ...ana, role: 'MODERATOR' });
 
       expect(screen.getByRole('button', { name: usersText.reset.action })).toBeOnTheScreen();
+    });
+  });
+
+  describe('deletion', () => {
+    const ownId = '6f1c1f1e-0000-4000-8000-000000000001';
+
+    async function open(role: 'MODERATOR' | 'ADMINISTRATOR', user: typeof ana | (Omit<typeof ana, 'role'> & { role: 'MODERATOR' }), remove = jest.fn().mockResolvedValue({ ok: true })) {
+      const api = fakeUsersApi({ get: jest.fn().mockResolvedValue({ ok: true, user }), remove });
+      const rendered = form({ userId: user.id, api });
+      await renderAs(role, rendered.element);
+      await screen.findByDisplayValue('Ana');
+      return rendered;
+    }
+
+    it('does not offer deletion when creating a user', async () => {
+      const { element } = form();
+      await renderAs('ADMINISTRATOR', element);
+
+      await screen.findByLabelText(usersText.form.name);
+      expect(screen.queryByRole('button', { name: usersText.delete.row })).not.toBeOnTheScreen();
+    });
+
+    it('offers deletion as a destructive row in its own section when editing', async () => {
+      await open('MODERATOR', ana);
+
+      const row = screen.getByRole('button', { name: usersText.delete.row });
+      expect(row).toBeOnTheScreen();
+      expect(screen.getByText(usersText.delete.row).props.className).toContain('text-destructive');
+    });
+
+    it('does not offer deletion on the own account', async () => {
+      await open('ADMINISTRATOR', { ...ana, id: ownId });
+
+      expect(screen.queryByRole('button', { name: usersText.delete.row })).not.toBeOnTheScreen();
+    });
+
+    it('does not offer a moderator deletion of another moderator', async () => {
+      await open('MODERATOR', { ...ana, role: 'MODERATOR' });
+
+      expect(screen.queryByRole('button', { name: usersText.delete.row })).not.toBeOnTheScreen();
+    });
+
+    it('offers an administrator deletion of a moderator', async () => {
+      await open('ADMINISTRATOR', { ...ana, role: 'MODERATOR' });
+
+      expect(screen.getByRole('button', { name: usersText.delete.row })).toBeOnTheScreen();
+    });
+
+    it('asks with a native alert before deleting', async () => {
+      const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+      const { api } = await open('MODERATOR', ana);
+
+      await fireEvent.press(screen.getByRole('button', { name: usersText.delete.row }));
+
+      expect(alert).toHaveBeenCalledWith(
+        usersText.delete.title('Ana'),
+        usersText.delete.warning,
+        expect.arrayContaining([expect.objectContaining({ text: usersText.delete.confirm, style: 'destructive' })]),
+      );
+      expect(api.remove).not.toHaveBeenCalled();
+    });
+
+    it('deletes after the native alert is confirmed, gives haptic feedback and goes back', async () => {
+      const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+      const { api, onDeleted } = await open('MODERATOR', ana);
+
+      await fireEvent.press(screen.getByRole('button', { name: usersText.delete.row }));
+      const buttons = alert.mock.calls[0][2] ?? [];
+      await act(async () => buttons.find((button) => button.style === 'destructive')?.onPress?.());
+
+      await waitFor(() => expect(onDeleted).toHaveBeenCalledTimes(1));
+      expect(api.remove).toHaveBeenCalledWith(ana.id);
+      expect(hapticSuccess).toHaveBeenCalledTimes(1);
+    });
+
+    it('asks with a dialog on web and deletes once confirmed', async () => {
+      jest.replaceProperty(Platform, 'OS', 'web');
+      const { api, onDeleted } = await open('MODERATOR', ana);
+
+      await fireEvent.press(screen.getByRole('button', { name: usersText.delete.row }));
+      expect(screen.getByLabelText(usersText.delete.title('Ana')).props.role).toBe('alertdialog');
+      expect(api.remove).not.toHaveBeenCalled();
+      await fireEvent.press(screen.getByRole('button', { name: usersText.delete.confirm }));
+
+      await waitFor(() => expect(onDeleted).toHaveBeenCalledTimes(1));
+      expect(api.remove).toHaveBeenCalledWith(ana.id);
+    });
+
+    it('keeps the user when the web dialog is cancelled', async () => {
+      jest.replaceProperty(Platform, 'OS', 'web');
+      const { api, onDeleted } = await open('MODERATOR', ana);
+
+      await fireEvent.press(screen.getByRole('button', { name: usersText.delete.row }));
+      await fireEvent.press(screen.getByRole('button', { name: usersText.delete.cancel }));
+
+      expect(screen.queryByLabelText(usersText.delete.title('Ana'))).not.toBeOnTheScreen();
+      expect(api.remove).not.toHaveBeenCalled();
+      expect(onDeleted).not.toHaveBeenCalled();
+    });
+
+    it('explains a refused deletion and stays on the screen', async () => {
+      jest.replaceProperty(Platform, 'OS', 'web');
+      const remove = jest.fn().mockResolvedValue({ ok: false, status: 409, code: 'LAST_MODERATOR' });
+      const { onDeleted } = await open('ADMINISTRATOR', { ...ana, role: 'MODERATOR' }, remove);
+
+      await fireEvent.press(screen.getByRole('button', { name: usersText.delete.row }));
+      await fireEvent.press(screen.getByRole('button', { name: usersText.delete.confirm }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(`⚠ ${usersText.errors.LAST_MODERATOR}`);
+      expect(hapticFailure).toHaveBeenCalledTimes(1);
+      expect(onDeleted).not.toHaveBeenCalled();
+    });
+
+    it('has no chevron on the destructive row', async () => {
+      await open('MODERATOR', ana);
+
+      expect(screen.queryByTestId('list-row-chevron')).not.toBeOnTheScreen();
+    });
+
+    it('disables the row while a native deletion is in progress', async () => {
+      const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+      const pendingRemove = jest.fn().mockReturnValue(new Promise(() => undefined));
+      await open('MODERATOR', ana, pendingRemove);
+
+      await fireEvent.press(screen.getByRole('button', { name: usersText.delete.row }));
+      await act(async () => {
+        (alert.mock.calls[0][2] ?? []).find((button) => button.style === 'destructive')?.onPress?.();
+      });
+      await fireEvent.press(screen.getByRole('button', { name: usersText.delete.row }));
+
+      expect(screen.getByRole('button', { name: usersText.delete.row }).props.accessibilityState).toEqual(
+        expect.objectContaining({ disabled: true }),
+      );
+      expect(pendingRemove).toHaveBeenCalledTimes(1);
+    });
+
+    it('enables the row again once a native deletion fails', async () => {
+      const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+      await open('MODERATOR', ana, jest.fn().mockResolvedValue({ ok: false, status: 409, code: 'LAST_MODERATOR' }));
+
+      await fireEvent.press(screen.getByRole('button', { name: usersText.delete.row }));
+      await act(async () => {
+        (alert.mock.calls[0][2] ?? []).find((button) => button.style === 'destructive')?.onPress?.();
+      });
+
+      await screen.findByRole('alert');
+      expect(screen.getByRole('button', { name: usersText.delete.row }).props.accessibilityState).toEqual(
+        expect.objectContaining({ disabled: false }),
+      );
+    });
+
+    it('explains a failed deletion when the request throws', async () => {
+      jest.replaceProperty(Platform, 'OS', 'web');
+      const { onDeleted } = await open('MODERATOR', ana, jest.fn().mockRejectedValue(new Error('network down')));
+
+      await fireEvent.press(screen.getByRole('button', { name: usersText.delete.row }));
+      await fireEvent.press(screen.getByRole('button', { name: usersText.delete.confirm }));
+
+      expect(await screen.findByText(`⚠ ${usersText.errors.UNKNOWN}`)).toBeOnTheScreen();
+      expect(onDeleted).not.toHaveBeenCalled();
     });
   });
 });

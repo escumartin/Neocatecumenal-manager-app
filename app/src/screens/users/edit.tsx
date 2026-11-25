@@ -9,7 +9,9 @@ import { useUsers } from '@/hooks/users/use-users';
 import { messageForUsersFailure, usersText } from '@/i18n/es/users';
 import type { CommunitiesApi } from '@/lib/api/communities-api';
 import type { CreatedUser, User, UsersApi, UsersFailure } from '@/lib/api/users-api';
+import { canManageAccount } from '@/lib/users/can-manage-account';
 import { CommunityPicker } from './community-picker';
+import { DeleteUser } from './delete-user';
 import { PasswordReset } from './password-reset';
 
 type Role = User['role'];
@@ -25,9 +27,10 @@ type Props = {
   onCreated: (created: CreatedUser) => void;
   onSaved: () => void;
   onPasswordReset?: (created: CreatedUser) => void;
+  onDeleted?: () => void;
 };
 
-export function UserEdit({ userId, api, communitiesApi, onCreated, onSaved, onPasswordReset }: Props) {
+export function UserEdit({ userId, api, communitiesApi, onCreated, onSaved, onPasswordReset, onDeleted }: Props) {
   const { status, user, save } = useUser(userId, api);
 
   if (status === 'loading') {
@@ -59,6 +62,7 @@ export function UserEdit({ userId, api, communitiesApi, onCreated, onSaved, onPa
       onCreated={onCreated}
       onSaved={onSaved}
       onPasswordReset={onPasswordReset}
+      onDeleted={onDeleted}
     />
   );
 }
@@ -68,10 +72,9 @@ type FieldsProps = Omit<Props, 'userId'> & {
   save: ReturnType<typeof useUser>['save'];
 };
 
-function UserFields({ initial, api, communitiesApi, save, onCreated, onSaved, onPasswordReset }: FieldsProps) {
+function UserFields({ initial, api, communitiesApi, save, onCreated, onSaved, onPasswordReset, onDeleted }: FieldsProps) {
   const { user: me, isAdministrator } = useCurrentUser();
-  const canResetPassword =
-    initial !== null && initial.id !== me?.userId && (isAdministrator || initial.role === 'REGISTERED');
+  const canManage = initial !== null && canManageAccount(me, initial);
   const { create } = useUsers(null, api, false);
   const [name, setName] = useState(initial?.name ?? '');
   const [role, setRole] = useState<Role>(initial?.role ?? 'REGISTERED');
@@ -185,8 +188,11 @@ function UserFields({ initial, api, communitiesApi, save, onCreated, onSaved, on
       >
         <Text>{submitting ? usersText.form.saving : editing ? usersText.form.save : usersText.form.create}</Text>
       </Button>
-      {initial && onPasswordReset && canResetPassword ? (
+      {initial && onPasswordReset && canManage ? (
         <PasswordReset user={initial} api={api} onReset={onPasswordReset} />
+      ) : null}
+      {initial && onDeleted && canManage ? (
+        <DeleteUser user={initial} api={api} onDeleted={onDeleted} />
       ) : null}
     </ScrollView>
   );

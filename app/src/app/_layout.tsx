@@ -1,7 +1,7 @@
 import '../global.css';
 
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from '@expo-google-fonts/inter';
-import { SourceSerif4_600SemiBold, useFonts } from '@expo-google-fonts/source-serif-4';
+import { SourceSerif4_400Regular, SourceSerif4_600SemiBold, useFonts } from '@expo-google-fonts/source-serif-4';
 import { PortalHost } from '@rn-primitives/portal';
 import { Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -19,6 +19,7 @@ export default function RootLayout() {
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
+    SourceSerif4_400Regular,
     SourceSerif4_600SemiBold,
   });
 

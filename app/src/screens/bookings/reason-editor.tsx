@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { bookingsText, messageForBookingFailure } from '@/i18n/es/bookings';
 import type { BookingRequestResult } from '@/lib/api/booking-requests-api';
+import { hapticFailure, hapticSuccess } from '@/lib/haptics';
 import { ReasonField } from './reason-field';
 
 type Props = {
@@ -28,11 +29,14 @@ export function ReasonEditor({ initialReason, onSave, onDone }: Props) {
     try {
       const result = await onSave(trimmed);
       if (result.ok) {
+        hapticSuccess();
         onDone();
       } else {
+        hapticFailure();
         setProblem(messageForBookingFailure(result));
       }
     } catch {
+      hapticFailure();
       setProblem(bookingsText.errors.UNKNOWN);
     } finally {
       setSaving(false);

@@ -53,13 +53,13 @@ async function regainFocus() {
 }
 
 describe('room occupancy screen', () => {
-  it('shows the title and the active rooms as options', async () => {
+  it('shows the active rooms as options without repeating the screen title', async () => {
     const { element } = screenWith();
     await renderAs('MODERATOR', element);
 
     expect(await screen.findByRole('radio', { name: hall.name })).toBeOnTheScreen();
     expect(screen.getByRole('radio', { name: chapel.name })).toBeOnTheScreen();
-    expect(screen.getByRole('heading', { name: bookingsText.occupancy.title })).toBeOnTheScreen();
+    expect(screen.queryByText(bookingsText.occupancy.title)).not.toBeOnTheScreen();
   });
 
   it('refuses a registered user without calling the server', async () => {
@@ -207,6 +207,48 @@ describe('room occupancy screen', () => {
     await waitFor(() => expect(roomsApi.occupancy).toHaveBeenCalledTimes(1));
 
     await regainFocus();
+
+    expect(roomsApi.occupancy).toHaveBeenCalledTimes(2);
+  });
+
+  it('marks the chosen room as selected and the others as not', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+
+    await fireEvent.press(await screen.findByRole('radio', { name: hall.name }));
+
+    expect(screen.getByRole('radio', { name: hall.name })).toBeChecked();
+    expect(screen.getByRole('radio', { name: chapel.name })).not.toBeChecked();
+  });
+
+  it('offers the rooms as one grouped list', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+    await screen.findByRole('radio', { name: hall.name });
+
+    expect(screen.getAllByTestId('list-section-card')).toHaveLength(1);
+  });
+
+  it('marks every occupied slot status with a glyph next to its text', async () => {
+    const occupancy = jest.fn().mockResolvedValue({ ok: true, occupancy: { ...emptyOccupancy, occupied } });
+    const { element } = screenWith(fakeRoomsApi({ occupancy }));
+    await renderAs('MODERATOR', element);
+
+    await chooseRoomAndDate();
+    await screen.findAllByRole('listitem');
+
+    expect(screen.getAllByTestId('status-badge-glyph', { includeHiddenElements: true })).toHaveLength(2);
+  });
+
+  it('reloads the occupancy on pull to refresh', async () => {
+    const { element, roomsApi } = screenWith();
+    await renderAs('MODERATOR', element);
+    await chooseRoomAndDate();
+    await waitFor(() => expect(roomsApi.occupancy).toHaveBeenCalledTimes(1));
+
+    await act(async () => {
+      await screen.getByTestId('occupancy-scroll').props.refreshControl.props.onRefresh();
+    });
 
     expect(roomsApi.occupancy).toHaveBeenCalledTimes(2);
   });

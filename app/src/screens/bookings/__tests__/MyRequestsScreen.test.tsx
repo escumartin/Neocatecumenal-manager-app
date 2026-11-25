@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { MyRequestsScreen } from '../my-requests';
 import {
   approved,
@@ -13,6 +13,7 @@ import {
 import { fontSizeOf, minHeightOf } from '../support/layout-checks';
 import { bookingsText } from '@/i18n/es/bookings';
 import { useReloadOnFocus } from '@/hooks/navigation/use-reload-on-focus';
+import { hapticFailure, hapticSuccess } from '@/lib/haptics';
 
 function screenWith(api = fakeBookingRequestsApi(), onRequest = jest.fn()) {
   return {
@@ -23,6 +24,11 @@ function screenWith(api = fakeBookingRequestsApi(), onRequest = jest.fn()) {
 }
 
 jest.mock('@/hooks/navigation/use-reload-on-focus', () => ({ useReloadOnFocus: jest.fn() }));
+jest.mock('@/lib/haptics', () => ({ hapticSuccess: jest.fn(), hapticFailure: jest.fn() }));
+
+afterEach(() => {
+  jest.clearAllMocks();
+});
 
 const mockedReloadOnFocus = jest.mocked(useReloadOnFocus);
 
@@ -44,7 +50,7 @@ describe('my requests screen', () => {
     expect(screen.getByText(pending.reason)).toBeOnTheScreen();
     expect(screen.getByText(bookingsText.status.PENDING)).toBeOnTheScreen();
     expect(screen.getByText(bookingsText.status.APPROVED)).toBeOnTheScreen();
-    expect(screen.getByRole('heading', { name: bookingsText.list.title })).toBeOnTheScreen();
+    expect(screen.queryByText(bookingsText.list.title)).not.toBeOnTheScreen();
   });
 
   it('shows the status and the rejection reason of a rejected request', async () => {
@@ -294,5 +300,54 @@ describe('my requests screen', () => {
     await regainFocus();
 
     expect(api.list).toHaveBeenCalledTimes(2);
+  });
+
+  it('marks every status with a glyph next to its text', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+    await screen.findByText(hall.name);
+
+    expect(screen.getAllByTestId('status-badge-glyph', { includeHiddenElements: true })).toHaveLength(2);
+  });
+
+  it('reloads the requests on pull to refresh', async () => {
+    const { element, api } = screenWith();
+    await renderAs('MODERATOR', element);
+    await screen.findByText(hall.name);
+
+    await act(async () => {
+      await screen.getByTestId('requests-list').props.refreshControl.props.onRefresh();
+    });
+
+    expect(api.list).toHaveBeenCalledTimes(2);
+  });
+
+  it('reloads the rooms too on pull to refresh', async () => {
+    const roomsApi = fakeRoomsApi();
+    await renderAs('MODERATOR', <MyRequestsScreen api={fakeBookingRequestsApi()} roomsApi={roomsApi} />);
+    await screen.findByText(hall.name);
+
+    await act(async () => {
+      await screen.getByTestId('requests-list').props.refreshControl.props.onRefresh();
+    });
+
+    expect(roomsApi.list).toHaveBeenCalledTimes(2);
+  });
+
+  it('gives haptic feedback when a correction is saved and when it fails', async () => {
+    const rectifyReason = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 409, code: 'BOOKING_REQUEST_ALREADY_RESOLVED' })
+      .mockResolvedValueOnce({ ok: true, request: { ...pending, reason: 'Otro motivo' } });
+    const { element } = screenWith(fakeBookingRequestsApi({ rectifyReason }));
+    await renderAs('MODERATOR', element);
+    await fireEvent.press(await screen.findByRole('button', { name: bookingsText.rectify.actionFor(hall.name) }));
+    await fireEvent.changeText(screen.getByLabelText(bookingsText.rectify.reason), 'Otro motivo');
+
+    await fireEvent.press(screen.getByRole('button', { name: bookingsText.rectify.save }));
+    await waitFor(() => expect(hapticFailure).toHaveBeenCalledTimes(1));
+    await fireEvent.press(screen.getByRole('button', { name: bookingsText.rectify.save }));
+
+    await waitFor(() => expect(hapticSuccess).toHaveBeenCalledTimes(1));
   });
 });

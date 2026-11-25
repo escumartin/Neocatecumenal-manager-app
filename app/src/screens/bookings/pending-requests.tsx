@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { FlatList, View } from 'react-native';
-import { Button } from '@/components/ui/button';
+import { FlatList, RefreshControl, View } from 'react-native';
+import { StateView } from '@/components/ui/state-view';
 import { Text } from '@/components/ui/text';
+import { usePullToRefresh } from '@/hooks/navigation/use-pull-to-refresh';
 import { useReloadOnFocus } from '@/hooks/navigation/use-reload-on-focus';
 import { usePendingRequests } from '@/hooks/bookings/use-pending-requests';
 import { useCommunities } from '@/hooks/communities/use-communities';
@@ -26,6 +27,7 @@ export function PendingRequestsScreen({ api, roomsApi, communitiesApi }: Props) 
   const { status: roomsStatus, rooms, reload: reloadRooms } = useRooms(roomsApi, isAdministrator);
   const { communities } = useCommunities(communitiesApi, isAdministrator);
   useReloadOnFocus(reload);
+  const { refreshing, onRefresh } = usePullToRefresh(() => Promise.all([reload(), reloadRooms()]));
 
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -38,18 +40,16 @@ export function PendingRequestsScreen({ api, roomsApi, communitiesApi }: Props) 
 
   if (user === null) {
     return (
-      <View className="flex-1 bg-background p-6">
-        <Text role="status">{bookingsText.resolve.loading}</Text>
+      <View className="flex-1 bg-background p-4">
+        <StateView kind="loading" message={bookingsText.resolve.loading} />
       </View>
     );
   }
 
   if (!isAdministrator) {
     return (
-      <View className="flex-1 bg-background p-6">
-        <Text role="alert" accessibilityLiveRegion="assertive" className="text-destructive">
-          {`⚠ ${bookingsText.resolve.forbidden}`}
-        </Text>
+      <View className="flex-1 bg-background p-4">
+        <StateView kind="error" message={bookingsText.resolve.forbidden} />
       </View>
     );
   }
@@ -64,46 +64,45 @@ export function PendingRequestsScreen({ api, roomsApi, communitiesApi }: Props) 
 
   const header = (
     <View className="gap-4">
-      <Text variant="title">{bookingsText.resolve.title}</Text>
       {notice ? (
         <Text role="alert" accessibilityLiveRegion="assertive" className="text-destructive">
           {`⚠ ${notice}`}
         </Text>
       ) : null}
       {roomsStatus === 'error' ? (
-        <View className="gap-3">
-          <Text role="alert" accessibilityLiveRegion="assertive" className="text-destructive">
-            {`⚠ ${bookingsText.request.roomsError}`}
-          </Text>
-          <Button variant="outline" accessibilityLabel={bookingsText.request.retry} onPress={() => void reloadRooms()}>
-            <Text>{bookingsText.request.retry}</Text>
-          </Button>
-        </View>
+        <StateView
+          kind="error"
+          message={bookingsText.request.roomsError}
+          retryLabel={bookingsText.request.retry}
+          onRetry={() => void reloadRooms()}
+        />
       ) : null}
-      {status === 'loading' ? <Text role="status">{bookingsText.resolve.loading}</Text> : null}
+      {status === 'loading' && !refreshing ? <StateView kind="loading" message={bookingsText.resolve.loading} /> : null}
       {status === 'error' ? (
-        <View className="gap-3">
-          <Text role="alert" accessibilityLiveRegion="assertive" className="text-destructive">
-            {`⚠ ${bookingsText.resolve.loadError}`}
-          </Text>
-          <Button variant="outline" accessibilityLabel={bookingsText.resolve.retry} onPress={() => void reload()}>
-            <Text>{bookingsText.resolve.retry}</Text>
-          </Button>
-        </View>
+        <StateView
+          kind="error"
+          message={bookingsText.resolve.loadError}
+          retryLabel={bookingsText.resolve.retry}
+          onRetry={() => void reload()}
+        />
       ) : null}
     </View>
   );
 
   return (
     <FlatList
+      testID="pending-requests-list"
       className="flex-1 bg-background"
-      contentContainerClassName="gap-4 p-6"
+      contentContainerClassName="gap-4 p-4"
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} />}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
       data={requests}
       keyExtractor={(request) => request.id}
       ListHeaderComponent={header}
-      ListEmptyComponent={status === 'ready' ? <Text>{bookingsText.resolve.empty}</Text> : undefined}
+      ListEmptyComponent={
+        status === 'ready' ? <StateView kind="empty" icon="tray" message={bookingsText.resolve.empty} /> : undefined
+      }
       renderItem={({ item: request }) => (
         <PendingRequestCard
           request={request}

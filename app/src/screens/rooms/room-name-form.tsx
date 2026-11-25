@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import { messageForRoomsFailure, roomsText } from '@/i18n/es/rooms';
 import type { RoomResult } from '@/lib/api/rooms-api';
+import { hapticFailure, hapticSuccess } from '@/lib/haptics';
 
 type Props = {
   label: string;
@@ -42,11 +43,16 @@ export function RoomNameForm({
     try {
       const result = await onSubmit(trimmed);
       if (!result.ok) {
+        hapticFailure();
         setProblem(messageForRoomsFailure(result));
-      } else if (clearOnSuccess) {
-        setName('');
+      } else {
+        hapticSuccess();
+        if (clearOnSuccess) {
+          setName('');
+        }
       }
     } catch {
+      hapticFailure();
       setProblem(roomsText.errors.UNKNOWN);
     } finally {
       setSubmitting(false);

@@ -1,13 +1,20 @@
 import { useState } from 'react';
-import { FlatList, View } from 'react-native';
+import { FlatList, RefreshControl, View } from 'react-native';
 import { Button } from '@/components/ui/button';
+import { ListRow, rowPosition } from '@/components/ui/list-row';
+import { ListSectionFooter } from '@/components/ui/list-section';
+import { StateView } from '@/components/ui/state-view';
 import { Text } from '@/components/ui/text';
 import { useCurrentUser } from '@/hooks/session/use-current-user';
+import { usePullToRefresh } from '@/hooks/navigation/use-pull-to-refresh';
 import { useReloadOnFocus } from '@/hooks/navigation/use-reload-on-focus';
 import { useUsers } from '@/hooks/users/use-users';
 import { messageForUsersFailure, usersText } from '@/i18n/es/users';
 import type { CommunitiesApi } from '@/lib/api/communities-api';
 import type { User, UsersApi } from '@/lib/api/users-api';
+import { confirmDestructive } from '@/lib/confirm';
+import { hapticFailure, hapticSuccess } from '@/lib/haptics';
+import { canManageAccount } from '@/lib/users/can-manage-account';
 import { CommunityPicker } from './community-picker';
 import { DeleteConfirmation } from './delete-confirmation';
 
@@ -24,24 +31,51 @@ export function UserList({ api, communitiesApi, onCreate, onEdit }: Props) {
   const communityId = chosenCommunityId ?? me?.communityId ?? null;
   const { status, users, reload, remove } = useUsers(communityId, api, communityId !== null);
   useReloadOnFocus(reload);
+  const { refreshing, onRefresh } = usePullToRefresh(reload);
   const [pendingDeletion, setPendingDeletion] = useState<User | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  async function deleteUser(user: User) {
+    try {
+      const result = await remove(user.id);
+      setMessage(result.ok ? null : messageForUsersFailure(result));
+      if (result.ok) {
+        hapticSuccess();
+      } else {
+        hapticFailure();
+      }
+    } catch {
+      hapticFailure();
+      setMessage(usersText.errors.UNKNOWN);
+    }
+  }
 
   async function confirmDeletion() {
     if (!pendingDeletion) {
       return;
     }
     setDeleting(true);
-    const result = await remove(pendingDeletion.id);
+    await deleteUser(pendingDeletion);
     setDeleting(false);
     setPendingDeletion(null);
-    setMessage(result.ok ? null : messageForUsersFailure(result));
+  }
+
+  function requestDeletion(user: User) {
+    const shownNatively = confirmDestructive({
+      title: usersText.delete.title(user.name),
+      message: usersText.delete.warning,
+      confirmLabel: usersText.delete.confirm,
+      cancelLabel: usersText.delete.cancel,
+      onConfirm: () => void deleteUser(user),
+    });
+    if (!shownNatively) {
+      setPendingDeletion(user);
+    }
   }
 
   const header = (
-    <View className="gap-4">
-      <Text variant="title">{usersText.title}</Text>
+    <View className="gap-4 pb-4">
       <CommunityPicker selectedId={communityId} onSelect={setChosenCommunityId} api={communitiesApi} />
       <Button accessibilityLabel={usersText.create} onPress={onCreate}>
         <Text>{usersText.create}</Text>
@@ -51,20 +85,9 @@ export function UserList({ api, communitiesApi, onCreate, onEdit }: Props) {
           {`⚠ ${message}`}
         </Text>
       ) : null}
-      {status === 'loading' ? (
-        <Text role="status" variant="muted">
-          {usersText.loading}
-        </Text>
-      ) : null}
+      {status === 'loading' && !refreshing ? <StateView kind="loading" message={usersText.loading} /> : null}
       {status === 'error' ? (
-        <View className="gap-3">
-          <Text role="alert" accessibilityLiveRegion="assertive" className="text-destructive">
-            {`⚠ ${usersText.loadError}`}
-          </Text>
-          <Button variant="outline" accessibilityLabel={usersText.retry} onPress={() => void reload()}>
-            <Text>{usersText.retry}</Text>
-          </Button>
-        </View>
+        <StateView kind="error" message={usersText.loadError} retryLabel={usersText.retry} onRetry={() => void reload()} />
       ) : null}
     </View>
   );
@@ -72,35 +95,45 @@ export function UserList({ api, communitiesApi, onCreate, onEdit }: Props) {
   return (
     <>
       <FlatList
+        testID="user-list"
         className="flex-1 bg-background"
-        contentContainerClassName="gap-4 p-6"
+        contentContainerClassName="p-4"
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} />}
         data={users}
         keyExtractor={(user) => user.id}
         ListHeaderComponent={header}
-        ListEmptyComponent={status === 'ready' ? <Text variant="muted">{usersText.empty}</Text> : undefined}
-        renderItem={({ item: user }) => (
-          <View className="gap-2 rounded-md border-2 border-input p-4">
-            <Text variant="heading">{user.name}</Text>
-            <Text variant="muted">{usersText.accessId(user.accessId)}</Text>
-            <Text variant="muted">{usersText.roles[user.role]}</Text>
-            <Button
-              variant="outline"
-              accessibilityLabel={usersText.editFor(user.name)}
+        ListEmptyComponent={
+          status === 'ready' ? <StateView kind="empty" icon="person.2" message={usersText.empty} /> : undefined
+        }
+        ListFooterComponent={
+          users.length > 0 ? <ListSectionFooter className="pt-2">{usersText.deleteTip}</ListSectionFooter> : undefined
+        }
+        renderItem={({ item: user, index }) => {
+          const deletable = canManageAccount(me, user);
+          return (
+            <ListRow
+              title={user.name}
+              subtitle={usersText.accessId(user.accessId)}
+              trailing={usersText.roles[user.role]}
+              position={rowPosition(index, users.length)}
               onPress={() => onEdit(user.id)}
-            >
-              <Text>{usersText.edit}</Text>
-            </Button>
-            <Button
-              variant="outline"
-              accessibilityLabel={usersText.deleteFor(user.name)}
-              onPress={() => setPendingDeletion(user)}
-            >
-              <Text>{usersText.remove}</Text>
-            </Button>
-          </View>
-        )}
+              accessibilityHint={deletable ? usersText.deleteHint : undefined}
+              onLongPress={deletable ? () => requestDeletion(user) : undefined}
+              accessibilityActions={deletable ? [{ name: 'delete', label: usersText.deleteFor(user.name) }] : undefined}
+              onAccessibilityAction={
+                deletable
+                  ? (event) => {
+                      if (event.nativeEvent.actionName === 'delete') {
+                        requestDeletion(user);
+                      }
+                    }
+                  : undefined
+              }
+            />
+          );
+        }}
       />
       {pendingDeletion ? (
         <DeleteConfirmation

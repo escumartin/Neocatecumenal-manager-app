@@ -1,6 +1,6 @@
-import { ScrollView, View } from 'react-native';
-import { Button } from '@/components/ui/button';
-import { Text } from '@/components/ui/text';
+import { ScrollView } from 'react-native';
+import { ListRow } from '@/components/ui/list-row';
+import { ListSection } from '@/components/ui/list-section';
 import { useSession } from '@/hooks/session/use-session';
 import { accountText } from '@/i18n/es/account';
 import { communitiesText } from '@/i18n/es/communities';
@@ -18,21 +18,21 @@ export function Account({ onChangePassword }: Props) {
     <ScrollView
       className="flex-1 bg-background"
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerClassName="gap-4 p-4"
+      contentContainerClassName="gap-6 p-4"
     >
       {me ? (
-        <View className="gap-1">
-          <Text variant="title">{me.name}</Text>
-          <Text variant="muted">{usersText.roles[me.role]}</Text>
-          <Text variant="muted">{communitiesText.option(me.communityNumber)}</Text>
-        </View>
+        <ListSection>
+          <ListRow
+            title={me.name}
+            subtitle={usersText.roles[me.role]}
+            trailing={communitiesText.option(me.communityNumber)}
+          />
+        </ListSection>
       ) : null}
-      <Button variant="outline" accessibilityLabel={accountText.changePassword} onPress={onChangePassword}>
-        <Text>{accountText.changePassword}</Text>
-      </Button>
-      <Button variant="outline" accessibilityLabel={identity.logout} onPress={logOut}>
-        <Text>{identity.logout}</Text>
-      </Button>
+      <ListSection>
+        <ListRow title={accountText.changePassword} icon="key" onPress={onChangePassword} />
+        <ListRow title={identity.logout} icon="rectangle.portrait.and.arrow.right" accessory="none" onPress={logOut} />
+      </ListSection>
     </ScrollView>
   );
 }

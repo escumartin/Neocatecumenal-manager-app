@@ -15,14 +15,15 @@ export const usersText = {
   deleteFor(name: string) {
     return `Borrar a ${name}`;
   },
-  edit: 'Editar',
-  remove: 'Borrar',
+  deleteHint: 'Mantén pulsado para borrar.',
+  deleteTip: 'Para borrar a alguien, ábrelo y pulsa «Eliminar usuario», o mantén pulsado su nombre.',
   roles: {
     REGISTERED: 'Registrado',
     MODERATOR: 'Moderador',
     ADMINISTRATOR: 'Administrador',
   },
   delete: {
+    row: 'Eliminar usuario',
     title(name: string) {
       return `¿Borrar a ${name}?`;
     },

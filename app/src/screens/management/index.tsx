@@ -1,6 +1,6 @@
 import { ScrollView } from 'react-native';
-import { Button } from '@/components/ui/button';
-import { Text } from '@/components/ui/text';
+import { ListRow } from '@/components/ui/list-row';
+import { ListSection } from '@/components/ui/list-section';
 import { useSession } from '@/hooks/session/use-session';
 import { navigationText } from '@/i18n/es/navigation';
 import { navigationFor } from '@/lib/auth/navigation-permissions';
@@ -18,18 +18,16 @@ export function ManagementMenu({ onOpenUsers, onOpenRooms }: Props) {
     <ScrollView
       className="flex-1 bg-background"
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerClassName="gap-4 p-4"
+      contentContainerClassName="p-4"
     >
-      {canManageUsers ? (
-        <Button variant="outline" accessibilityLabel={navigationText.management.users} onPress={onOpenUsers}>
-          <Text>{navigationText.management.users}</Text>
-        </Button>
-      ) : null}
-      {canManageRooms ? (
-        <Button variant="outline" accessibilityLabel={navigationText.management.rooms} onPress={onOpenRooms}>
-          <Text>{navigationText.management.rooms}</Text>
-        </Button>
-      ) : null}
+      <ListSection>
+        {canManageUsers ? (
+          <ListRow title={navigationText.management.users} icon="person.2" onPress={onOpenUsers} />
+        ) : null}
+        {canManageRooms ? (
+          <ListRow title={navigationText.management.rooms} icon="door.left.hand.open" onPress={onOpenRooms} />
+        ) : null}
+      </ListSection>
     </ScrollView>
   );
 }

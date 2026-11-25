@@ -1,11 +1,16 @@
 import { useState } from 'react';
-import { FlatList, View } from 'react-native';
-import { Button } from '@/components/ui/button';
+import { FlatList, RefreshControl, View } from 'react-native';
+import { ListRow, rowPosition } from '@/components/ui/list-row';
+import { ListSection, ListSectionFooter } from '@/components/ui/list-section';
+import { StateView } from '@/components/ui/state-view';
 import { Text } from '@/components/ui/text';
+import { usePullToRefresh } from '@/hooks/navigation/use-pull-to-refresh';
 import { useCurrentUser } from '@/hooks/session/use-current-user';
 import { useRooms } from '@/hooks/rooms/use-rooms';
 import { messageForRoomsFailure, roomsText } from '@/i18n/es/rooms';
 import type { Room, RoomsApi } from '@/lib/api/rooms-api';
+import { confirmDestructive } from '@/lib/confirm';
+import { hapticFailure, hapticSuccess } from '@/lib/haptics';
 import { DeactivateConfirmation } from './deactivate-confirmation';
 import { RoomNameForm } from './room-name-form';
 
@@ -16,6 +21,7 @@ type Props = {
 export function RoomsAdminScreen({ api }: Props) {
   const { user, isAdministrator } = useCurrentUser();
   const { status, rooms, reload, create, rename, deactivate } = useRooms(api, isAdministrator);
+  const { refreshing, onRefresh } = usePullToRefresh(reload);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingDeactivation, setPendingDeactivation] = useState<Room | null>(null);
   const [deactivating, setDeactivating] = useState(false);
@@ -23,20 +29,33 @@ export function RoomsAdminScreen({ api }: Props) {
 
   if (user === null) {
     return (
-      <View className="flex-1 bg-background p-6">
-        <Text role="status">{roomsText.loading}</Text>
+      <View className="flex-1 bg-background p-4">
+        <StateView kind="loading" message={roomsText.loading} />
       </View>
     );
   }
 
   if (!isAdministrator) {
     return (
-      <View className="flex-1 bg-background p-6">
-        <Text role="alert" accessibilityLiveRegion="assertive" className="text-destructive">
-          {`⚠ ${roomsText.forbidden}`}
-        </Text>
+      <View className="flex-1 bg-background p-4">
+        <StateView kind="error" message={roomsText.forbidden} />
       </View>
     );
+  }
+
+  async function deactivateRoom(room: Room) {
+    try {
+      const result = await deactivate(room.id);
+      setMessage(result.ok ? null : messageForRoomsFailure(result));
+      if (result.ok) {
+        hapticSuccess();
+      } else {
+        hapticFailure();
+      }
+    } catch {
+      hapticFailure();
+      setMessage(roomsText.errors.UNKNOWN);
+    }
   }
 
   async function confirmDeactivation() {
@@ -44,14 +63,21 @@ export function RoomsAdminScreen({ api }: Props) {
       return;
     }
     setDeactivating(true);
-    try {
-      const result = await deactivate(pendingDeactivation.id);
-      setMessage(result.ok ? null : messageForRoomsFailure(result));
-    } catch {
-      setMessage(roomsText.errors.UNKNOWN);
-    } finally {
-      setDeactivating(false);
-      setPendingDeactivation(null);
+    await deactivateRoom(pendingDeactivation);
+    setDeactivating(false);
+    setPendingDeactivation(null);
+  }
+
+  function requestDeactivation(room: Room) {
+    const shownNatively = confirmDestructive({
+      title: roomsText.deactivate.title(room.name),
+      message: roomsText.deactivate.warning,
+      confirmLabel: roomsText.deactivate.confirm,
+      cancelLabel: roomsText.deactivate.cancel,
+      onConfirm: () => void deactivateRoom(room),
+    });
+    if (!shownNatively) {
+      setPendingDeactivation(room);
     }
   }
 
@@ -64,8 +90,7 @@ export function RoomsAdminScreen({ api }: Props) {
   }
 
   const header = (
-    <View className="gap-4">
-      <Text variant="title">{roomsText.title}</Text>
+    <View className="gap-4 pb-4">
       <RoomNameForm
         label={roomsText.add.name}
         submitLabel={roomsText.add.submit}
@@ -78,16 +103,9 @@ export function RoomsAdminScreen({ api }: Props) {
           {`⚠ ${message}`}
         </Text>
       ) : null}
-      {status === 'loading' ? <Text role="status">{roomsText.loading}</Text> : null}
+      {status === 'loading' && !refreshing ? <StateView kind="loading" message={roomsText.loading} /> : null}
       {status === 'error' ? (
-        <View className="gap-3">
-          <Text role="alert" accessibilityLiveRegion="assertive" className="text-destructive">
-            {`⚠ ${roomsText.loadError}`}
-          </Text>
-          <Button variant="outline" accessibilityLabel={roomsText.retry} onPress={() => void reload()}>
-            <Text>{roomsText.retry}</Text>
-          </Button>
-        </View>
+        <StateView kind="error" message={roomsText.loadError} retryLabel={roomsText.retry} onRetry={() => void reload()} />
       ) : null}
     </View>
   );
@@ -95,45 +113,55 @@ export function RoomsAdminScreen({ api }: Props) {
   return (
     <>
       <FlatList
+        testID="rooms-list"
         className="flex-1 bg-background"
-        contentContainerClassName="gap-4 p-6"
+        contentContainerClassName="p-4"
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} />}
         data={rooms}
         keyExtractor={(room) => room.id}
         ListHeaderComponent={header}
-        ListEmptyComponent={status === 'ready' ? <Text>{roomsText.empty}</Text> : undefined}
-        renderItem={({ item: room }) =>
+        ListEmptyComponent={
+          status === 'ready' ? (
+            <StateView kind="empty" icon="door.left.hand.open" message={roomsText.empty} />
+          ) : undefined
+        }
+        ListFooterComponent={
+          rooms.length > 0 ? <ListSectionFooter className="pt-2">{roomsText.deactivateTip}</ListSectionFooter> : undefined
+        }
+        renderItem={({ item: room, index }) =>
           editingId === room.id ? (
-            <View className="gap-2 rounded-md border-2 border-input p-4">
-              <RoomNameForm
-                label={roomsText.rename.name}
-                submitLabel={roomsText.rename.save}
-                submittingLabel={roomsText.rename.saving}
-                initialName={room.name}
-                cancelLabel={roomsText.rename.cancel}
-                onCancel={() => setEditingId(null)}
-                onSubmit={(name) => submitRename(room, name)}
-              />
+            <View className="my-2 gap-4">
+              <View className="rounded-lg border-hairline border-border bg-card p-4">
+                <RoomNameForm
+                  label={roomsText.rename.name}
+                  submitLabel={roomsText.rename.save}
+                  submittingLabel={roomsText.rename.saving}
+                  initialName={room.name}
+                  cancelLabel={roomsText.rename.cancel}
+                  onCancel={() => setEditingId(null)}
+                  onSubmit={(name) => submitRename(room, name)}
+                />
+              </View>
+              <ListSection>
+                <ListRow destructive title={roomsText.deactivate.action} onPress={() => requestDeactivation(room)} />
+              </ListSection>
             </View>
           ) : (
-            <View className="gap-2 rounded-md border-2 border-input p-4">
-              <Text variant="heading">{room.name}</Text>
-              <Button
-                variant="outline"
-                accessibilityLabel={roomsText.rename.actionFor(room.name)}
-                onPress={() => setEditingId(room.id)}
-              >
-                <Text>{roomsText.rename.action}</Text>
-              </Button>
-              <Button
-                variant="outline"
-                accessibilityLabel={roomsText.deactivate.actionFor(room.name)}
-                onPress={() => setPendingDeactivation(room)}
-              >
-                <Text>{roomsText.deactivate.action}</Text>
-              </Button>
-            </View>
+            <ListRow
+              title={room.name}
+              position={rowPosition(index, rooms.length)}
+              onPress={() => setEditingId(room.id)}
+              accessibilityHint={roomsText.deactivateHint}
+              onLongPress={() => requestDeactivation(room)}
+              accessibilityActions={[{ name: 'deactivate', label: roomsText.deactivate.actionFor(room.name) }]}
+              onAccessibilityAction={(event) => {
+                if (event.nativeEvent.actionName === 'deactivate') {
+                  requestDeactivation(room);
+                }
+              }}
+            />
           )
         }
       />

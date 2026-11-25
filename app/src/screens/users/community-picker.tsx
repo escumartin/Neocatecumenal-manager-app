@@ -1,6 +1,7 @@
 import { View } from 'react-native';
-import { Button } from '@/components/ui/button';
-import { Text } from '@/components/ui/text';
+import { ListRow } from '@/components/ui/list-row';
+import { ListSection } from '@/components/ui/list-section';
+import { StateView } from '@/components/ui/state-view';
 import { useCommunities } from '@/hooks/communities/use-communities';
 import { useCurrentUser } from '@/hooks/session/use-current-user';
 import { communitiesText } from '@/i18n/es/communities';
@@ -22,35 +23,28 @@ export function CommunityPicker({ selectedId, onSelect, api }: Props) {
 
   return (
     <View role="radiogroup" accessibilityLabel={communitiesText.pickerTitle} className="gap-3">
-      <Text variant="heading">{communitiesText.pickerTitle}</Text>
-      {status === 'loading' ? <Text variant="muted">{communitiesText.loading}</Text> : null}
+      {status === 'loading' ? <StateView kind="loading" message={communitiesText.loading} /> : null}
       {status === 'error' ? (
-        <View className="gap-3">
-          <Text role="alert" accessibilityLiveRegion="assertive" className="text-destructive">
-            {`⚠ ${communitiesText.loadError}`}
-          </Text>
-          <Button variant="outline" accessibilityLabel={communitiesText.retry} onPress={() => void reload()}>
-            <Text>{communitiesText.retry}</Text>
-          </Button>
-        </View>
+        <StateView
+          kind="error"
+          message={communitiesText.loadError}
+          retryLabel={communitiesText.retry}
+          onRetry={() => void reload()}
+        />
       ) : null}
-      {communities.map((community) => {
-        const label = communitiesText.option(community.number);
-        const selected = community.id === selectedId;
-        return (
-          <Button
-            key={community.id}
-            role="radio"
-            variant={selected ? 'default' : 'outline'}
-            accessibilityLabel={label}
-            aria-checked={selected}
-            accessibilityState={{ checked: selected }}
-            onPress={() => onSelect(community.id)}
-          >
-            <Text>{selected ? `✓ ${label}` : label}</Text>
-          </Button>
-        );
-      })}
+      {communities.length > 0 ? (
+        <ListSection title={communitiesText.pickerTitle}>
+          {communities.map((community) => (
+            <ListRow
+              key={community.id}
+              role="radio"
+              title={communitiesText.option(community.number)}
+              selected={community.id === selectedId}
+              onPress={() => onSelect(community.id)}
+            />
+          ))}
+        </ListSection>
+      ) : null}
     </View>
   );
 }
