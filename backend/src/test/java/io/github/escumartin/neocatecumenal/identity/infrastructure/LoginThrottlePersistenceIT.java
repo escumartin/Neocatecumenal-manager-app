@@ -1,7 +1,5 @@
 package io.github.escumartin.neocatecumenal.identity.infrastructure;
 
-import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
-import org.springframework.context.annotation.Import;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.escumartin.neocatecumenal.identity.application.port.in.LogIn;
@@ -49,7 +47,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SpringBootTest
 @Testcontainers
-@Import(TestCommunityProvisionerConfig.class)
 class LoginThrottlePersistenceIT {
 
     private static final String PASSWORD = "correct-horse-battery";

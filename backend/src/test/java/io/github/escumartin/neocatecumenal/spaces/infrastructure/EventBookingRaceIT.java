@@ -1,7 +1,5 @@
 package io.github.escumartin.neocatecumenal.spaces.infrastructure;
 
-import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
-import org.springframework.context.annotation.Import;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -37,7 +35,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @SpringBootTest
 @Testcontainers
-@Import(TestCommunityProvisionerConfig.class)
 class EventBookingRaceIT {
 
     private static final CommunityId COMMUNITY = new CommunityId(UUID.randomUUID());

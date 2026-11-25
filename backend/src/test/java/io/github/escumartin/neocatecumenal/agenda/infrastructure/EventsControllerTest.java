@@ -1,7 +1,5 @@
 package io.github.escumartin.neocatecumenal.agenda.infrastructure;
 
-import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
-import org.springframework.context.annotation.Import;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
@@ -52,7 +50,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
-@Import(TestCommunityProvisionerConfig.class)
 class EventsControllerTest {
 
     private static final AtomicInteger ACCESS_IDS = new AtomicInteger(500000);

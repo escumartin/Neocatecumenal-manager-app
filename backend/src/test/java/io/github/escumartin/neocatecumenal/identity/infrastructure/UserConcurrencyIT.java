@@ -1,6 +1,5 @@
 package io.github.escumartin.neocatecumenal.identity.infrastructure;
 
-import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -65,7 +64,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
-@Import({UserConcurrencyIT.Probes.class, TestCommunityProvisionerConfig.class})
+@Import(UserConcurrencyIT.Probes.class)
 class UserConcurrencyIT {
 
     private static final AtomicInteger ACCESS_IDS = new AtomicInteger(400000);

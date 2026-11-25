@@ -1,7 +1,5 @@
 package io.github.escumartin.neocatecumenal.agenda.infrastructure;
 
-import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
-import org.springframework.context.annotation.Import;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.escumartin.neocatecumenal.agenda.application.port.in.PurgeExpiredEvents;
@@ -34,7 +32,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @SpringBootTest
 @Testcontainers
-@Import(TestCommunityProvisionerConfig.class)
 class EventPurgeIT {
 
     private static final LocalDate TODAY = LocalDate.now(ZoneId.of("Europe/Madrid"));

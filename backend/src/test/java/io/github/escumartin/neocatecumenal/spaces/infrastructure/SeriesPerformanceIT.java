@@ -1,7 +1,5 @@
 package io.github.escumartin.neocatecumenal.spaces.infrastructure;
 
-import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
-import org.springframework.context.annotation.Import;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.escumartin.neocatecumenal.spaces.application.port.in.RequestBooking;
@@ -36,7 +34,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @SpringBootTest
 @Testcontainers
-@Import(TestCommunityProvisionerConfig.class)
 class SeriesPerformanceIT {
 
     private static final int OCCURRENCES = 53;

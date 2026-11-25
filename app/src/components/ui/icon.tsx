@@ -6,6 +6,7 @@ import { themeColorsFor } from '@/lib/theme/colors';
 const glyphs = {
   'chevron.right': '›',
   'person.2': '☺',
+  'person.3': '☻',
   'door.left.hand.open': '▭',
   'key': '⚷',
   'rectangle.portrait.and.arrow.right': '⇥',

@@ -1,7 +1,5 @@
 package io.github.escumartin.neocatecumenal.spaces.infrastructure;
 
-import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
-import org.springframework.context.annotation.Import;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -44,7 +42,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @SpringBootTest
 @Testcontainers
-@Import(TestCommunityProvisionerConfig.class)
 class BookingLogsTest {
 
     private static final String REASON_SENTINEL = "Zzyzx catechesis sentinel";

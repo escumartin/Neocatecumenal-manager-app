@@ -34,6 +34,13 @@ describe('navigation permissions', () => {
     expect(navigationFor('MODERATOR')).toMatchObject({ canReviewPending: false, canManageRooms: false });
   });
 
+  it('lets only an administrator manage communities', () => {
+    expect(navigationFor('ADMINISTRATOR').canManageCommunities).toBe(true);
+    expect(navigationFor('MODERATOR').canManageCommunities).toBe(false);
+    expect(navigationFor('REGISTERED').canManageCommunities).toBe(false);
+    expect(navigationFor(undefined).canManageCommunities).toBe(false);
+  });
+
   it('gives a registered user no capability beyond the account', () => {
     expect(navigationFor('REGISTERED')).toMatchObject({
       canCreateEvent: false,

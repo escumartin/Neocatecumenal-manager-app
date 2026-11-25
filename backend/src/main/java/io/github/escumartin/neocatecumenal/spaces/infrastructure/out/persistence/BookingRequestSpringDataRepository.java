@@ -16,6 +16,8 @@ import org.springframework.data.repository.query.Param;
 
 interface BookingRequestSpringDataRepository extends JpaRepository<BookingRequestEntity, UUID> {
 
+    boolean existsByCommunityId(UUID communityId);
+
     Page<BookingRequestEntity> findByStatusIn(Collection<BookingRequestStatus> statuses, Pageable pageable);
 
     Page<BookingRequestEntity> findByCommunityIdAndStatusIn(UUID communityId,

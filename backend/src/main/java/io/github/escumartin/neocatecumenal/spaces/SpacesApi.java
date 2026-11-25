@@ -8,4 +8,6 @@ public interface SpacesApi {
     EventBookingResult requestForEvent(EventBookingCommand command);
 
     Optional<BookingRequestState> bookingRequestStatus(UUID bookingRequestId);
+
+    boolean hasBookingRequestsFor(UUID communityId);
 }

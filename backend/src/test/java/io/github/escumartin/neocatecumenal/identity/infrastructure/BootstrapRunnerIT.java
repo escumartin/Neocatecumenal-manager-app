@@ -7,7 +7,6 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import io.github.escumartin.neocatecumenal.NeocatecumenalApplication;
-import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
 import io.github.escumartin.neocatecumenal.identity.infrastructure.in.bootstrap.BootstrapAbortedException;
 import io.github.escumartin.neocatecumenal.identity.infrastructure.in.bootstrap.BootstrapConsoleProvider;
 import io.github.escumartin.neocatecumenal.identity.infrastructure.in.bootstrap.IdentityBootstrapRunner;
@@ -100,8 +99,7 @@ class BootstrapRunnerIT {
     }
 
     private ConfigurableApplicationContext start(BootstrapConsoleProvider console, boolean noWeb, String... extraArgs) {
-        SpringApplication application = new SpringApplication(NeocatecumenalApplication.class,
-                TestCommunityProvisionerConfig.class);
+        SpringApplication application = new SpringApplication(NeocatecumenalApplication.class);
         if (noWeb) {
             application.setWebApplicationType(WebApplicationType.NONE);
         }

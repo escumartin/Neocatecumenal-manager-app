@@ -14,5 +14,6 @@ export function navigationFor(role: Me['role'] | undefined) {
     canManageUsers: isModerator,
     canReviewPending: isAdministrator,
     canManageRooms: isAdministrator,
+    canManageCommunities: isAdministrator,
   };
 }

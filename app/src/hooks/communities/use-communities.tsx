@@ -1,6 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { communitiesApi } from '@/lib/api';
-import type { CommunitiesApi, Community, ListCommunitiesResult } from '@/lib/api/communities-api';
+import type {
+  CommunitiesApi,
+  Community,
+  ListCommunitiesOptions,
+  ListCommunitiesResult,
+} from '@/lib/api/communities-api';
 
 export type CommunitiesStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -12,7 +17,12 @@ function toState(result: ListCommunitiesResult): State {
 
 const FAILED: State = { status: 'error', communities: [] };
 
-export function useCommunities(api: CommunitiesApi = communitiesApi, enabled = true) {
+export function useCommunities(
+  api: CommunitiesApi = communitiesApi,
+  enabled = true,
+  { includeDeactivated = false }: ListCommunitiesOptions = {},
+) {
+  const query = useMemo(() => (includeDeactivated ? { includeDeactivated: true } : undefined), [includeDeactivated]);
   const [state, setState] = useState<State>({ status: enabled ? 'loading' : 'idle', communities: [] });
 
   useEffect(() => {
@@ -21,7 +31,7 @@ export function useCommunities(api: CommunitiesApi = communitiesApi, enabled = t
     }
     let active = true;
     api
-      .list()
+      .list(query)
       .then(toState, () => FAILED)
       .then((next) => {
         if (active) {
@@ -31,16 +41,30 @@ export function useCommunities(api: CommunitiesApi = communitiesApi, enabled = t
     return () => {
       active = false;
     };
-  }, [api, enabled]);
+  }, [api, enabled, query]);
 
   const reload = useCallback(async () => {
     setState((current) => ({ ...current, status: 'loading' }));
     try {
-      setState(toState(await api.list()));
+      setState(toState(await api.list(query)));
     } catch {
       setState(FAILED);
     }
-  }, [api]);
+  }, [api, query]);
 
-  return { status: state.status, communities: state.communities, reload };
+  const refresh = useCallback(async () => {
+    if (!enabled) {
+      return;
+    }
+    try {
+      const result = await api.list(query);
+      if (result.ok) {
+        setState(toState(result));
+      }
+    } catch {
+      return;
+    }
+  }, [api, enabled, query]);
+
+  return { status: state.status, communities: state.communities, reload, refresh };
 }

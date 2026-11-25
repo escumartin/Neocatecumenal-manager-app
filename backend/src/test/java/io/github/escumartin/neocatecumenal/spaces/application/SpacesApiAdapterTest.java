@@ -1,6 +1,7 @@
 package io.github.escumartin.neocatecumenal.spaces.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.github.escumartin.neocatecumenal.spaces.BookingRequestState;
 import io.github.escumartin.neocatecumenal.spaces.EventBookingCommand;
@@ -9,6 +10,7 @@ import io.github.escumartin.neocatecumenal.spaces.EventBookingResult;
 import io.github.escumartin.neocatecumenal.spaces.EventBookingResult.Booked;
 import io.github.escumartin.neocatecumenal.spaces.EventBookingResult.Occupied;
 import io.github.escumartin.neocatecumenal.spaces.application.port.in.BookRoomForEvent;
+import io.github.escumartin.neocatecumenal.spaces.application.port.out.BookingRequestRepository;
 import io.github.escumartin.neocatecumenal.spaces.application.service.SpacesApiAdapter;
 import io.github.escumartin.neocatecumenal.spaces.domain.Conflict;
 import io.github.escumartin.neocatecumenal.spaces.domain.RoomOccupied;
@@ -34,7 +36,7 @@ class SpacesApiAdapterTest {
         UUID id = UUID.randomUUID();
         BookRoomForEvent delegate = new StubBookRoomForEvent(new Booked(id), null);
 
-        assertThat(new SpacesApiAdapter(delegate).requestForEvent(command())).isEqualTo(new Booked(id));
+        assertThat(new SpacesApiAdapter(delegate, mock(BookingRequestRepository.class)).requestForEvent(command())).isEqualTo(new Booked(id));
     }
 
     @Test
@@ -43,7 +45,7 @@ class SpacesApiAdapterTest {
                 new Conflict(DATE, new TimeSlot(LocalTime.of(18, 0), LocalTime.of(19, 0)))));
         BookRoomForEvent delegate = new StubBookRoomForEvent(null, raced);
 
-        EventBookingResult result = new SpacesApiAdapter(delegate).requestForEvent(command());
+        EventBookingResult result = new SpacesApiAdapter(delegate, mock(BookingRequestRepository.class)).requestForEvent(command());
 
         assertThat(result).isEqualTo(new Occupied(List.of(
                 new EventBookingConflict(DATE, LocalTime.of(18, 0), LocalTime.of(19, 0)))));
@@ -53,7 +55,7 @@ class SpacesApiAdapterTest {
     void theStatusQueryIsDelegated() {
         BookRoomForEvent delegate = new StubBookRoomForEvent(null, null);
 
-        assertThat(new SpacesApiAdapter(delegate).bookingRequestStatus(UUID.randomUUID()))
+        assertThat(new SpacesApiAdapter(delegate, mock(BookingRequestRepository.class)).bookingRequestStatus(UUID.randomUUID()))
                 .contains(BookingRequestState.APPROVED);
     }
 

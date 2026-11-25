@@ -1,7 +1,5 @@
 package io.github.escumartin.neocatecumenal.spaces.infrastructure;
 
-import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
-import org.springframework.context.annotation.Import;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -51,7 +49,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
-@Import(TestCommunityProvisionerConfig.class)
 class RoomOccupancyControllerTest {
 
     private static final AtomicInteger ACCESS_IDS = new AtomicInteger(500000);

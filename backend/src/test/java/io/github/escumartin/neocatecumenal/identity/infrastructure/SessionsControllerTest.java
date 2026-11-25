@@ -1,7 +1,5 @@
 package io.github.escumartin.neocatecumenal.identity.infrastructure;
 
-import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
-import org.springframework.context.annotation.Import;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
@@ -55,7 +53,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest(properties = "identity.allowed-origins=https://app.example.test")
 @AutoConfigureMockMvc
 @Testcontainers
-@Import(TestCommunityProvisionerConfig.class)
 class SessionsControllerTest {
 
     private static final String PASSWORD = "correct-horse-battery";

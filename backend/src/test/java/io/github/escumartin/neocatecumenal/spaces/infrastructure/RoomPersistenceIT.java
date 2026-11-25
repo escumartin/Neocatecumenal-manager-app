@@ -1,7 +1,5 @@
 package io.github.escumartin.neocatecumenal.spaces.infrastructure;
 
-import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
-import org.springframework.context.annotation.Import;
 import static io.github.escumartin.neocatecumenal.FlywayTestSupport.assertSqlState;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -34,7 +32,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @SpringBootTest
 @Testcontainers
-@Import(TestCommunityProvisionerConfig.class)
 class RoomPersistenceIT {
 
     private static final String LOCK_NOT_AVAILABLE = "55P03";

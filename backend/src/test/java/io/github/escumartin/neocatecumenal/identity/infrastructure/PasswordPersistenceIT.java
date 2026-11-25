@@ -1,7 +1,5 @@
 package io.github.escumartin.neocatecumenal.identity.infrastructure;
 
-import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
-import org.springframework.context.annotation.Import;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -47,7 +45,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
-@Import(TestCommunityProvisionerConfig.class)
 class PasswordPersistenceIT {
 
     private static final AtomicInteger ACCESS_IDS = new AtomicInteger(300000);

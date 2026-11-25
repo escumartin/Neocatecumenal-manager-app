@@ -9,6 +9,8 @@ import org.springframework.data.repository.query.Param;
 
 interface EventSpringDataRepository extends JpaRepository<EventEntity, UUID> {
 
+    boolean existsByCommunityId(UUID communityId);
+
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(value = "update event set created_by = null where created_by = :userId", nativeQuery = true)
     int clearCreator(@Param("userId") UUID userId);

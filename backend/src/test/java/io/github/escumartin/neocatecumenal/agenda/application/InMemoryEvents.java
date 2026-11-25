@@ -1,6 +1,7 @@
 package io.github.escumartin.neocatecumenal.agenda.application;
 
 import io.github.escumartin.neocatecumenal.agenda.application.port.out.EventRepository;
+import io.github.escumartin.neocatecumenal.agenda.domain.CommunityId;
 import io.github.escumartin.neocatecumenal.agenda.domain.Event;
 import io.github.escumartin.neocatecumenal.agenda.domain.EventId;
 import io.github.escumartin.neocatecumenal.agenda.domain.UserId;
@@ -23,6 +24,11 @@ final class InMemoryEvents implements EventRepository {
     @Override
     public Optional<Event> findById(EventId id) {
         return Optional.ofNullable(stored.get(id));
+    }
+
+    @Override
+    public boolean existsByCommunity(CommunityId communityId) {
+        return stored.values().stream().anyMatch(event -> event.communityId().equals(communityId));
     }
 
     @Override

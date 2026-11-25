@@ -194,6 +194,11 @@ class SpacesApiTest {
         }
 
         @Override
+        public boolean existsByCommunity(CommunityId communityId) {
+            return false;
+        }
+
+        @Override
         public int anonymize(UserId userId) {
             return 0;
         }

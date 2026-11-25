@@ -14,8 +14,11 @@ export const navigationText = {
   newUser: 'Nuevo usuario',
   editUser: 'Editar usuario',
   createdUser: 'Usuario creado',
+  newCommunity: 'Nueva comunidad',
+  editCommunity: 'Comunidad',
   management: {
     users: 'Usuarios',
     rooms: 'Salones',
+    communities: 'Comunidades',
   },
 };

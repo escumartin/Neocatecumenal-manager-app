@@ -7,6 +7,7 @@ export default function ManagementRoute() {
     <ManagementMenu
       onOpenUsers={() => router.push('/gestion/usuarios')}
       onOpenRooms={() => router.push('/gestion/salones')}
+      onOpenCommunities={() => router.push('/gestion/comunidades')}
     />
   );
 }

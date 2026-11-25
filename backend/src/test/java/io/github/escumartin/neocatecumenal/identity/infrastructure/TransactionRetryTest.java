@@ -11,7 +11,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.github.escumartin.neocatecumenal.identity.StaleLockOrderException;
-import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
 import io.github.escumartin.neocatecumenal.identity.TestUsers;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.DeleteUser;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.UpdateUser;
@@ -39,7 +38,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -53,7 +51,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
-@Import(TestCommunityProvisionerConfig.class)
 class TransactionRetryTest {
 
     @Container

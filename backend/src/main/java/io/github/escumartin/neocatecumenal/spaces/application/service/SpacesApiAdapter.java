@@ -7,6 +7,8 @@ import io.github.escumartin.neocatecumenal.spaces.EventBookingResult;
 import io.github.escumartin.neocatecumenal.spaces.EventBookingResult.Occupied;
 import io.github.escumartin.neocatecumenal.spaces.SpacesApi;
 import io.github.escumartin.neocatecumenal.spaces.application.port.in.BookRoomForEvent;
+import io.github.escumartin.neocatecumenal.spaces.application.port.out.BookingRequestRepository;
+import io.github.escumartin.neocatecumenal.spaces.domain.CommunityId;
 import io.github.escumartin.neocatecumenal.spaces.domain.Conflict;
 import io.github.escumartin.neocatecumenal.spaces.domain.RoomOccupied;
 import java.util.List;
@@ -14,15 +16,18 @@ import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.annotation.Transactional;
 
 public class SpacesApiAdapter implements SpacesApi {
 
     private static final Logger log = LoggerFactory.getLogger(SpacesApiAdapter.class);
 
     private final BookRoomForEvent bookRoomForEvent;
+    private final BookingRequestRepository requests;
 
-    public SpacesApiAdapter(BookRoomForEvent bookRoomForEvent) {
+    public SpacesApiAdapter(BookRoomForEvent bookRoomForEvent, BookingRequestRepository requests) {
         this.bookRoomForEvent = bookRoomForEvent;
+        this.requests = requests;
     }
 
     @Override
@@ -37,6 +42,12 @@ public class SpacesApiAdapter implements SpacesApi {
     @Override
     public Optional<BookingRequestState> bookingRequestStatus(UUID bookingRequestId) {
         return bookRoomForEvent.bookingRequestStatus(bookingRequestId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasBookingRequestsFor(UUID communityId) {
+        return requests.existsByCommunity(new CommunityId(communityId));
     }
 
     static Occupied occupied(List<Conflict> conflicts) {

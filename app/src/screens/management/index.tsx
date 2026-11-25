@@ -8,11 +8,12 @@ import { navigationFor } from '@/lib/auth/navigation-permissions';
 type Props = {
   onOpenUsers: () => void;
   onOpenRooms: () => void;
+  onOpenCommunities: () => void;
 };
 
-export function ManagementMenu({ onOpenUsers, onOpenRooms }: Props) {
+export function ManagementMenu({ onOpenUsers, onOpenRooms, onOpenCommunities }: Props) {
   const { me } = useSession();
-  const { canManageUsers, canManageRooms } = navigationFor(me?.role);
+  const { canManageUsers, canManageRooms, canManageCommunities } = navigationFor(me?.role);
 
   return (
     <ScrollView
@@ -26,6 +27,9 @@ export function ManagementMenu({ onOpenUsers, onOpenRooms }: Props) {
         ) : null}
         {canManageRooms ? (
           <ListRow title={navigationText.management.rooms} icon="door.left.hand.open" onPress={onOpenRooms} />
+        ) : null}
+        {canManageCommunities ? (
+          <ListRow title={navigationText.management.communities} icon="person.3" onPress={onOpenCommunities} />
         ) : null}
       </ListSection>
     </ScrollView>

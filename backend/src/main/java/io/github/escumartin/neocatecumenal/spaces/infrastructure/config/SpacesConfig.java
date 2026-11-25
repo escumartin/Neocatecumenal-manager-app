@@ -124,8 +124,8 @@ public class SpacesConfig {
     }
 
     @Bean
-    SpacesApi spacesApi(BookRoomForEvent bookRoomForEvent) {
-        return new SpacesApiAdapter(bookRoomForEvent);
+    SpacesApi spacesApi(BookRoomForEvent bookRoomForEvent, BookingRequestRepository requests) {
+        return new SpacesApiAdapter(bookRoomForEvent, requests);
     }
 
     @Bean

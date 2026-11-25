@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.escumartin.neocatecumenal.identity.IdentityRuleViolation;
-import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
 import io.github.escumartin.neocatecumenal.identity.TestUsers;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.CommunityRepository;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.UserRepository;
@@ -33,7 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -43,7 +41,6 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @SpringBootTest
 @Testcontainers
-@Import(TestCommunityProvisionerConfig.class)
 class CommunityUserLockingIT {
 
     private static final String LOCK_NOT_AVAILABLE = "55P03";

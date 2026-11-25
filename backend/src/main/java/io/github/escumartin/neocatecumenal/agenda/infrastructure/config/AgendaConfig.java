@@ -1,10 +1,12 @@
 package io.github.escumartin.neocatecumenal.agenda.infrastructure.config;
 
+import io.github.escumartin.neocatecumenal.agenda.AgendaApi;
 import io.github.escumartin.neocatecumenal.agenda.application.port.in.AnonymizeCreator;
 import io.github.escumartin.neocatecumenal.agenda.application.port.in.CreateEvent;
 import io.github.escumartin.neocatecumenal.agenda.application.port.in.GetEvent;
 import io.github.escumartin.neocatecumenal.agenda.application.port.in.PurgeExpiredEvents;
 import io.github.escumartin.neocatecumenal.agenda.application.port.out.EventRepository;
+import io.github.escumartin.neocatecumenal.agenda.application.service.AgendaApiAdapter;
 import io.github.escumartin.neocatecumenal.agenda.application.service.AnonymizeCreatorService;
 import io.github.escumartin.neocatecumenal.agenda.application.service.CreateEventService;
 import io.github.escumartin.neocatecumenal.agenda.application.service.GetEventService;
@@ -17,6 +19,11 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class AgendaConfig {
+
+    @Bean
+    AgendaApi agendaApi(EventRepository events) {
+        return new AgendaApiAdapter(events);
+    }
 
     @Bean
     AgendaServiceClock agendaServiceClock(Clock clock) {
