@@ -5,13 +5,15 @@ import { useSession } from '@/hooks/session/use-session';
 import { accountText } from '@/i18n/es/account';
 import { communitiesText } from '@/i18n/es/communities';
 import { identity } from '@/i18n/es/identity';
+import { membersText } from '@/i18n/es/members';
 import { usersText } from '@/i18n/es/users';
 
 type Props = {
   onChangePassword: () => void;
+  onOpenContact: () => void;
 };
 
-export function Account({ onChangePassword }: Props) {
+export function Account({ onChangePassword, onOpenContact }: Props) {
   const { me, logOut } = useSession();
 
   return (
@@ -30,6 +32,7 @@ export function Account({ onChangePassword }: Props) {
         </ListSection>
       ) : null}
       <ListSection>
+        <ListRow title={membersText.own.row} icon="person.crop.rectangle" onPress={onOpenContact} />
         <ListRow title={accountText.changePassword} icon="key" onPress={onChangePassword} />
         <ListRow title={identity.logout} icon="rectangle.portrait.and.arrow.right" accessory="none" onPress={logOut} />
       </ListSection>

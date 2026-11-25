@@ -56,7 +56,7 @@ class ResponsibleServicesTest {
         UserId userId = new UserId(UUID.randomUUID());
         Member member = members.add(Member.restore(new MemberId(UUID.randomUUID()), community.id(),
                 PersonName.of("Luis", "Garcia"), java.util.Map.of(), java.util.List.of(), Optional.of(userId)));
-        users.users.add(new LinkedUser(userId, role, community.id()));
+        users.users.add(new LinkedUser(userId, role, community.id(), "Test Person"));
         return member;
     }
 

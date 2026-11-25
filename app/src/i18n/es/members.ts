@@ -1,5 +1,16 @@
 import type { ContactFieldName } from '@/lib/members/contact-validation';
 
+const originText = {
+  title: 'Quién anotó tu consentimiento',
+  deletedUser: 'usuario eliminado',
+  channel: { VERBAL: 'De palabra', WRITTEN: 'Por escrito' } as Record<string, string>,
+  role: { MODERATOR: 'moderador', ADMINISTRATOR: 'administrador' } as Record<string, string>,
+  line: (channel: string, role: string, name: string | undefined) =>
+    `${originText.channel[channel] ?? channel}, anotado por ${name ?? originText.deletedUser} (${
+      originText.role[role] ?? role
+    })`,
+};
+
 export const membersText = {
   retry: 'Reintentar',
   list: {
@@ -67,6 +78,18 @@ export const membersText = {
       landline: 'Compartir el fijo',
       email: 'Compartir el correo',
     },
+  },
+  own: {
+    row: 'Mis datos de contacto',
+    loading: 'Cargando tus datos…',
+    loadError: 'No hemos podido cargar tus datos de contacto.',
+    notLinked:
+      'Tu usuario todavía no está vinculado a un hermano de tu comunidad. Pide a tu moderador que te vincule y podrás elegir aquí qué datos compartes.',
+    hideNote: 'Si dejas de compartir un dato, se borra y tus hermanos dejan de verlo.',
+    saved: 'Datos guardados.',
+    nameLabel: 'Nombre',
+    communityLabel: 'Comunidad',
+    origin: originText,
   },
   consent: {
     title: 'Consentimiento del hermano',

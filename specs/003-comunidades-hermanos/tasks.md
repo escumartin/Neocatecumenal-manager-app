@@ -261,24 +261,24 @@
 
 ### Tests de dominio y aplicación
 
-- [ ] T079 [P] [US5] Tests de `ChangeOwnContactService` y `GetOwnMemberService` con fakes en `BT/community/application/OwnMemberServicesTest.java`: busca el hermano con `MemberRepository.findByLinkedUser`, sin vínculo `MEMBER_NOT_LINKED`, el contexto es el del propio usuario (canal `APP`, rol `MEMBER`, `noticeGiven` no exigido), cambiar `shared` crea fila `APP` que prevalece sobre una anotada `VERBAL` o `WRITTEN`, `shared=false` borra el valor, inválido deja los valores anteriores, `MemberContactInput` no admite nombre ni comunidad, `recordedBy` con `{role, name?, deleted}` resuelto con `UserDirectory.user` (usuario borrado `deleted = true` sin nombre, `MEMBER` sin nombre) (FR-014, FR-019, FR-020, FR-027, R17; data-model.md `ConsentRecord.recordedBy`, `ConsentRecord.channel`)
+- [x] T079 [P] [US5] Tests de `ChangeOwnContactService` y `GetOwnMemberService` con fakes en `BT/community/application/OwnMemberServicesTest.java`: busca el hermano con `MemberRepository.findByLinkedUser`, sin vínculo `MEMBER_NOT_LINKED`, el contexto es el del propio usuario (canal `APP`, rol `MEMBER`, `noticeGiven` no exigido), cambiar `shared` crea fila `APP` que prevalece sobre una anotada `VERBAL` o `WRITTEN`, `shared=false` borra el valor, inválido deja los valores anteriores, `MemberContactInput` no admite nombre ni comunidad, `recordedBy` con `{role, name?, deleted}` resuelto con `UserDirectory.user` (usuario borrado `deleted = true` sin nombre, `MEMBER` sin nombre) (FR-014, FR-019, FR-020, FR-027, R17; data-model.md `ConsentRecord.recordedBy`, `ConsentRecord.channel`)
 
 ### Implementación de aplicación
 
-- [ ] T080 [US5] Puertos de entrada `GetOwnMember` y `ChangeOwnContact` y sus servicios, con la resolución del autor del consentimiento, en `B/community/application/` (data-model.md `ConsentRecord.recordedBy`, `ConsentRecord.recorderRole`)
+- [x] T080 [US5] Puertos de entrada `GetOwnMember` y `ChangeOwnContact` y sus servicios, con la resolución del autor del consentimiento, en `B/community/application/` (data-model.md `ConsentRecord.recordedBy`, `ConsentRecord.recorderRole`)
 
 ### Tests de adaptadores
 
-- [ ] T081 [P] [US5] Tests MockMvc de `MyMemberController` en `BT/community/infrastructure/MyMemberControllerTest.java`: `GET /api/me/member` `200` con `currentConsents` y su registro, `409 MEMBER_NOT_LINKED` sin vínculo; `PUT /api/me/member/contact` `200` con valores válidos, inválido `422` con valores anteriores intactos, `shared=false` borra; `PUT /api/members/{otro}/contact` como registrado `403`; el cuerpo no acepta nombre ni comunidad; tras anotar el moderador un consentimiento `VERBAL`, `currentConsents` muestra el canal y la decisión propia crea fila `APP` (FR-014, FR-019, FR-020, FR-027; data-model.md `Member.contact`, `ConsentRecord.channel`)
+- [x] T081 [P] [US5] Tests MockMvc de `MyMemberController` en `BT/community/infrastructure/MyMemberControllerTest.java`: `GET /api/me/member` `200` con `currentConsents` y su registro, `409 MEMBER_NOT_LINKED` sin vínculo; `PUT /api/me/member/contact` `200` con valores válidos, inválido `422` con valores anteriores intactos, `shared=false` borra; `PUT /api/members/{otro}/contact` como registrado `403`; el cuerpo no acepta nombre ni comunidad; tras anotar el moderador un consentimiento `VERBAL`, `currentConsents` muestra el canal y la decisión propia crea fila `APP` (FR-014, FR-019, FR-020, FR-027; data-model.md `Member.contact`, `ConsentRecord.channel`)
 
 ### Implementación de adaptadores
 
-- [ ] T082 [US5] `MyMemberController` implementando `getMyMember` y `changeMyContact` de `MyMemberApi` con mappers en `B/community/infrastructure/in/rest/`, con `TransactionRetry` y `ActorResolver` (data-model.md `Member.contact`, `ConsentRecord.recordedBy`)
+- [x] T082 [US5] `MyMemberController` implementando `getMyMember` y `changeMyContact` de `MyMemberApi` con mappers en `B/community/infrastructure/in/rest/`, con `TransactionRetry` y `ActorResolver` (data-model.md `Member.contact`, `ConsentRecord.recordedBy`)
 
 ### Cliente
 
-- [ ] T083 [P] [US5] Tests de componente en `A/screens/account/__tests__/ContactScreen.test.tsx` y `A/screens/account/__tests__/AccountScreen.test.tsx`: fila «Mis datos de contacto» en Cuenta; formulario con `FormField` y un interruptor «Compartir» por campo, validación con formato previo, ejemplo y sin borrar lo escrito, nombre y comunidad no editables, origen del consentimiento anotado por el moderador visible con «usuario eliminado» cuando proceda, `StateView` con explicación de cómo pedir el vínculo si no hay hermano; el aviso de datos usa el texto de recursos de T111; textos ≥ 18 px y objetivos ≥ 48 px (FR-014, FR-022, FR-024, SC-004)
-- [ ] T084 [US5] Hook `use-own-member`, `A/screens/account/contact.tsx`, ruta `A/app/(app)/(tabs)/cuenta/contacto.tsx`, fila Mis datos de contacto en `A/screens/account/index.tsx` y textos en `A/i18n/es/members.ts`, reutilizando `lib/members/contact-validation.ts`, solo con tokens de `design-system`
+- [x] T083 [P] [US5] Tests de componente en `A/screens/account/__tests__/ContactScreen.test.tsx` y `A/screens/account/__tests__/AccountScreen.test.tsx`: fila «Mis datos de contacto» en Cuenta; formulario con `FormField` y un interruptor «Compartir» por campo, validación con formato previo, ejemplo y sin borrar lo escrito, nombre y comunidad no editables, origen del consentimiento anotado por el moderador visible con «usuario eliminado» cuando proceda, `StateView` con explicación de cómo pedir el vínculo si no hay hermano; el aviso de datos usa el texto de recursos de T111; textos ≥ 18 px y objetivos ≥ 48 px (FR-014, FR-022, FR-024, SC-004)
+- [x] T084 [US5] Hook `use-own-member`, `A/screens/account/contact.tsx`, ruta `A/app/(app)/(tabs)/cuenta/contacto.tsx`, fila Mis datos de contacto en `A/screens/account/index.tsx` y textos en `A/i18n/es/members.ts`, reutilizando `lib/members/contact-validation.ts`, solo con tokens de `design-system`
 
 **Checkpoint**: US5 funcional; SC-004 se mide en la prueba manual (quickstart § 3, paso 6).
 

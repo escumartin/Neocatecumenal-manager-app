@@ -1,5 +1,5 @@
 import { createApiClient } from '../client';
-import { createMembersApi } from '../members-api';
+import { createMembersApi, createMyMemberApi } from '../members-api';
 
 const ID = '6f1c1f1e-0000-4000-8000-000000000041';
 const COMMUNITY = '6f1c1f1e-0000-4000-8000-000000000031';
@@ -104,5 +104,56 @@ describe('members api', () => {
     expect(sentRequest(fetch).method).toBe('PUT');
     expect(sentRequest(fetch).url).toBe(`http://localhost/api/members/${ID}/contact`);
     expect(await sentRequest(fetch).json()).toEqual(contact);
+  });
+});
+
+describe('my member api', () => {
+  const mine = { member, currentConsents: [] };
+
+  function myApiWith(response: Response) {
+    const fetch = jest.fn().mockResolvedValue(response);
+    const client = createApiClient({
+      baseUrl: 'http://localhost',
+      readToken: async () => null,
+      onUnauthorized: jest.fn(),
+      onPendingStep: jest.fn(),
+      fetch,
+    });
+    return { api: createMyMemberApi(client), fetch };
+  }
+
+  it('gets the own member', async () => {
+    const { api, fetch } = myApiWith(jsonResponse(200, mine));
+
+    expect(await api.get()).toEqual({ ok: true, myMember: mine });
+    expect(sentRequest(fetch).url).toBe('http://localhost/api/me/member');
+    expect(sentRequest(fetch).method).toBe('GET');
+  });
+
+  it('reports a user without a linked member', async () => {
+    const { api } = myApiWith(jsonResponse(409, { code: 'MEMBER_NOT_LINKED' }));
+
+    expect(await api.get()).toEqual({ ok: false, status: 409, code: 'MEMBER_NOT_LINKED' });
+  });
+
+  it('replaces the own contact', async () => {
+    const { api, fetch } = myApiWith(jsonResponse(200, mine));
+
+    expect(await api.changeContact(contact)).toEqual({ ok: true, myMember: mine });
+    expect(sentRequest(fetch).url).toBe('http://localhost/api/me/member/contact');
+    expect(sentRequest(fetch).method).toBe('PUT');
+    expect(await sentRequest(fetch).json()).toEqual(contact);
+  });
+
+  it('reports the field errors of a refused contact', async () => {
+    const errors = [{ field: 'mobile', code: 'PHONE_INVALID' }];
+    const { api } = myApiWith(jsonResponse(422, { code: 'VALIDATION_FAILED', errors }));
+
+    expect(await api.changeContact(contact)).toEqual({
+      ok: false,
+      status: 422,
+      code: 'VALIDATION_FAILED',
+      fieldErrors: errors,
+    });
   });
 });

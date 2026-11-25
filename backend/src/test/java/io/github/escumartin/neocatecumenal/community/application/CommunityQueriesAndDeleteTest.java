@@ -109,7 +109,7 @@ class CommunityQueriesAndDeleteTest {
     @Test
     void deleteIsRejectedWhenThereAreUsers() {
         Community community = existing(12);
-        users.users.add(new LinkedUser(new UserId(UUID.randomUUID()), ActorRole.REGISTERED, community.id()));
+        users.users.add(new LinkedUser(new UserId(UUID.randomUUID()), ActorRole.REGISTERED, community.id(), "Test Person"));
 
         assertRule(() -> delete.delete(administrator, community.id()), "COMMUNITY_NOT_EMPTY");
         assertThat(communities.stored).containsKey(community.id());

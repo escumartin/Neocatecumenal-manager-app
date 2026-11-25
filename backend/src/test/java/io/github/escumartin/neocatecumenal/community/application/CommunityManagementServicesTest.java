@@ -155,7 +155,7 @@ class CommunityManagementServicesTest {
     @Test
     void deactivateAsksForTheUsersAndDeactivatesAnEmptyOfPrivilegedCommunity() {
         Community community = existing(12);
-        users.users.add(new LinkedUser(new UserId(UUID.randomUUID()), ActorRole.REGISTERED, community.id()));
+        users.users.add(new LinkedUser(new UserId(UUID.randomUUID()), ActorRole.REGISTERED, community.id(), "Test Person"));
 
         deactivate.deactivate(administrator, community.id(), false);
 
@@ -167,7 +167,7 @@ class CommunityManagementServicesTest {
     @Test
     void deactivateWithPrivilegedUsersNeedsConfirmation() {
         Community community = existing(12);
-        users.users.add(new LinkedUser(new UserId(UUID.randomUUID()), ActorRole.MODERATOR, community.id()));
+        users.users.add(new LinkedUser(new UserId(UUID.randomUUID()), ActorRole.MODERATOR, community.id(), "Test Person"));
 
         assertThatThrownBy(() -> deactivate.deactivate(administrator, community.id(), false))
                 .isInstanceOfSatisfying(CommunityDomainException.class,
@@ -179,7 +179,7 @@ class CommunityManagementServicesTest {
     @Test
     void deactivateWithPrivilegedUsersAndConfirmationSucceeds() {
         Community community = existing(12);
-        users.users.add(new LinkedUser(new UserId(UUID.randomUUID()), ActorRole.ADMINISTRATOR, community.id()));
+        users.users.add(new LinkedUser(new UserId(UUID.randomUUID()), ActorRole.ADMINISTRATOR, community.id(), "Test Person"));
 
         deactivate.deactivate(administrator, community.id(), true);
 

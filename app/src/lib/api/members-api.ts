@@ -5,12 +5,15 @@ export type Member = components['schemas']['Member'];
 export type MemberInput = components['schemas']['MemberInput'];
 export type MemberNameInput = components['schemas']['MemberNameInput'];
 export type MemberContactInput = components['schemas']['MemberContactInput'];
+export type ContactInput = components['schemas']['ContactInput'];
+export type MyMember = components['schemas']['MyMember'];
 export type FieldError = components['schemas']['ValidationProblem']['errors'][number];
 
 export type MembersFailure = { ok: false; status: number; code?: string; fieldErrors?: FieldError[] };
 
 export type ListMembersResult = { ok: true; members: Member[] } | MembersFailure;
 export type MemberResult = { ok: true; member: Member } | MembersFailure;
+export type MyMemberResult = { ok: true; myMember: MyMember } | MembersFailure;
 
 export type MembersApi = {
   list: (communityId?: string) => Promise<ListMembersResult>;
@@ -21,6 +24,11 @@ export type MemberManagementApi = {
   create: (input: MemberInput) => Promise<MemberResult>;
   rename: (memberId: string, input: MemberNameInput) => Promise<MemberResult>;
   changeContact: (memberId: string, input: MemberContactInput) => Promise<MemberResult>;
+};
+
+export type MyMemberApi = {
+  get: () => Promise<MyMemberResult>;
+  changeContact: (input: ContactInput) => Promise<MyMemberResult>;
 };
 
 function failure(error: unknown, response: Response): MembersFailure {
@@ -64,6 +72,19 @@ export function createMembersApi(client: ApiClient): MembersApi & MemberManageme
         body: input,
       });
       return data ? { ok: true, member: data } : failure(error, response);
+    },
+  };
+}
+
+export function createMyMemberApi(client: ApiClient): MyMemberApi {
+  return {
+    async get() {
+      const { data, error, response } = await client.GET('/api/me/member');
+      return data ? { ok: true, myMember: data } : failure(error, response);
+    },
+    async changeContact(input) {
+      const { data, error, response } = await client.PUT('/api/me/member/contact', { body: input });
+      return data ? { ok: true, myMember: data } : failure(error, response);
     },
   };
 }

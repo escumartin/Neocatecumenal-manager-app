@@ -158,7 +158,7 @@ class CommunityIdentityProjectionIT {
         List<LinkedUser> found = userDirectory.usersOf(new CommunityId(id));
 
         assertThat(found).containsExactly(new LinkedUser(new UserId(moderator), ActorRole.MODERATOR,
-                new CommunityId(id)));
+                new CommunityId(id), "Test Person"));
     }
 
     @Test

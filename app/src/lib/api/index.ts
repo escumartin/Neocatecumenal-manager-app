@@ -6,7 +6,7 @@ import { sessionEvents } from './session-events';
 import { createBookingRequestsApi } from './booking-requests-api';
 import { createCommunitiesApi } from './communities-api';
 import { createEventsApi } from './events-api';
-import { createMembersApi } from './members-api';
+import { createMembersApi, createMyMemberApi } from './members-api';
 import { createRoomsApi } from './rooms-api';
 import { createSessionApi } from './session-api';
 import { createUsersApi } from './users-api';
@@ -38,3 +38,5 @@ export const bookingRequestsApi = createBookingRequestsApi(apiClient);
 export const eventsApi = createEventsApi(apiClient);
 
 export const membersApi = createMembersApi(apiClient);
+
+export const myMemberApi = createMyMemberApi(apiClient);

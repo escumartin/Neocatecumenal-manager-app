@@ -69,7 +69,10 @@ final class CommunityApiFixture {
     }
 
     String bearer(UserRole role, UUID communityId) {
-        UUID userId = user(role, communityId);
+        return bearerOf(user(role, communityId));
+    }
+
+    String bearerOf(UUID userId) {
         IssuedSessionToken issued = tokens.issue();
         sessions.save(Session.open(new UserId(userId), issued.hash(), Instant.now()));
         return "Bearer " + issued.token();
