@@ -12,6 +12,7 @@ export function navigationFor(role: Me['role'] | undefined) {
     canCreateEvent: isModerator,
     canRequestBooking: isModerator,
     canManageUsers: isModerator,
+    canManageMembers: isModerator,
     canReviewPending: isAdministrator,
     canManageRooms: isAdministrator,
     canManageCommunities: isAdministrator,

@@ -11,7 +11,6 @@ import io.github.escumartin.neocatecumenal.community.domain.MemberId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,8 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class CommunityRepositoryAdapter implements CommunityRepository {
 
-    private static final String UNIQUE_VIOLATION = "23505";
-    private static final String FOREIGN_KEY_VIOLATION = "23503";
     private static final String NUMBER_CONSTRAINT = "uk_community_number";
 
     private final CommunityJpaRepository repository;
@@ -41,7 +38,7 @@ public class CommunityRepositoryAdapter implements CommunityRepository {
         try {
             return toDomain(repository.saveAndFlush(entity));
         } catch (DataIntegrityViolationException failure) {
-            if (isViolation(failure, UNIQUE_VIOLATION, NUMBER_CONSTRAINT)) {
+            if (PersistenceViolations.isViolation(failure, PersistenceViolations.UNIQUE_VIOLATION, NUMBER_CONSTRAINT)) {
                 throw new CommunityFieldInvalid("number", "COMMUNITY_NUMBER_TAKEN");
             }
             throw failure;
@@ -80,7 +77,7 @@ public class CommunityRepositoryAdapter implements CommunityRepository {
             repository.deleteById(id.value());
             repository.flush();
         } catch (DataIntegrityViolationException failure) {
-            if (isViolation(failure, FOREIGN_KEY_VIOLATION, null)) {
+            if (PersistenceViolations.isViolation(failure, PersistenceViolations.FOREIGN_KEY_VIOLATION, null)) {
                 throw new CommunityDomainException("COMMUNITY_NOT_EMPTY");
             }
             throw failure;
@@ -91,17 +88,6 @@ public class CommunityRepositoryAdapter implements CommunityRepository {
         CommunityJpaEntity entity = new CommunityJpaEntity();
         entity.id = community.id().value();
         return entity;
-    }
-
-    private static boolean isViolation(DataIntegrityViolationException failure, String sqlState,
-            String constraint) {
-        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
-            if (cause instanceof ConstraintViolationException violation) {
-                return sqlState.equals(violation.getSQLState())
-                        && (constraint == null || constraint.equals(violation.getConstraintName()));
-            }
-        }
-        return false;
     }
 
     private static Community toDomain(CommunityJpaEntity entity) {

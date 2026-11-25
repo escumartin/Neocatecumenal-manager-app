@@ -9,11 +9,12 @@ type Props = {
   onOpenUsers: () => void;
   onOpenRooms: () => void;
   onOpenCommunities: () => void;
+  onOpenMembers: () => void;
 };
 
-export function ManagementMenu({ onOpenUsers, onOpenRooms, onOpenCommunities }: Props) {
+export function ManagementMenu({ onOpenUsers, onOpenRooms, onOpenCommunities, onOpenMembers }: Props) {
   const { me } = useSession();
-  const { canManageUsers, canManageRooms, canManageCommunities } = navigationFor(me?.role);
+  const { canManageUsers, canManageMembers, canManageRooms, canManageCommunities } = navigationFor(me?.role);
 
   return (
     <ScrollView
@@ -24,6 +25,9 @@ export function ManagementMenu({ onOpenUsers, onOpenRooms, onOpenCommunities }: 
       <ListSection>
         {canManageUsers ? (
           <ListRow title={navigationText.management.users} icon="person.2" onPress={onOpenUsers} />
+        ) : null}
+        {canManageMembers ? (
+          <ListRow title={navigationText.management.members} icon="person.crop.rectangle" onPress={onOpenMembers} />
         ) : null}
         {canManageRooms ? (
           <ListRow title={navigationText.management.rooms} icon="door.left.hand.open" onPress={onOpenRooms} />

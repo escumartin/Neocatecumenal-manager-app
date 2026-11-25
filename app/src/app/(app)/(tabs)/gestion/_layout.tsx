@@ -31,6 +31,16 @@ export default function GestionLayout() {
       />
       <Stack.Screen name="comunidades/nueva" options={formSheetOptions(navigationText.newCommunity)} />
       <Stack.Screen name="comunidades/[communityId]" options={formSheetOptions(navigationText.editCommunity)} />
+      <Stack.Screen
+        name="hermanos/index"
+        options={{
+          ...detailStackOptions,
+          title: navigationText.management.members,
+        }}
+      />
+      <Stack.Screen name="hermanos/nuevo" options={formSheetOptions(navigationText.newMember)} />
+      <Stack.Screen name="hermanos/[memberId]" options={formSheetOptions(navigationText.editMember)} />
+      <Stack.Screen name="hermanos/contacto" options={formSheetOptions(navigationText.memberContact)} />
       <Stack.Screen name="usuarios/nuevo" options={formSheetOptions(navigationText.newUser)} />
       <Stack.Screen name="usuarios/[userId]" options={formSheetOptions(navigationText.editUser)} />
       <Stack.Screen

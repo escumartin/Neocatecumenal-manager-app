@@ -16,9 +16,13 @@ export const navigationText = {
   createdUser: 'Usuario creado',
   newCommunity: 'Nueva comunidad',
   editCommunity: 'Comunidad',
+  newMember: 'Nuevo hermano',
+  editMember: 'Hermano',
+  memberContact: 'Datos de contacto',
   management: {
     users: 'Usuarios',
     rooms: 'Salones',
     communities: 'Comunidades',
+    members: 'Hermanos',
   },
 };

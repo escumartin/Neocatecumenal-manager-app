@@ -51,3 +51,14 @@ describe('navigation permissions', () => {
     });
   });
 });
+
+describe('member management permission', () => {
+  it.each(['MODERATOR', 'ADMINISTRATOR'] as const)('lets %s manage members', (role) => {
+    expect(navigationFor(role).canManageMembers).toBe(true);
+  });
+
+  it('does not let a registered or unknown user manage members', () => {
+    expect(navigationFor('REGISTERED').canManageMembers).toBe(false);
+    expect(navigationFor(undefined).canManageMembers).toBe(false);
+  });
+});

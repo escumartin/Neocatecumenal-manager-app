@@ -20,6 +20,23 @@ public final class MemberAccessPolicy {
         }
     }
 
+    public static void requireCanManageMembers(Actor actor) {
+        if (actor.role() == ActorRole.REGISTERED) {
+            throw new CommunityForbidden();
+        }
+    }
+
+    public static void requireCanManageMembers(Actor actor, CommunityId community) {
+        if (!canManageMembers(actor, community)) {
+            throw new CommunityForbidden();
+        }
+    }
+
+    public static boolean canManageMembers(Actor actor, CommunityId community) {
+        return actor.role() == ActorRole.ADMINISTRATOR
+                || (actor.role() == ActorRole.MODERATOR && actor.communityId().equals(community));
+    }
+
     private static void requireAdministrator(Actor actor) {
         if (actor.role() != ActorRole.ADMINISTRATOR) {
             throw new CommunityForbidden();

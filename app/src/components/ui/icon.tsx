@@ -7,6 +7,7 @@ const glyphs = {
   'chevron.right': '›',
   'person.2': '☺',
   'person.3': '☻',
+  'person.crop.rectangle': '▣',
   'door.left.hand.open': '▭',
   'key': '⚷',
   'rectangle.portrait.and.arrow.right': '⇥',
