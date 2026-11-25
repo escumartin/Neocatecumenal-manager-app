@@ -1,0 +1,102 @@
+package io.github.escumartin.neocatecumenal.agenda.infrastructure.in.rest;
+
+import io.github.escumartin.neocatecumenal.agenda.domain.AgendaFieldInvalid;
+import io.github.escumartin.neocatecumenal.agenda.domain.AgendaForbidden;
+import io.github.escumartin.neocatecumenal.agenda.domain.EventNotFound;
+import io.github.escumartin.neocatecumenal.agenda.domain.RoomInactive;
+import io.github.escumartin.neocatecumenal.agenda.domain.RoomNotFound;
+import io.github.escumartin.neocatecumenal.agenda.domain.RoomOccupied;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+@Order(Ordered.HIGHEST_PRECEDENCE)
+@RestControllerAdvice(basePackageClasses = AgendaProblemHandler.class)
+public class AgendaProblemHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(AgendaProblemHandler.class);
+    private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
+
+    @ExceptionHandler(RoomInactive.class)
+    public ResponseEntity<Map<String, Object>> roomInactive(Exception exception) {
+        return respond(exception, HttpStatus.CONFLICT, "El salón está dado de baja", "ROOM_INACTIVE");
+    }
+
+    @ExceptionHandler({RoomNotFound.class, EventNotFound.class})
+    public ResponseEntity<Map<String, Object>> notFound(Exception exception) {
+        return respond(exception, HttpStatus.NOT_FOUND, "Recurso no encontrado", "NOT_FOUND");
+    }
+
+    @ExceptionHandler(AgendaForbidden.class)
+    public ResponseEntity<Map<String, Object>> forbidden(Exception exception) {
+        return respond(exception, HttpStatus.FORBIDDEN, "Acceso denegado", "FORBIDDEN");
+    }
+
+    @ExceptionHandler(UnauthenticatedException.class)
+    public ResponseEntity<Map<String, Object>> unauthenticated(Exception exception) {
+        return respond(exception, HttpStatus.UNAUTHORIZED, "Autenticación requerida", "UNAUTHENTICATED");
+    }
+
+    @ExceptionHandler(AgendaFieldInvalid.class)
+    public ResponseEntity<Map<String, Object>> invalidField(AgendaFieldInvalid exception) {
+        Map<String, Object> body = body(HttpStatus.UNPROCESSABLE_ENTITY, "Datos no válidos", "VALIDATION_FAILED");
+        Map<String, String> error = new LinkedHashMap<>();
+        error.put("field", exception.field());
+        error.put("code", exception.code());
+        body.put("errors", List.of(error));
+        return send(exception, HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_FAILED", body);
+    }
+
+    @ExceptionHandler(RoomOccupied.class)
+    public ResponseEntity<Map<String, Object>> roomOccupied(RoomOccupied exception) {
+        Map<String, Object> body = body(HttpStatus.CONFLICT, "El salón está ocupado", "ROOM_OCCUPIED");
+        body.put("conflicts", exception.conflicts().stream().map(conflict -> {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("date", conflict.date().toString());
+            item.put("startTime", time(conflict.slot().start()));
+            item.put("endTime", time(conflict.slot().end()));
+            return item;
+        }).toList());
+        return send(exception, HttpStatus.CONFLICT, "ROOM_OCCUPIED", body);
+    }
+
+    private static String time(LocalTime time) {
+        return TIME.format(time);
+    }
+
+    private ResponseEntity<Map<String, Object>> respond(Exception exception, HttpStatus status, String title,
+            String code) {
+        return send(exception, status, code, body(status, title, code));
+    }
+
+    private ResponseEntity<Map<String, Object>> send(Exception exception, HttpStatus status, String code,
+            Map<String, Object> body) {
+        var entry = log.atWarn().addKeyValue("code", code).addKeyValue("status", status.value())
+                .addKeyValue("exception", exception.getClass().getSimpleName());
+        if (exception instanceof AgendaFieldInvalid invalid) {
+            entry = entry.addKeyValue("field", invalid.field());
+        }
+        entry.log("Respuesta de error enviada");
+        return ResponseEntity.status(status).contentType(MediaType.APPLICATION_PROBLEM_JSON).body(body);
+    }
+
+    private static Map<String, Object> body(HttpStatus status, String title, String code) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("type", "about:blank");
+        body.put("title", title);
+        body.put("status", status.value());
+        body.put("code", code);
+        return body;
+    }
+}

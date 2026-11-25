@@ -10,6 +10,8 @@ function toState(result: ListCommunitiesResult): State {
   return result.ok ? { status: 'ready', communities: result.communities } : { status: 'error', communities: [] };
 }
 
+const FAILED: State = { status: 'error', communities: [] };
+
 export function useCommunities(api: CommunitiesApi = communitiesApi, enabled = true) {
   const [state, setState] = useState<State>({ status: enabled ? 'loading' : 'idle', communities: [] });
 
@@ -18,11 +20,14 @@ export function useCommunities(api: CommunitiesApi = communitiesApi, enabled = t
       return;
     }
     let active = true;
-    api.list().then((result) => {
-      if (active) {
-        setState(toState(result));
-      }
-    });
+    api
+      .list()
+      .then(toState, () => FAILED)
+      .then((next) => {
+        if (active) {
+          setState(next);
+        }
+      });
     return () => {
       active = false;
     };
@@ -30,7 +35,11 @@ export function useCommunities(api: CommunitiesApi = communitiesApi, enabled = t
 
   const reload = useCallback(async () => {
     setState((current) => ({ ...current, status: 'loading' }));
-    setState(toState(await api.list()));
+    try {
+      setState(toState(await api.list()));
+    } catch {
+      setState(FAILED);
+    }
   }, [api]);
 
   return { status: state.status, communities: state.communities, reload };

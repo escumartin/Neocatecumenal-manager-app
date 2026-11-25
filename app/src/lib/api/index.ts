@@ -3,7 +3,10 @@ import { sessionStore } from '@/lib/auth/session-store';
 import { resolveApiUrl } from './api-url';
 import { createApiClient } from './client';
 import { sessionEvents } from './session-events';
+import { createBookingRequestsApi } from './booking-requests-api';
 import { createCommunitiesApi } from './communities-api';
+import { createEventsApi } from './events-api';
+import { createRoomsApi } from './rooms-api';
 import { createSessionApi } from './session-api';
 import { createUsersApi } from './users-api';
 
@@ -26,3 +29,9 @@ export const sessionApi = createSessionApi(
 export const communitiesApi = createCommunitiesApi(apiClient);
 
 export const usersApi = createUsersApi(apiClient);
+
+export const roomsApi = createRoomsApi(apiClient);
+
+export const bookingRequestsApi = createBookingRequestsApi(apiClient);
+
+export const eventsApi = createEventsApi(apiClient);

@@ -1,15 +1,33 @@
 openapi: 3.1.0
 info:
   title: Neocatecumenal Manager API - Rooms, bookings and events (draft)
-  version: 0.1.0-draft
+  version: 0.2.0-draft
 servers:
-  - url: http://localhost:8080
+  - url: /
 security:
   - bearerAuth: []
+  - cookieAuth: []
+x-merge:
+  problemCodes:
+    - ROOM_OCCUPIED
+    - BOOKING_REQUEST_ALREADY_RESOLVED
+    - BOOKING_REQUEST_NOT_ACTIVE
+    - BOOKING_ALREADY_STARTED
+    - ROOM_NAME_TAKEN
+    - ROOM_INACTIVE
+    - ROOM_HAS_ACTIVE_BOOKINGS
+  validationCodes:
+    - END_NOT_AFTER_START
+    - START_NOT_IN_FUTURE
+    - RECURRENCE_UNTIL_BEFORE_DATE
+    - RECURRENCE_TOO_LONG
 tags:
   - name: rooms
+    description: Parish rooms and their occupancy
   - name: booking-requests
+    description: Room booking requests and series
   - name: events
+    description: Minimal agenda, one-day events in a room
 paths:
   /api/rooms:
     get:
@@ -26,7 +44,7 @@ paths:
                 items:
                   $ref: "#/components/schemas/Room"
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
     post:
       tags: [rooms]
       operationId: createRoom
@@ -49,13 +67,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/Room"
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: "#/components/responses/Forbidden"
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
         "409":
-          $ref: "#/components/responses/StateConflict"
+          $ref: "#/components/responses/BookingStateConflict"
         "422":
-          $ref: "#/components/responses/ValidationFailed"
+          $ref: "../../../api/openapi.yaml#/components/responses/ValidationFailed"
   /api/rooms/{roomId}:
     put:
       tags: [rooms]
@@ -77,33 +95,33 @@ paths:
               schema:
                 $ref: "#/components/schemas/Room"
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: "#/components/responses/Forbidden"
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/BookingNotFound"
         "409":
-          $ref: "#/components/responses/StateConflict"
+          $ref: "#/components/responses/BookingStateConflict"
         "422":
-          $ref: "#/components/responses/ValidationFailed"
+          $ref: "../../../api/openapi.yaml#/components/responses/ValidationFailed"
   /api/rooms/{roomId}/deactivation:
     post:
       tags: [rooms]
       operationId: deactivateRoom
-      summary: Permanently deactivate a room with no active bookings from today on (administrators only); history is kept
+      summary: Permanently deactivate a room with no pending or approved bookings with a future slot (administrators only); history is kept
       parameters:
         - $ref: "#/components/parameters/RoomId"
       responses:
         "204":
           description: Room deactivated
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: "#/components/responses/Forbidden"
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/BookingNotFound"
         "409":
-          description: The room still has active bookings from today on, or is already deactivated
+          description: The room still has pending or approved bookings with a future slot, or is already deactivated
           content:
             application/problem+json:
               schema:
@@ -121,6 +139,12 @@ paths:
           schema:
             type: string
             format: date
+        - name: communityId
+          in: query
+          description: Community the caller acts for, used for ownCommunity; required for administrators (422 COMMUNITY_REQUIRED), moderators may omit it or send their own (another community gets 403)
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: Occupied slots ordered by start time
@@ -129,11 +153,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/RoomOccupancy"
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: "#/components/responses/Forbidden"
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/BookingNotFound"
+        "422":
+          $ref: "../../../api/openapi.yaml#/components/responses/ValidationFailed"
   /api/booking-requests:
     post:
       tags: [booking-requests]
@@ -157,19 +183,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/BookingRequest"
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: "#/components/responses/Forbidden"
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/BookingNotFound"
         "409":
-          description: The room is occupied on at least one date; nothing is registered
+          description: ROOM_OCCUPIED with the conflicting dates, or ROOM_INACTIVE; nothing is registered
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/RoomOccupiedProblem"
         "422":
-          $ref: "#/components/responses/ValidationFailed"
+          $ref: "../../../api/openapi.yaml#/components/responses/ValidationFailed"
     get:
       tags: [booking-requests]
       operationId: listBookingRequests
@@ -185,25 +211,10 @@ paths:
           explode: true
         - name: communityId
           in: query
-          description: Administrators only; ignored for moderators, who always get their own community
+          description: Administrators may filter by community or omit it to see all; moderators may omit it or send their own (another community gets 403)
           schema:
             type: string
             format: uuid
-        - name: roomId
-          in: query
-          schema:
-            type: string
-            format: uuid
-        - name: from
-          in: query
-          schema:
-            type: string
-            format: date
-        - name: to
-          in: query
-          schema:
-            type: string
-            format: date
         - name: page
           in: query
           schema:
@@ -225,14 +236,14 @@ paths:
               schema:
                 $ref: "#/components/schemas/BookingRequestPage"
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: "#/components/responses/Forbidden"
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
   /api/booking-requests/{bookingRequestId}:
     get:
       tags: [booking-requests]
       operationId: getBookingRequest
-      summary: Booking request with its occurrences and status history
+      summary: Booking request with its occurrences and status history (moderators only for their community)
       parameters:
         - $ref: "#/components/parameters/BookingRequestId"
       responses:
@@ -243,16 +254,46 @@ paths:
               schema:
                 $ref: "#/components/schemas/BookingRequestDetail"
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: "#/components/responses/Forbidden"
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/BookingNotFound"
+  /api/booking-requests/{bookingRequestId}/reason:
+    put:
+      tags: [booking-requests]
+      operationId: rectifyBookingRequestReason
+      summary: Correct the reason of a pending request (moderator of its community or administrator)
+      parameters:
+        - $ref: "#/components/parameters/BookingRequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingReasonInput"
+      responses:
+        "200":
+          description: Reason corrected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingRequest"
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/BookingNotFound"
+        "409":
+          $ref: "#/components/responses/BookingStateConflict"
+        "422":
+          $ref: "../../../api/openapi.yaml#/components/responses/ValidationFailed"
   /api/booking-requests/{bookingRequestId}/approval:
     post:
       tags: [booking-requests]
       operationId: approveBookingRequest
-      summary: Approve a pending request (administrators only); a series is approved as a whole
+      summary: Approve a pending request whose first occurrence has not started (administrators only); a series is approved as a whole
       parameters:
         - $ref: "#/components/parameters/BookingRequestId"
       responses:
@@ -263,13 +304,15 @@ paths:
               schema:
                 $ref: "#/components/schemas/BookingRequest"
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: "#/components/responses/Forbidden"
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/BookingNotFound"
         "409":
-          $ref: "#/components/responses/StateConflict"
+          $ref: "#/components/responses/BookingStateConflict"
+        "422":
+          $ref: "../../../api/openapi.yaml#/components/responses/ValidationFailed"
   /api/booking-requests/{bookingRequestId}/rejection:
     post:
       tags: [booking-requests]
@@ -291,20 +334,20 @@ paths:
               schema:
                 $ref: "#/components/schemas/BookingRequest"
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: "#/components/responses/Forbidden"
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/BookingNotFound"
         "409":
-          $ref: "#/components/responses/StateConflict"
+          $ref: "#/components/responses/BookingStateConflict"
         "422":
-          $ref: "#/components/responses/ValidationFailed"
+          $ref: "../../../api/openapi.yaml#/components/responses/ValidationFailed"
   /api/booking-requests/{bookingRequestId}/cancellation:
     post:
       tags: [booking-requests]
       operationId: cancelBookingRequest
-      summary: Cancel a request or a whole series; future occurrences are cancelled, past ones are kept
+      summary: Cancel a request or a whole series; occurrences not yet started are cancelled, past and started ones are kept
       parameters:
         - $ref: "#/components/parameters/BookingRequestId"
       responses:
@@ -315,18 +358,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/BookingRequest"
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: "#/components/responses/Forbidden"
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/BookingNotFound"
         "409":
-          $ref: "#/components/responses/StateConflict"
+          $ref: "#/components/responses/BookingStateConflict"
   /api/booking-requests/{bookingRequestId}/bookings/{bookingId}/cancellation:
     post:
       tags: [booking-requests]
       operationId: cancelBooking
-      summary: Cancel a single occurrence of a series
+      summary: Cancel a single occurrence that has not started yet
       parameters:
         - $ref: "#/components/parameters/BookingRequestId"
         - name: bookingId
@@ -343,13 +386,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/BookingRequestDetail"
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: "#/components/responses/Forbidden"
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/BookingNotFound"
         "409":
-          $ref: "#/components/responses/StateConflict"
+          $ref: "#/components/responses/BookingStateConflict"
   /api/events:
     post:
       tags: [events]
@@ -373,24 +416,24 @@ paths:
               schema:
                 $ref: "#/components/schemas/Event"
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: "#/components/responses/Forbidden"
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/BookingNotFound"
         "409":
-          description: The room is occupied; neither the event nor the booking request is saved
+          description: ROOM_OCCUPIED with the conflicting dates, or ROOM_INACTIVE; neither the event nor the booking request is saved
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/RoomOccupiedProblem"
         "422":
-          $ref: "#/components/responses/ValidationFailed"
+          $ref: "../../../api/openapi.yaml#/components/responses/ValidationFailed"
   /api/events/{eventId}:
     get:
       tags: [events]
       operationId: getEvent
-      summary: Event with the status of its booking request
+      summary: Event with the status of its booking request (moderators only for their community)
       parameters:
         - name: eventId
           in: path
@@ -406,16 +449,17 @@ paths:
               schema:
                 $ref: "#/components/schemas/Event"
         "401":
-          $ref: "#/components/responses/Unauthorized"
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
         "403":
-          $ref: "#/components/responses/Forbidden"
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
         "404":
-          $ref: "#/components/responses/NotFound"
+          $ref: "#/components/responses/BookingNotFound"
 components:
   securitySchemes:
     bearerAuth:
-      type: http
-      scheme: bearer
+      $ref: "../../../api/openapi.yaml#/components/securitySchemes/bearerAuth"
+    cookieAuth:
+      $ref: "../../../api/openapi.yaml#/components/securitySchemes/cookieAuth"
   parameters:
     RoomId:
       name: roomId
@@ -432,36 +476,21 @@ components:
         type: string
         format: uuid
   responses:
-    Unauthorized:
-      description: Not authenticated
+    BookingNotFound:
+      description: Room, booking request, occurrence or event does not exist
       content:
         application/problem+json:
           schema:
-            $ref: "#/components/schemas/Problem"
-    Forbidden:
-      description: The caller's role or community does not allow this action
+            $ref: "../../../api/openapi.yaml#/components/schemas/Problem"
+    BookingStateConflict:
+      description: >-
+        The request or room is no longer in a state that allows this action; codes BOOKING_REQUEST_ALREADY_RESOLVED
+        (already resolved or changed concurrently), BOOKING_REQUEST_NOT_ACTIVE, BOOKING_ALREADY_STARTED, ROOM_NAME_TAKEN
+        or ROOM_INACTIVE
       content:
         application/problem+json:
           schema:
-            $ref: "#/components/schemas/Problem"
-    NotFound:
-      description: Room, request or occurrence not found or not visible to the caller
-      content:
-        application/problem+json:
-          schema:
-            $ref: "#/components/schemas/Problem"
-    StateConflict:
-      description: The request is no longer in a state that allows this action, for example already resolved by another administrator
-      content:
-        application/problem+json:
-          schema:
-            $ref: "#/components/schemas/Problem"
-    ValidationFailed:
-      description: Invalid input; nothing is registered
-      content:
-        application/problem+json:
-          schema:
-            $ref: "#/components/schemas/ValidationProblem"
+            $ref: "../../../api/openapi.yaml#/components/schemas/Problem"
   schemas:
     LocalTime:
       type: string
@@ -512,7 +541,7 @@ components:
         communityId:
           type: string
           format: uuid
-          description: Required for administrators; moderators may omit it or must send their own community
+          description: Community the caller acts for; required for administrators (422 COMMUNITY_REQUIRED, or COMMUNITY_NOT_FOUND), moderators may omit it or send their own (another community gets 403)
         roomId:
           type: string
           format: uuid
@@ -587,7 +616,7 @@ components:
         until:
           type: string
           format: date
-          description: Last possible date, inclusive; at most one year after the first date
+          description: Mandatory last possible date, inclusive; not before the first date and at most one year after it
     CreateBookingRequest:
       type: object
       required: [roomId, date, startTime, endTime, reason]
@@ -598,7 +627,7 @@ components:
         communityId:
           type: string
           format: uuid
-          description: Required for administrators; moderators may omit it or must send their own community
+          description: Community the caller acts for; required for administrators (422 COMMUNITY_REQUIRED, or COMMUNITY_NOT_FOUND), moderators may omit it or send their own (another community gets 403)
         date:
           type: string
           format: date
@@ -609,7 +638,8 @@ components:
         reason:
           type: string
           minLength: 1
-          maxLength: 200
+          maxLength: 500
+          description: Shown to administrators; the form warns not to include personal data
         recurrence:
           $ref: "#/components/schemas/WeeklyRecurrence"
     RejectBookingRequest:
@@ -617,6 +647,16 @@ components:
       properties:
         reason:
           type: string
+          minLength: 1
+          maxLength: 500
+          description: Optional; the form warns not to include personal data
+    BookingReasonInput:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 1
           maxLength: 500
     BookingRequestStatus:
       type: string
@@ -679,7 +719,7 @@ components:
           $ref: "#/components/schemas/BookingStatus"
     StatusChange:
       type: object
-      required: [toStatus, changedBy, changedAt]
+      required: [toStatus, changedAt]
       properties:
         bookingId:
           type: string
@@ -693,6 +733,7 @@ components:
         changedBy:
           type: string
           format: uuid
+          description: Absent when the user was deleted; the client shows a deleted-user label
         changedAt:
           type: string
           format: date-time
@@ -724,68 +765,14 @@ components:
           type: integer
         totalItems:
           type: integer
-    Problem:
-      type: object
-      required: [type, title, status, code]
-      properties:
-        type:
-          type: string
-          format: uri-reference
-        title:
-          type: string
-        status:
-          type: integer
-        detail:
-          type: string
-        code:
-          type: string
-          description: Stable error code the client maps to a localised message
-          enum:
-            - UNAUTHENTICATED
-            - FORBIDDEN
-            - NOT_FOUND
-            - VALIDATION_FAILED
-            - ROOM_OCCUPIED
-            - BOOKING_REQUEST_ALREADY_RESOLVED
-            - BOOKING_REQUEST_NOT_ACTIVE
-            - BOOKING_IN_THE_PAST
-            - ROOM_NAME_TAKEN
-            - ROOM_INACTIVE
-            - ROOM_HAS_ACTIVE_BOOKINGS
-    ValidationProblem:
-      allOf:
-        - $ref: "#/components/schemas/Problem"
-        - type: object
-          required: [errors]
-          properties:
-            errors:
-              type: array
-              items:
-                type: object
-                required: [field, code]
-                properties:
-                  field:
-                    type: string
-                  code:
-                    type: string
-                    enum:
-                      - REQUIRED
-                      - END_NOT_AFTER_START
-                      - DATE_IN_THE_PAST
-                      - RECURRENCE_UNTIL_BEFORE_DATE
-                      - RECURRENCE_TOO_LONG
-                      - TOO_LONG
-                      - COMMUNITY_REQUIRED
-                      - ROOM_INACTIVE
-                      - INVALID_EVENT_TYPE
     RoomOccupiedProblem:
       allOf:
-        - $ref: "#/components/schemas/Problem"
+        - $ref: "../../../api/openapi.yaml#/components/schemas/Problem"
         - type: object
-          required: [conflicts]
           properties:
             conflicts:
               type: array
+              description: Present with code ROOM_OCCUPIED; empty when another request took the slot concurrently and the client must reload the occupancy
               items:
                 type: object
                 required: [date, startTime, endTime]
@@ -799,7 +786,7 @@ components:
                     $ref: "#/components/schemas/LocalTime"
     RoomHasActiveBookingsProblem:
       allOf:
-        - $ref: "#/components/schemas/Problem"
+        - $ref: "../../../api/openapi.yaml#/components/schemas/Problem"
         - type: object
           properties:
             activeBookings:

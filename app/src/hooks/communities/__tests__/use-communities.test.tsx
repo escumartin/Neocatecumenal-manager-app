@@ -50,4 +50,13 @@ describe('useCommunities', () => {
 
     await waitFor(() => expect(result.current.status).toBe('ready'));
   });
+
+  it('reports an error when the list request fails', async () => {
+    const api: CommunitiesApi = { list: jest.fn().mockRejectedValue(new Error('network down')) };
+
+    const { result } = await renderHook(() => useCommunities(api));
+
+    await waitFor(() => expect(result.current.status).toBe('error'));
+    expect(result.current.communities).toEqual([]);
+  });
 });
