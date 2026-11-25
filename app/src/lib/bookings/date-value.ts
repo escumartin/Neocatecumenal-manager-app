@@ -1,5 +1,8 @@
 import { pickersText } from '@/i18n/es/pickers';
+import { addYears } from '@/lib/bookings/calendar';
 import { isDate, isTime } from '@/lib/bookings/validation';
+
+export { addYears };
 
 export type PickerMode = 'date' | 'time';
 
@@ -58,12 +61,6 @@ export function spokenValue(value: string, mode: PickerMode): string {
 
 export function startOfDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-export function addYears(date: Date, years: number): Date {
-  const year = date.getFullYear() + years;
-  const lastDay = new Date(year, date.getMonth() + 1, 0).getDate();
-  return new Date(year, date.getMonth(), Math.min(date.getDate(), lastDay));
 }
 
 export function clampDate(date: Date, minimum?: Date, maximum?: Date): Date {

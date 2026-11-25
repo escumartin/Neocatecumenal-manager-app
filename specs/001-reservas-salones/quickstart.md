@@ -73,8 +73,9 @@ Arrancar PostgreSQL local y el backend, y obtener una sesión de moderador A, mo
    del paso 2 → `REJECTED`; repetir → `409 BOOKING_REQUEST_ALREADY_RESOLVED`.
 8. Moderador B: `18:00`–`20:00` → `201` (franja liberada).
 9. Moderador A: serie semanal en Salón A, `18:00`–`20:00`, desde mañana y `until` 7 semanas después → `409` con la fecha
-   de mañana (ocupada en el paso 8); la misma serie desde una semana después → `201` con 8 ocurrencias. `until` a 13
-   meses → `422 RECURRENCE_TOO_LONG`.
+   de mañana (ocupada en el paso 8); la misma serie desde una semana después y `until` 7 semanas después de ese nuevo
+   inicio → `201` con 8 ocurrencias. `until` a 13 meses → `422 VALIDATION_FAILED` con
+   `errors[0] = {field: recurrence.until, code: RECURRENCE_TOO_LONG}`.
 10. Moderador A: cancelar una ocurrencia → solo esa `CANCELLED`; cancelar la serie → futuras `CANCELLED`.
 11. Moderador A: `POST /api/events` tipo `WORD` en Salón A, mañana `18:00`–`20:00` (ocupada en el paso 8) → `409`;
     `GET /api/booking-requests` no muestra ninguna solicitud nueva. En Salón B, en una franja libre → `201` con

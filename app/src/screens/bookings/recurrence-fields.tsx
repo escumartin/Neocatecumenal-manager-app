@@ -14,11 +14,12 @@ type Props = {
   firstDate?: string;
   invalid: boolean;
   problem?: string | null;
+  problemIsLive?: boolean;
   onToggle: (enabled: boolean) => void;
   onChangeUntil: (until: string) => void;
 };
 
-export function RecurrenceFields({ enabled, until, firstDate = '', invalid, problem, onToggle, onChangeUntil }: Props) {
+export function RecurrenceFields({ enabled, until, firstDate = '', invalid, problem, problemIsLive = false, onToggle, onChangeUntil }: Props) {
   const minimumDate = dateFromValue(firstDate, 'date', startOfDay(new Date()));
   return (
     <View className="gap-3">
@@ -45,7 +46,7 @@ export function RecurrenceFields({ enabled, until, firstDate = '', invalid, prob
               maximumDate={addYears(minimumDate, 1)}
               onChange={onChangeUntil}
             />
-            <FieldProblem message={problem} />
+            <FieldProblem message={problem} live={problemIsLive} />
           </FormField>
         </ListSection>
       ) : null}
