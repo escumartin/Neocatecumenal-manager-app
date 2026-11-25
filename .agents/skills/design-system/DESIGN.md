@@ -14,6 +14,8 @@ Reference: VoltAgent/awesome-design-md `design-md/claude/DESIGN.md`. Chosen for 
 
 ## Colour tokens
 
+The React Navigation themes in `src/lib/theme/navigation-theme.ts` mirror these tokens (background, card, foreground, border, primary); a test keeps them equal to `global.css`.
+
 Defined as CSS variables in `global.css`, consumed by NativeWind through `tailwind.config.js` as `var(--token)`.
 
 | Token | Light | Dark | Use |

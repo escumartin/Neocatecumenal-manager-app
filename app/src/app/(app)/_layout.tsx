@@ -1,10 +1,10 @@
-import { Slot } from 'expo-router';
+import { Stack } from 'expo-router';
 import { SessionGuard } from '@/screens/auth/session-guard';
 
 export default function AppLayout() {
   return (
     <SessionGuard>
-      <Slot />
+      <Stack screenOptions={{ headerShown: false }} />
     </SessionGuard>
   );
 }

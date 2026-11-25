@@ -1,7 +1,6 @@
 import { Redirect } from 'expo-router';
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
-import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { useSession } from '@/hooks/session/use-session';
 import { identity } from '@/i18n/es/identity';
@@ -9,7 +8,7 @@ import { routeForPendingSteps } from '@/lib/auth/pending-steps';
 import { SessionUnavailable } from './session-unavailable';
 
 export function SessionGuard({ children }: { children: ReactNode }) {
-  const { status, me, logOut } = useSession();
+  const { status, me } = useSession();
 
   if (status === 'loading') {
     return (
@@ -32,14 +31,5 @@ export function SessionGuard({ children }: { children: ReactNode }) {
     return <Redirect href={pendingRoute} />;
   }
 
-  return (
-    <View className="flex-1 bg-background">
-      <View className="flex-row justify-end px-4 pt-4">
-        <Button variant="outline" accessibilityLabel={identity.logout} onPress={logOut}>
-          <Text>{identity.logout}</Text>
-        </Button>
-      </View>
-      {children}
-    </View>
-  );
+  return <View className="flex-1 bg-background">{children}</View>;
 }

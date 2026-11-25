@@ -1,18 +1,8 @@
-import { useRouter } from 'expo-router';
-import { Home } from '@/screens/home';
+import { Redirect } from 'expo-router';
+import { useCurrentUser } from '@/hooks/session/use-current-user';
+import { navigationFor } from '@/lib/auth/navigation-permissions';
 
-export default function HomeRoute() {
-  const router = useRouter();
-  return (
-    <Home
-      onOpenUsers={() => router.push('/users')}
-      onOpenRooms={() => router.push('/salones')}
-      onRequestBooking={() => router.push('/reservas/nueva')}
-      onOpenMyRequests={() => router.push('/reservas')}
-      onOpenOccupancy={() => router.push('/salones/ocupacion')}
-      onOpenPendingRequests={() => router.push('/reservas/pendientes')}
-      onCreateEvent={() => router.push('/eventos/nuevo')}
-      onPasswordChange={() => router.push('/change-password')}
-    />
-  );
+export default function AppIndexRoute() {
+  const { user } = useCurrentUser();
+  return <Redirect href={`/${navigationFor(user?.role).firstTab}`} />;
 }

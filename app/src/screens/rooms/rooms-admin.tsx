@@ -97,6 +97,7 @@ export function RoomsAdminScreen({ api }: Props) {
       <FlatList
         className="flex-1 bg-background"
         contentContainerClassName="gap-4 p-6"
+        contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         data={rooms}
         keyExtractor={(room) => room.id}

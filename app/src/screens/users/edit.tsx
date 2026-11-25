@@ -129,6 +129,7 @@ function UserFields({ initial, api, communitiesApi, save, onCreated, onSaved, on
     <ScrollView
       className="flex-1 bg-background"
       contentContainerClassName="gap-6 p-6"
+      contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
     >
       <Text variant="title">{editing ? usersText.form.editTitle : usersText.form.createTitle}</Text>

@@ -68,7 +68,11 @@ export function EventScreen({ eventId, api = eventsApi, roomsApi }: Props) {
   });
 
   return (
-    <ScrollView className="flex-1 bg-background" contentContainerClassName="gap-6 p-6">
+    <ScrollView
+      className="flex-1 bg-background"
+      contentContainerClassName="gap-6 p-6"
+      contentInsetAdjustmentBehavior="automatic"
+    >
       <Text variant="title">{event.title}</Text>
       <View className="gap-1">
         <Text variant="strong">{eventsText.detail.type}</Text>

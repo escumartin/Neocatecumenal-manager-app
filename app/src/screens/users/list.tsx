@@ -3,6 +3,7 @@ import { FlatList, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { useCurrentUser } from '@/hooks/session/use-current-user';
+import { useReloadOnFocus } from '@/hooks/navigation/use-reload-on-focus';
 import { useUsers } from '@/hooks/users/use-users';
 import { messageForUsersFailure, usersText } from '@/i18n/es/users';
 import type { CommunitiesApi } from '@/lib/api/communities-api';
@@ -22,6 +23,7 @@ export function UserList({ api, communitiesApi, onCreate, onEdit }: Props) {
   const [chosenCommunityId, setChosenCommunityId] = useState<string | null>(null);
   const communityId = chosenCommunityId ?? me?.communityId ?? null;
   const { status, users, reload, remove } = useUsers(communityId, api, communityId !== null);
+  useReloadOnFocus(reload);
   const [pendingDeletion, setPendingDeletion] = useState<User | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -72,6 +74,7 @@ export function UserList({ api, communitiesApi, onCreate, onEdit }: Props) {
       <FlatList
         className="flex-1 bg-background"
         contentContainerClassName="gap-4 p-6"
+        contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         data={users}
         keyExtractor={(user) => user.id}

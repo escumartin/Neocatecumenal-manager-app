@@ -10,11 +10,11 @@ export default function EditUserRoute() {
       userId={userId}
       onCreated={(created) => {
         createdUserHandoff.set(created);
-        router.replace('/users/created');
+        router.replace('/gestion/usuarios/creado');
       }}
       onPasswordReset={(reset) => {
         createdUserHandoff.set(reset, 'reset');
-        router.replace('/users/created');
+        router.replace('/gestion/usuarios/creado');
       }}
       onSaved={() => router.back()}
     />
