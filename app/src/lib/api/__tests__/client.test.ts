@@ -26,6 +26,25 @@ function sentRequest(fetchMock: jest.Mock): Request {
 }
 
 describe('api client', () => {
+  it('accepts responses from a native fetch that are not instances of the global Response', async () => {
+    const body = { userId: 'user-1' };
+    const nativeResponse = {
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'Content-Type': 'application/json' }),
+      json: async () => body,
+      text: async () => JSON.stringify(body),
+      clone() {
+        return this;
+      },
+    } as unknown as Response;
+    const { client } = setup(nativeResponse);
+
+    const { data } = await client.GET('/api/me');
+
+    expect(data).toEqual(body);
+  });
+
   it('adds the bearer token when a session token exists', async () => {
     const { client, fetchMock } = setup(new Response(null, { status: 204 }));
 

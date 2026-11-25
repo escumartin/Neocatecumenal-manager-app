@@ -50,7 +50,6 @@ export function createApiClient(options: ApiClientOptions) {
           options.onPendingStep(code);
         }
       }
-      return response;
     },
   };
 
