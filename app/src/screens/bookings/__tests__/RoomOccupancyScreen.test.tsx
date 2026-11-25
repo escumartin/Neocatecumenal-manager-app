@@ -263,4 +263,23 @@ describe('room occupancy screen', () => {
 
     expect(roomsApi.occupancy).toHaveBeenCalledTimes(2);
   });
+
+  it('keeps the occupied slots and hides the loading state while the focus reload is pending', async () => {
+    const occupancy = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, occupancy: { roomId: hall.id, date: '2030-05-11', occupied } })
+      .mockReturnValueOnce(new Promise(() => undefined));
+    const { element } = screenWith(fakeRoomsApi({ occupancy }));
+    await renderAs('MODERATOR', element);
+    await chooseRoomAndDate();
+    await waitFor(() => expect(screen.getByText(bookingsText.occupancy.slotText(occupied[0]))).toBeOnTheScreen());
+
+    await act(async () => {
+      void mockedReloadOnFocus.mock.calls.at(-1)?.[0]();
+    });
+
+    expect(occupancy).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText(bookingsText.occupancy.loading)).not.toBeOnTheScreen();
+    expect(screen.getByText(bookingsText.occupancy.slotText(occupied[0]))).toBeOnTheScreen();
+  });
 });

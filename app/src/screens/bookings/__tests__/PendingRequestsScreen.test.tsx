@@ -327,4 +327,19 @@ describe('pending requests screen', () => {
 
     await waitFor(() => expect(hapticSuccess).toHaveBeenCalledTimes(1));
   });
+
+  it('keeps the list and hides the loading state while the focus reload is pending', async () => {
+    const list = jest.fn().mockResolvedValueOnce(pendingPage).mockReturnValueOnce(new Promise(() => undefined));
+    const { element } = screenWith({ list });
+    await renderAs('ADMINISTRATOR', element);
+    await screen.findByRole('heading', { name: hall.name });
+
+    await act(async () => {
+      void mockedReloadOnFocus.mock.calls.at(-1)?.[0]();
+    });
+
+    expect(list).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText(bookingsText.resolve.loading)).not.toBeOnTheScreen();
+    expect(screen.getByRole('heading', { name: hall.name })).toBeOnTheScreen();
+  });
 });

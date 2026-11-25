@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { roomsApi } from '@/lib/api';
 import type { OccupiedSlot, RoomOccupancyResult, RoomsApi } from '@/lib/api/rooms-api';
 
@@ -26,8 +26,15 @@ export function useRoomOccupancy(api: RoomsApi = roomsApi, query: RoomOccupancyQ
   const communityId = query?.communityId;
   const key = roomId === undefined || date === undefined ? null : `${roomId}|${date}|${communityId ?? ''}`;
   const [state, setState] = useState<State>(IDLE);
+  const sequence = useRef(0);
+  const keyRef = useRef(key);
 
   useEffect(() => {
+    keyRef.current = key;
+  }, [key]);
+
+  useEffect(() => {
+    const id = ++sequence.current;
     if (key === null || roomId === undefined || date === undefined) {
       return;
     }
@@ -39,7 +46,7 @@ export function useRoomOccupancy(api: RoomsApi = roomsApi, query: RoomOccupancyQ
         () => failed(key),
       )
       .then((next) => {
-        if (active) {
+        if (active && id === sequence.current) {
           setState(next);
         }
       });
@@ -52,19 +59,39 @@ export function useRoomOccupancy(api: RoomsApi = roomsApi, query: RoomOccupancyQ
     if (key === null || roomId === undefined || date === undefined) {
       return;
     }
+    const id = ++sequence.current;
     setState((current) => ({ ...current, key, status: 'loading' }));
+    let next = failed(key);
     try {
-      setState(toState(key, await api.occupancy(roomId, date, communityId)));
+      next = toState(key, await api.occupancy(roomId, date, communityId));
     } catch {
-      setState(failed(key));
+      next = failed(key);
+    }
+    if (id === sequence.current && keyRef.current === key) {
+      setState(next);
+    }
+  }, [api, key, roomId, date, communityId]);
+
+  const refresh = useCallback(async () => {
+    if (key === null || roomId === undefined || date === undefined) {
+      return;
+    }
+    const id = ++sequence.current;
+    try {
+      const result = await api.occupancy(roomId, date, communityId);
+      if (result.ok && id === sequence.current && keyRef.current === key) {
+        setState(toState(key, result));
+      }
+    } catch {
+      return;
     }
   }, [api, key, roomId, date, communityId]);
 
   if (key === null) {
-    return { status: IDLE.status, occupied: IDLE.occupied, reload };
+    return { status: IDLE.status, occupied: IDLE.occupied, reload, refresh };
   }
   if (state.key !== key) {
-    return { status: 'loading' as const, occupied: [] as OccupiedSlot[], reload };
+    return { status: 'loading' as const, occupied: [] as OccupiedSlot[], reload, refresh };
   }
-  return { status: state.status, occupied: state.occupied, reload };
+  return { status: state.status, occupied: state.occupied, reload, refresh };
 }

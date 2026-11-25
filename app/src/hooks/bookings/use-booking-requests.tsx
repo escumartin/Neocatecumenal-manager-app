@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { bookingRequestsApi } from '@/lib/api';
 import type {
   BookingFailure,
@@ -33,7 +33,10 @@ export function useBookingRequests(
     requests: [],
   });
 
+  const sequence = useRef(0);
+
   useEffect(() => {
+    const id = ++sequence.current;
     if (!enabled) {
       return;
     }
@@ -42,7 +45,7 @@ export function useBookingRequests(
       .list({ size: PAGE_SIZE })
       .then(toState, () => FAILED)
       .then((next) => {
-        if (active) {
+        if (active && id === sequence.current) {
           setState(next);
         }
       });
@@ -52,18 +55,39 @@ export function useBookingRequests(
   }, [api, enabled]);
 
   const reload = useCallback(async () => {
+    const id = ++sequence.current;
     setState((current) => ({ ...current, status: 'loading' }));
+    let next = FAILED;
     try {
-      setState(toState(await api.list({ size: PAGE_SIZE })));
+      next = toState(await api.list({ size: PAGE_SIZE }));
     } catch {
-      setState(FAILED);
+      next = FAILED;
+    }
+    if (id === sequence.current) {
+      setState(next);
     }
   }, [api]);
+
+  const refresh = useCallback(async () => {
+    if (!enabled) {
+      return;
+    }
+    const id = ++sequence.current;
+    try {
+      const result = await api.list({ size: PAGE_SIZE });
+      if (result.ok && id === sequence.current) {
+        setState(toState(result));
+      }
+    } catch {
+      return;
+    }
+  }, [api, enabled]);
 
   const rectifyReason = useCallback(
     async (bookingRequestId: string, reason: string) => {
       const result = await api.rectifyReason(bookingRequestId, reason);
       if (result.ok) {
+        sequence.current++;
         setState((current) => ({
           ...current,
           requests: current.requests.map((request) =>
@@ -78,6 +102,7 @@ export function useBookingRequests(
 
   const replace = useCallback(
     (bookingRequestId: string, updated: BookingRequest) => {
+      sequence.current++;
       setState((current) => ({
         ...current,
         requests: current.requests.map((request) =>
@@ -91,7 +116,11 @@ export function useBookingRequests(
   const refreshWhenStale = useCallback(
     async (failure: BookingFailure) => {
       if (failure.code && STALE_CODES.includes(failure.code)) {
-        setState(toState(await api.list({ size: PAGE_SIZE })));
+        const id = ++sequence.current;
+        const next = toState(await api.list({ size: PAGE_SIZE }));
+        if (id === sequence.current) {
+          setState(next);
+        }
       }
     },
     [api],
@@ -135,6 +164,7 @@ export function useBookingRequests(
     status: state.status,
     requests: state.requests,
     reload,
+    refresh,
     rectifyReason,
     cancel,
     cancelBooking,

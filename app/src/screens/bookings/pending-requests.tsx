@@ -23,10 +23,10 @@ type Props = {
 
 export function PendingRequestsScreen({ api, roomsApi, communitiesApi }: Props) {
   const { user, isAdministrator } = useCurrentUser();
-  const { status, requests, reload, approve, reject } = usePendingRequests(api, isAdministrator);
+  const { status, requests, reload, refresh, approve, reject } = usePendingRequests(api, isAdministrator);
   const { status: roomsStatus, rooms, reload: reloadRooms } = useRooms(roomsApi, isAdministrator);
   const { communities } = useCommunities(communitiesApi, isAdministrator);
-  useReloadOnFocus(reload);
+  useReloadOnFocus(refresh);
   const { refreshing, onRefresh } = usePullToRefresh(() => Promise.all([reload(), reloadRooms()]));
 
   const [notice, setNotice] = useState<string | null>(null);

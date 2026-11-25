@@ -29,8 +29,8 @@ export function UserList({ api, communitiesApi, onCreate, onEdit }: Props) {
   const { user: me } = useCurrentUser();
   const [chosenCommunityId, setChosenCommunityId] = useState<string | null>(null);
   const communityId = chosenCommunityId ?? me?.communityId ?? null;
-  const { status, users, reload, remove } = useUsers(communityId, api, communityId !== null);
-  useReloadOnFocus(reload);
+  const { status, users, reload, refresh, remove } = useUsers(communityId, api, communityId !== null);
+  useReloadOnFocus(refresh);
   const { refreshing, onRefresh } = usePullToRefresh(reload);
   const [pendingDeletion, setPendingDeletion] = useState<User | null>(null);
   const [deleting, setDeleting] = useState(false);

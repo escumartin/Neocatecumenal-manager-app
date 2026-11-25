@@ -52,6 +52,7 @@ export function MyRequestsScreen({ api, roomsApi, onRequest }: Props) {
     status,
     requests,
     reload,
+    refresh,
     rectifyReason,
     cancel,
     cancelBooking,
@@ -62,7 +63,7 @@ export function MyRequestsScreen({ api, roomsApi, onRequest }: Props) {
     rooms,
     reload: reloadRooms,
   } = useRooms(roomsApi, isModerator);
-  useReloadOnFocus(reload);
+  useReloadOnFocus(refresh);
   const { refreshing, onRefresh } = usePullToRefresh(() => Promise.all([reload(), reloadRooms()]));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<Cancelling | null>(null);
