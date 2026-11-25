@@ -11,7 +11,35 @@ if [ -n "$sdk_java" ] && [ -x "$HOME/.sdkman/candidates/java/$sdk_java/bin/java"
 else
   export JAVA_HOME="$(/usr/libexec/java_home -v 25)"
 fi
-export EXPO_PUBLIC_API_URL="${EXPO_PUBLIC_API_URL:-http://localhost:8080}"
+
+mode="web"
+case "${1:-}" in
+  "") ;;
+  --device) mode="device" ;;
+  *) echo "usage: $0 [--device]" >&2; exit 2 ;;
+esac
+
+lan_ip() {
+  local ip
+  for iface in en0 en1; do
+    ip="$(ipconfig getifaddr "$iface" 2>/dev/null || true)"
+    if [ -n "$ip" ]; then
+      echo "$ip"
+      return 0
+    fi
+  done
+  return 1
+}
+
+if [ "$mode" = "device" ]; then
+  if ! host_ip="$(lan_ip)"; then
+    echo "no LAN IP found on en0 or en1; connect to Wi-Fi or Ethernet" >&2
+    exit 1
+  fi
+  export EXPO_PUBLIC_API_URL="${EXPO_PUBLIC_API_URL:-http://$host_ip:8080}"
+else
+  export EXPO_PUBLIC_API_URL="${EXPO_PUBLIC_API_URL:-http://localhost:8080}"
+fi
 
 docker compose -f "$root/docker-compose.yml" up -d --wait postgres
 
@@ -32,4 +60,8 @@ done
 
 echo "backend up on http://localhost:8080 (log: $log_dir/backend.log)"
 cd "$root/app"
-npm run web
+if [ "$mode" = "device" ]; then
+  npx expo start --lan
+else
+  npm run web
+fi

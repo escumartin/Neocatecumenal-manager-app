@@ -96,6 +96,9 @@ CORS solo para `http://localhost:8081`) y la web Expo en `http://localhost:8081`
 `docker compose down` (el volumen se conserva). La cookie `__Host-session` es `Secure`: Chrome y Firefox la aceptan en
 `localhost`; Safari no.
 
+Con `scripts/local-run.sh --device` se arranca `npx expo start --lan` (QR para Expo Go en un iPhone de la misma red) y
+`EXPO_PUBLIC_API_URL` apunta a la IP LAN del Mac (`en0`, o `en1`) en el puerto 8080.
+
 PostgreSQL 18 usa el volumen `postgres18-data`; el antiguo `postgres-data` de PG 17 queda sin uso y se puede borrar con `docker volume rm` si no se necesitan sus datos.
 
 Primer administrador, en un terminal interactivo con la base arriba:
