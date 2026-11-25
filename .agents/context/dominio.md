@@ -1,4 +1,5 @@
 Verificado: 2026-11-23 (fuente: TFG, capítulos 1 y 4)
+Flujo de solicitud y aprobación de salones (línea 57): fuente `specs/001-reservas-salones/spec.md` FR-005, no el TFG.
 
 # Dominio
 
@@ -54,6 +55,7 @@ El identificador de acceso es de 6 dígitos (100000–999999), lo genera el sist
 
 - Una reserva de lugar no puede solaparse con otra en el mismo lugar: cualquier solape (inicio dentro, fin dentro, envolvente).
 - Generar grupos aleatorios de una comunidad: entre 2 y 20 grupos, reparto lo más uniforme posible; si hay más grupos que miembros, quedan grupos vacíos. Son efímeros: no se persisten.
+- El moderador solicita un salón; la solicitud queda pendiente y bloquea la franja; el administrador (ostiario jefe) la aprueba o la rechaza, con motivo opcional al rechazar.
 - El moderador solo opera sobre su comunidad.
 - El administrador elige comunidad antes de operar.
 - Borrar es definitivo y pide confirmación.

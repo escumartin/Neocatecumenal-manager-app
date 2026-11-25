@@ -12,7 +12,7 @@
 
 ### User Story 1 - Solicitar un salón para una fecha y franja (Priority: P1)
 
-El responsable de una comunidad (moderador) elige un salón parroquial, una fecha y una franja horaria, indica el motivo y envía la solicitud. La solicitud queda pendiente hasta que quien gestiona los salones (administrador, ostiario jefe) la resuelva. Sustituye al reparto actual de salones por WhatsApp.
+El responsable de una comunidad (moderador) elige un salón parroquial, una fecha y una franja horaria, indica el motivo y envía la solicitud. El administrador puede hacerlo en nombre de la comunidad que elija antes de operar. La solicitud queda pendiente hasta que quien gestiona los salones (administrador, ostiario jefe) la resuelva. Sustituye al reparto actual de salones por WhatsApp.
 
 **Why this priority**: es el flujo mínimo que sustituye al reparto manual; sin solicitud no hay nada que aprobar ni solapamientos que evitar.
 
@@ -21,8 +21,11 @@ El responsable de una comunidad (moderador) elige un salón parroquial, una fech
 **Acceptance Scenarios**:
 
 1. **Given** un moderador identificado y un salón sin reservas en la franja elegida, **When** envía la solicitud con salón, fecha, hora de inicio, hora de fin y motivo, **Then** la solicitud se registra como pendiente asociada a su comunidad.
-2. **Given** un moderador, **When** envía una solicitud con la hora de fin igual o anterior a la de inicio, o con una fecha pasada, **Then** el sistema la rechaza con un mensaje claro y no registra nada.
+2. **Given** un moderador, **When** envía una solicitud con la hora de fin igual o anterior a la de inicio, o con una hora de inicio que no es posterior al momento actual, **Then** el sistema la rechaza con un mensaje claro y no registra nada.
 3. **Given** un moderador de la comunidad A, **When** consulta sus solicitudes, **Then** solo ve las de la comunidad A.
+4. **Given** un administrador que ha elegido la comunidad B, **When** envía una solicitud, **Then** queda asociada a la comunidad B.
+5. **Given** un moderador que envía un motivo de más de 500 caracteres, **When** guarda, **Then** el sistema lo rechaza; la pantalla avisa de no incluir datos personales en el motivo.
+6. **Given** un moderador con una solicitud pendiente, **When** consulta su lista, **Then** puede ver y corregir el motivo de esa solicitud mientras siga pendiente.
 
 ---
 
@@ -46,7 +49,7 @@ El sistema impide que dos reservas ocupen el mismo salón en franjas que se sola
 
 ### User Story 3 - Aprobar o rechazar solicitudes (Priority: P2)
 
-El administrador ve las solicitudes pendientes de todas las comunidades, y aprueba o rechaza cada una; al rechazar puede indicar un motivo. El solicitante ve el resultado en su lista.
+El administrador ve las solicitudes pendientes de todas las comunidades, y aprueba o rechaza cada una (una serie, entera); al rechazar puede indicar un motivo de hasta 500 caracteres. El solicitante ve el resultado en su lista.
 
 **Why this priority**: cierra el ciclo y da validez a la reserva, pero depende de que existan solicitudes.
 
@@ -57,12 +60,14 @@ El administrador ve las solicitudes pendientes de todas las comunidades, y aprue
 1. **Given** una solicitud pendiente, **When** el administrador la aprueba, **Then** pasa a aprobada y sigue ocupando el salón en esa franja.
 2. **Given** una solicitud pendiente, **When** el administrador la rechaza con un motivo, **Then** pasa a rechazada, el motivo es visible para el solicitante y el salón queda libre.
 3. **Given** un usuario que no es administrador, **When** intenta aprobar o rechazar, **Then** el sistema lo impide.
+4. **Given** una serie pendiente, **When** el administrador la aprueba, **Then** todas sus ocurrencias pasan a aprobadas sin solapar con ninguna reserva activa, porque la serie pendiente ya bloqueaba sus franjas (FR-013).
+5. **Given** una solicitud o serie pendiente cuya primera ocurrencia ya ha empezado, **When** el administrador intenta aprobarla, **Then** el sistema lo impide y solo permite rechazarla.
 
 ---
 
 ### User Story 4 - Consultar disponibilidad y cancelar (Priority: P3)
 
-El moderador consulta la ocupación de los salones por día y cancela las solicitudes o reservas de su comunidad. El administrador puede cancelar cualquier reserva. Cancelar es definitivo y pide confirmación.
+El moderador consulta la ocupación de los salones por día y cancela las solicitudes o reservas de su comunidad. El administrador consulta y cancela las de cualquier comunidad. Cancelar es definitivo, pide confirmación y solo es posible mientras la franja no haya empezado.
 
 **Why this priority**: mejora la experiencia y evita reservas fantasma, pero el flujo funciona sin ella.
 
@@ -72,13 +77,14 @@ El moderador consulta la ocupación de los salones por día y cancela las solici
 
 1. **Given** una reserva de la comunidad del moderador, **When** la cancela y confirma, **Then** deja de estar activa y la franja queda libre.
 2. **Given** una reserva de otra comunidad, **When** un moderador intenta cancelarla, **Then** el sistema lo impide.
-3. **Given** un día con reservas, **When** un moderador consulta la disponibilidad de un salón, **Then** ve las franjas ocupadas, sin motivos ni datos de personas.
+3. **Given** una reserva cuya franja ya ha empezado, **When** se intenta cancelar, **Then** el sistema lo impide.
+4. **Given** un día con reservas, **When** un moderador consulta la disponibilidad de un salón, **Then** ve las franjas ocupadas, sin motivos ni datos de personas.
 
 ---
 
 ### User Story 5 - Reservas periódicas y ligadas a eventos (Priority: P2)
 
-El moderador puede pedir una reserva que se repite (por ejemplo, una Palabra semanal hasta una fecha fin). Cada ocurrencia se comprueba contra solapes; si alguna choca, se rechaza la solicitud entera y se informa de las fechas en conflicto. Al dar de alta un evento (Palabra, Convivencia...) con un salón como lugar, se crea su solicitud de reserva. Se puede cancelar una ocurrencia o toda la serie.
+El moderador puede pedir una reserva semanal (por ejemplo, una Palabra) con fecha fin obligatoria, como máximo un año después de la primera ocurrencia. Cada ocurrencia se comprueba contra solapes; si alguna choca, se rechaza la solicitud entera y se informa de las fechas en conflicto. Al dar de alta un evento (Palabra, Convivencia...) con un salón como lugar, se crea su solicitud de reserva. Se puede cancelar una ocurrencia o toda la serie; la serie se aprueba o rechaza entera.
 
 **Why this priority**: las Palabras son semanales; sin repetición el moderador tendría que repetir la solicitud cada semana.
 
@@ -89,10 +95,12 @@ El moderador puede pedir una reserva que se repite (por ejemplo, una Palabra sem
 1. **Given** una solicitud semanal con fecha fin sin choques, **When** se envía, **Then** se registran todas las ocurrencias como una serie pendiente.
 2. **Given** una solicitud periódica en la que alguna ocurrencia solapa con una reserva activa, **When** se envía, **Then** se rechaza entera y se muestran las fechas en conflicto.
 3. **Given** una serie aprobada, **When** el moderador cancela una ocurrencia, **Then** solo esa franja queda libre y las demás siguen activas.
-4. **Given** una serie aprobada, **When** el moderador cancela la serie y confirma, **Then** todas las ocurrencias futuras se cancelan.
-5. **Given** un moderador que da de alta un evento con un salón como lugar, **When** guarda el evento, **Then** se crea la solicitud de reserva de ese salón para la fecha y franja del evento, y si el salón está ocupado el evento no se guarda.
-6. **Given** un moderador que da de alta un evento con un salón ocupado en esa franja, **When** guarda el evento, **Then** no se registra ni el evento ni la solicitud y se le informa de la franja en conflicto.
-7. **Given** un evento dado de alta con su solicitud, **When** el moderador lo consulta, **Then** ve el tipo, título, fecha, franja, salón y el estado de su solicitud de reserva.
+4. **Given** una serie aprobada, **When** el moderador cancela la serie y confirma, **Then** todas las ocurrencias futuras se cancelan y las pasadas se conservan tal cual.
+5. **Given** una solicitud semanal sin fecha fin o con fecha fin a más de un año de la primera ocurrencia, **When** se envía, **Then** el sistema la rechaza con un mensaje claro.
+6. **Given** una serie con alguna ocurrencia ya empezada, **When** se cancela la serie, **Then** las ocurrencias empezadas no se modifican y las futuras se cancelan.
+7. **Given** un moderador que da de alta un evento con un salón como lugar, **When** guarda el evento, **Then** se crea la solicitud de reserva de ese salón para la fecha y franja del evento, y si el salón está ocupado el evento no se guarda.
+8. **Given** un moderador que da de alta un evento con un salón ocupado en esa franja, **When** guarda el evento, **Then** no se registra ni el evento ni la solicitud y se le informa de la franja en conflicto.
+9. **Given** un evento dado de alta con su solicitud, **When** el moderador lo consulta, **Then** ve el tipo, título, fecha, franja, salón y el estado de su solicitud de reserva.
 
 ---
 
@@ -109,7 +117,7 @@ El administrador da de alta los salones parroquiales que se pueden reservar, cor
 1. **Given** un administrador, **When** da de alta un salón con un nombre que no usa otro salón activo, **Then** el salón aparece disponible para solicitar.
 2. **Given** un salón activo, **When** el administrador cambia su nombre, **Then** las solicitudes existentes muestran el nombre nuevo.
 3. **Given** un salón sin reservas activas futuras, **When** el administrador lo da de baja y confirma, **Then** deja de aparecer para solicitar y su historial de reservas se conserva.
-4. **Given** un salón con alguna reserva activa (pendiente o aprobada) de hoy en adelante, **When** el administrador intenta darlo de baja, **Then** el sistema lo impide e indica cuántas reservas debe resolver antes.
+4. **Given** un salón con alguna reserva activa (pendiente o aprobada) con franja futura (no empezada), **When** el administrador intenta darlo de baja, **Then** el sistema lo impide e indica cuántas reservas debe resolver antes.
 5. **Given** un usuario que no es administrador, **When** intenta dar de alta, editar o dar de baja un salón, **Then** el sistema lo impide.
 6. **Given** un nombre vacío o ya usado por otro salón activo, **When** el administrador guarda, **Then** el sistema lo rechaza con un mensaje claro.
 
@@ -120,37 +128,41 @@ El administrador da de alta los salones parroquiales que se pueden reservar, cor
 - Franjas contiguas (una termina cuando otra empieza) no se consideran solapadas.
 - Franjas que cruzan la medianoche: no se admiten; una franja pertenece a un único día.
 - Un salón con reservas activas futuras que el administrador quiere dar de baja: debe resolver antes esas reservas (rechazarlas o cancelarlas); la baja se bloquea mientras tanto.
+- Una pendiente que nadie resuelve antes de que empiece su primera ocurrencia no caduca: ya no se puede aprobar, solo rechazar. Sus ocurrencias empezadas o pasadas no bloquean ni cuentan para la baja del salón; si es una serie, sus ocurrencias futuras siguen bloqueando su franja y contando para la baja hasta que se rechace.
 - Un salón dado de baja no admite solicitudes nuevas ni vuelve a darse de alta: la baja es definitiva; si hace falta, se crea otro salón.
 - Un evento con salón cuya solicitud se rechaza o cancela: el evento sigue existiendo y muestra el estado de su solicitud.
 - Dos administradores resuelven la misma solicitud a la vez: solo cuenta la primera resolución; la segunda recibe un aviso.
-- Una serie sin fecha fin o con demasiadas ocurrencias: se exige fecha fin dentro de un límite razonable (un año).
-- Un usuario que deja de ser moderador conserva el historial de sus solicitudes, pero no puede crear ni cancelar nuevas.
+- Una serie sin fecha fin o con fecha fin a más de un año de la primera ocurrencia: se rechaza (FR-015).
+- Un usuario que deja de ser moderador conserva el historial de sus solicitudes, pero no puede crear ni cancelar nuevas; se conserva por el interés legítimo de la parroquia en organizar sus espacios (FR-022).
+- Un usuario borrado: su identidad en solicitudes e historial pasa a «usuario eliminado» y la reserva se conserva para la comunidad (FR-022).
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: Los moderadores MUST poder solicitar un salón indicando salón, fecha, hora de inicio, hora de fin y motivo; la solicitud queda asociada a su comunidad.
-- **FR-002**: El sistema MUST validar que la hora de fin es posterior a la de inicio, que ambas caen en el mismo día y que la fecha no es pasada.
+- **FR-001**: Los moderadores, para su comunidad, y los administradores, para la comunidad que elijan antes de operar, MUST poder solicitar un salón indicando salón, fecha, hora de inicio, hora de fin y motivo; la solicitud queda asociada a esa comunidad.
+- **FR-002**: El sistema MUST validar que la hora de fin es posterior a la de inicio, que ambas caen en el mismo día y que la hora de inicio es posterior al momento actual (hoy se admite solo si la franja aún no ha empezado).
 - **FR-003**: El sistema MUST rechazar cualquier solicitud que solape en el mismo salón con una reserva activa, pendiente o aprobada (inicio dentro, fin dentro o envolvente); las franjas contiguas no se solapan.
-- **FR-004**: Una solicitud MUST tener un estado entre pendiente, aprobada, rechazada y cancelada, con las transiciones pendiente a aprobada, pendiente a rechazada y pendiente o aprobada a cancelada.
-- **FR-005**: Los administradores MUST poder ver las solicitudes pendientes de todas las comunidades y aprobarlas o rechazarlas, con motivo opcional al rechazar.
+- **FR-004**: Una solicitud MUST tener un estado entre pendiente, aprobada, rechazada y cancelada, con las transiciones pendiente a aprobada, pendiente a rechazada y pendiente o aprobada a cancelada; solo se puede cancelar mientras la franja no haya empezado.
+- **FR-005**: Los administradores MUST poder ver las solicitudes pendientes de todas las comunidades y aprobarlas o rechazarlas, con motivo opcional al rechazar. Una serie se aprueba o se rechaza entera; una serie pendiente nunca llega a solapar al aprobarse, porque ya bloquea sus franjas (FR-013). Una solicitud o serie pendiente no se puede aprobar si su primera ocurrencia ya ha empezado (`START_NOT_IN_FUTURE`); solo se puede rechazar. No hay estado de caducidad: una pendiente cuya franja ya pasó no bloquea nada.
 - **FR-006**: Los moderadores MUST ver solo las solicitudes y reservas de su comunidad; los administradores, las de cualquier comunidad.
-- **FR-007**: Los moderadores MUST poder cancelar las solicitudes y reservas de su comunidad, y los administradores cualquiera, siempre con confirmación previa.
-- **FR-008**: Los moderadores MUST poder consultar las franjas ocupadas de un salón por día antes de solicitar, sin ver motivos ni datos de personas de otras comunidades.
-- **FR-009**: Solo los administradores MUST poder aprobar o rechazar; el resto de roles, no.
+- **FR-007**: Los moderadores MUST poder cancelar las solicitudes y reservas de su comunidad, y los administradores cualquiera, siempre con confirmación previa y solo mientras la franja no haya empezado.
+- **FR-008**: Los moderadores, y los administradores indicando la comunidad elegida, MUST poder consultar las franjas ocupadas de un salón por día antes de solicitar; sin comunidad, la petición del administrador se rechaza. No se ven motivos ni datos de personas de otras comunidades.
+- **FR-009**: Solo los administradores MUST poder aprobar o rechazar, siempre una serie entera; el resto de roles, no.
 - **FR-010**: El sistema MUST conservar el historial de estados de cada solicitud (quién y cuándo la creó, resolvió o canceló).
 - **FR-011**: Las solicitudes MUST guardar solo los datos necesarios: salón, comunidad, solicitante, fecha, franja, motivo, estado y motivo de rechazo; nunca datos personales adicionales ni en registros técnicos.
-- **FR-012**: Las pantallas MUST cumplir los requisitos de accesibilidad y uso móvil del proyecto (texto legible, objetivos táctiles amplios, contraste AA, etiquetas en todos los controles).
+- **FR-012**: Las pantallas MUST cumplir los requisitos de accesibilidad y uso móvil del proyecto para un público de 14 a 90 años: texto base de al menos 18 px, objetivos táctiles de al menos 48 px, contraste AA, etiquetas en todos los controles y respeto al escalado de fuente del sistema y al movimiento reducido.
 - **FR-013**: Una solicitud pendiente MUST bloquear la franja para otras solicitudes; gana quien solicita antes. Al rechazarse o cancelarse, la franja MUST quedar libre.
 - **FR-014**: Al dar de alta un evento con un salón como lugar, el sistema MUST crear la solicitud de reserva de ese salón para la fecha y franja del evento; si el salón está ocupado, el evento no se guarda.
-- **FR-015**: Las solicitudes MUST admitir una regla de repetición (por ejemplo, semanal con fecha fin); cada ocurrencia MUST comprobarse contra solapes y, si alguna choca, se rechaza la solicitud entera informando de las fechas en conflicto.
-- **FR-016**: Los usuarios con permiso MUST poder cancelar una sola ocurrencia o toda la serie, con confirmación previa.
+- **FR-015**: Las solicitudes MUST admitir una regla de repetición solo semanal (mismo día de la semana y franja) con fecha fin obligatoria, como máximo un año después de la fecha de la primera ocurrencia; cada ocurrencia MUST comprobarse contra solapes y, si alguna choca, se rechaza la solicitud entera informando de las fechas en conflicto.
+- **FR-016**: Los usuarios con permiso MUST poder cancelar una sola ocurrencia o toda la serie, con confirmación previa. Cancelar la serie cancela todas sus ocurrencias futuras; las pasadas y las ya empezadas se conservan tal cual.
 - **FR-017**: Solo los administradores MUST poder dar de alta, editar y dar de baja salones; el nombre es obligatorio y único entre los salones activos.
-- **FR-018**: La baja de un salón MUST ser definitiva, conservar el historial de sus reservas y bloquearse mientras el salón tenga reservas activas (pendientes o aprobadas) de hoy en adelante, informando de cuántas son.
+- **FR-018**: La baja de un salón MUST ser definitiva, conservar el historial de sus reservas y bloquearse mientras el salón tenga reservas activas, informando de cuántas son. Son activas las reservas pendientes o aprobadas cuya franja no ha empezado; las empezadas o pasadas, en cualquier estado, no la bloquean.
 - **FR-019**: Solo los salones activos MUST poder solicitarse y aparecer en la consulta de disponibilidad.
-- **FR-020**: Los moderadores (para su comunidad) y los administradores (para la comunidad que elijan) MUST poder dar de alta un evento de tipo Palabra o Convivencia de un día con tipo, título, fecha, franja y salón; el alta del evento y la de su solicitud de reserva MUST ser una sola operación: o se registran ambas o ninguna.
+- **FR-020**: Los moderadores (para su comunidad) y los administradores (para la comunidad que elijan antes de operar) MUST poder dar de alta un evento de tipo Palabra o Convivencia de un día con tipo, título, fecha, franja y salón; el alta del evento y la de su solicitud de reserva MUST ser una sola operación: o se registran ambas o ninguna.
 - **FR-021**: Los usuarios con permiso MUST poder consultar un evento dado de alta junto con el estado de su solicitud de reserva.
+- **FR-022**: Base legal: interés legítimo de la parroquia en organizar sus espacios. Al borrar un usuario, su identidad en solicitudes e historial MUST sustituirse por una referencia anónima («usuario eliminado») y la reserva se conserva para la comunidad. El historial y las reservas MUST borrarse un año después del fin de la última ocurrencia, y los eventos asociados a una reserva con ella, un año después de su fecha.
+- **FR-023**: El motivo y el motivo de rechazo MUST tener una longitud máxima de 500 caracteres y la interfaz MUST avisar de no incluir datos personales. El moderador MUST poder ver y rectificar el motivo de sus solicitudes pendientes.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -169,12 +181,12 @@ El administrador da de alta los salones parroquiales que se pueden reservar, cor
 - **SC-002**: 0 casos de dos reservas aprobadas solapadas en el mismo salón, en el 100 % de las pruebas de solape (inicio dentro, fin dentro, envolvente, contiguas).
 - **SC-003**: El administrador resuelve una solicitud pendiente en menos de 30 segundos.
 - **SC-004**: El 90 % de los moderadores completa su primera solicitud sin ayuda.
-- **SC-005**: Tras la puesta en marcha, el reparto de salones por WhatsApp deja de ser necesario para las comunidades que usan la app.
+- **SC-005**: Durante el primer mes de uso, el 100 % de las ocupaciones de salones se registran en la app y no se produce ningún solape.
 
 ## Assumptions
 
 - «Responsable de comunidad» equivale al rol moderador y «quien gestiona los salones» al administrador (ostiario jefe), según `dominio.md`.
-- El dominio no describe un flujo de solicitud y aprobación (modela la reserva como ocupación de un lugar y el reparto lo hace el ostiario jefe); esta feature lo añade conforme a la descripción, y la regla de solape del dominio se mantiene sin cambios.
+- El dominio no describía un flujo de solicitud y aprobación (modelaba la reserva como ocupación de un lugar y el reparto lo hacía el ostiario jefe); esta feature lo añadió conforme a la descripción, que ya está en `dominio.md`, y la regla de solape del dominio se mantiene sin cambios.
 - La franja se define con hora de inicio y fin libres dentro de un día, no con tramos fijos, según la regla de solape del dominio (inicio dentro, fin dentro, envolvente).
 - Solo se reservan salones parroquiales; hoteles y restaurantes (Pasos y Peregrinaciones) quedan fuera.
 - Esta feature incluye la gestión de salones (alta, edición y baja lógica definitiva) por el administrador.
@@ -187,5 +199,5 @@ El administrador da de alta los salones parroquiales que se pueden reservar, cor
 - Agenda mínima: esta feature incluye solo el alta de un evento con salón (Palabra o Convivencia de un día) y su consulta. Quedan fuera y van a la feature completa de Agenda: edición y borrado de eventos, listados y consulta por los registrados, Eucaristías, Pasos, Convivencias de fin de semana, eventos periódicos, lecturas, cuerpo y precio, y las reglas de día de la semana de cada tipo.
 - Si la solicitud de un evento se rechaza o se cancela, el evento no cambia; solo muestra el estado de su solicitud.
 - Conflicto en una serie: se rechaza la solicitud entera y se informan las fechas en conflicto; no hay aprobación parcial.
-- La regla de repetición de v1 es semanal con fecha fin; otras frecuencias quedan para después.
-- Aprobar o rechazar una serie se hace como un todo; cancelar admite una ocurrencia o toda la serie.
+- La regla de repetición de v1 es solo semanal con fecha fin obligatoria (máximo un año); otras frecuencias quedan para después.
+- Aprobar o rechazar una serie se hace como un todo; cancelar admite una ocurrencia o toda la serie (solo ocurrencias futuras).

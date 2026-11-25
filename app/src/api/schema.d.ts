@@ -207,6 +207,229 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rooms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active rooms that can be booked */
+        get: operations["listRooms"];
+        put?: never;
+        /** Create a bookable room (administrators only) */
+        post: operations["createRoom"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{roomId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Change the name of an active room (administrators only) */
+        put: operations["renameRoom"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{roomId}/deactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Permanently deactivate a room with no pending or approved bookings with a future slot (administrators only); history is kept */
+        post: operations["deactivateRoom"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{roomId}/occupancy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Occupied slots of a room on a day, without reasons or personal data */
+        get: operations["getRoomOccupancy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/booking-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Booking requests visible to the caller (own community for moderators, any for administrators) */
+        get: operations["listBookingRequests"];
+        put?: never;
+        /** Request a room for a slot, once or weekly until an end date */
+        post: operations["createBookingRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/booking-requests/{bookingRequestId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Booking request with its occurrences and status history (moderators only for their community) */
+        get: operations["getBookingRequest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/booking-requests/{bookingRequestId}/reason": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Correct the reason of a pending request (moderator of its community or administrator) */
+        put: operations["rectifyBookingRequestReason"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/booking-requests/{bookingRequestId}/approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a pending request whose first occurrence has not started (administrators only); a series is approved as a whole */
+        post: operations["approveBookingRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/booking-requests/{bookingRequestId}/rejection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a pending request with an optional reason (administrators only) */
+        post: operations["rejectBookingRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/booking-requests/{bookingRequestId}/cancellation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a request or a whole series; occurrences not yet started are cancelled, past and started ones are kept */
+        post: operations["cancelBookingRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/booking-requests/{bookingRequestId}/bookings/{bookingId}/cancellation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a single occurrence that has not started yet */
+        post: operations["cancelBooking"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a one-day event in a room; its booking request is created in the same operation or nothing is saved */
+        post: operations["createEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/events/{eventId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Event with the status of its booking request (moderators only for their community) */
+        get: operations["getEvent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -306,17 +529,181 @@ export interface components {
              * @description Stable error code the client maps to a localised message
              * @enum {string}
              */
-            code: "UNAUTHENTICATED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_FAILED" | "INVALID_CREDENTIALS" | "LOGIN_TEMPORARILY_BLOCKED" | "PRIVACY_NOTICE_PENDING" | "PRIVACY_NOTICE_OUTDATED" | "PASSWORD_CHANGE_REQUIRED" | "LAST_ADMINISTRATOR" | "LAST_MODERATOR" | "SELF_ACTION_FORBIDDEN" | "CONCURRENT_MODIFICATION" | "BAD_REQUEST" | "METHOD_NOT_ALLOWED" | "NOT_ACCEPTABLE" | "UNSUPPORTED_MEDIA_TYPE" | "INTERNAL_ERROR";
+            code: "UNAUTHENTICATED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_FAILED" | "INVALID_CREDENTIALS" | "LOGIN_TEMPORARILY_BLOCKED" | "PRIVACY_NOTICE_PENDING" | "PRIVACY_NOTICE_OUTDATED" | "PASSWORD_CHANGE_REQUIRED" | "LAST_ADMINISTRATOR" | "LAST_MODERATOR" | "SELF_ACTION_FORBIDDEN" | "CONCURRENT_MODIFICATION" | "BAD_REQUEST" | "METHOD_NOT_ALLOWED" | "NOT_ACCEPTABLE" | "UNSUPPORTED_MEDIA_TYPE" | "INTERNAL_ERROR" | "ROOM_OCCUPIED" | "BOOKING_REQUEST_ALREADY_RESOLVED" | "BOOKING_REQUEST_NOT_ACTIVE" | "BOOKING_ALREADY_STARTED" | "ROOM_NAME_TAKEN" | "ROOM_INACTIVE" | "ROOM_HAS_ACTIVE_BOOKINGS";
         };
         ValidationProblem: components["schemas"]["Problem"] & {
             errors: {
                 field: string;
                 /** @enum {string} */
-                code: "REQUIRED" | "TOO_LONG" | "INVALID_FORMAT" | "COMMUNITY_REQUIRED" | "COMMUNITY_NOT_FOUND" | "PASSWORD_TOO_SHORT" | "PASSWORD_TOO_LONG" | "PASSWORD_TOO_COMMON" | "PASSWORD_CONTAINS_ACCESS_ID" | "CURRENT_PASSWORD_INCORRECT";
+                code: "REQUIRED" | "TOO_LONG" | "INVALID_FORMAT" | "COMMUNITY_REQUIRED" | "COMMUNITY_NOT_FOUND" | "PASSWORD_TOO_SHORT" | "PASSWORD_TOO_LONG" | "PASSWORD_TOO_COMMON" | "PASSWORD_CONTAINS_ACCESS_ID" | "CURRENT_PASSWORD_INCORRECT" | "END_NOT_AFTER_START" | "START_NOT_IN_FUTURE" | "RECURRENCE_UNTIL_BEFORE_DATE" | "RECURRENCE_TOO_LONG";
             }[];
         };
         LoginBlockedProblem: components["schemas"]["Problem"] & {
             retryAfterSeconds: number;
+        };
+        /** @example 18:00 */
+        LocalTime: string;
+        TimeSlot: {
+            startTime: components["schemas"]["LocalTime"];
+            endTime: components["schemas"]["LocalTime"];
+        };
+        Room: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            active: boolean;
+        };
+        RoomInput: {
+            name: string;
+        };
+        /** @enum {string} */
+        EventType: "WORD" | "CONVIVENCE";
+        CreateEvent: {
+            type: components["schemas"]["EventType"];
+            title: string;
+            /**
+             * Format: uuid
+             * @description Community the caller acts for; required for administrators (422 COMMUNITY_REQUIRED, or COMMUNITY_NOT_FOUND), moderators may omit it or send their own (another community gets 403)
+             */
+            communityId?: string;
+            /** Format: uuid */
+            roomId: string;
+            /** Format: date */
+            date: string;
+            startTime: components["schemas"]["LocalTime"];
+            endTime: components["schemas"]["LocalTime"];
+        };
+        Event: {
+            /** Format: uuid */
+            id: string;
+            type: components["schemas"]["EventType"];
+            title: string;
+            /** Format: uuid */
+            communityId: string;
+            /** Format: uuid */
+            roomId: string;
+            /** Format: date */
+            date: string;
+            startTime: components["schemas"]["LocalTime"];
+            endTime: components["schemas"]["LocalTime"];
+            /** Format: uuid */
+            bookingRequestId: string;
+            bookingStatus: components["schemas"]["BookingRequestStatus"];
+        };
+        OccupiedSlot: components["schemas"]["TimeSlot"] & {
+            /** @enum {string} */
+            status: "PENDING" | "APPROVED";
+            ownCommunity: boolean;
+        };
+        RoomOccupancy: {
+            /** Format: uuid */
+            roomId: string;
+            /** Format: date */
+            date: string;
+            occupied: components["schemas"]["OccupiedSlot"][];
+        };
+        WeeklyRecurrence: {
+            /** @enum {string} */
+            frequency: "WEEKLY";
+            /**
+             * Format: date
+             * @description Mandatory last possible date, inclusive; not before the first date and at most one year after it
+             */
+            until: string;
+        };
+        CreateBookingRequest: {
+            /** Format: uuid */
+            roomId: string;
+            /**
+             * Format: uuid
+             * @description Community the caller acts for; required for administrators (422 COMMUNITY_REQUIRED, or COMMUNITY_NOT_FOUND), moderators may omit it or send their own (another community gets 403)
+             */
+            communityId?: string;
+            /** Format: date */
+            date: string;
+            startTime: components["schemas"]["LocalTime"];
+            endTime: components["schemas"]["LocalTime"];
+            /** @description Shown to administrators; the form warns not to include personal data */
+            reason: string;
+            recurrence?: components["schemas"]["WeeklyRecurrence"];
+        };
+        RejectBookingRequest: {
+            /** @description Optional; the form warns not to include personal data */
+            reason?: string;
+        };
+        BookingReasonInput: {
+            reason: string;
+        };
+        /** @enum {string} */
+        BookingRequestStatus: "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
+        /** @enum {string} */
+        BookingStatus: "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
+        BookingRequest: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            roomId: string;
+            /** Format: uuid */
+            communityId: string;
+            /** Format: uuid */
+            eventId?: string;
+            /** Format: date */
+            date: string;
+            startTime: components["schemas"]["LocalTime"];
+            endTime: components["schemas"]["LocalTime"];
+            reason: string;
+            recurrence?: components["schemas"]["WeeklyRecurrence"];
+            status: components["schemas"]["BookingRequestStatus"];
+            rejectionReason?: string;
+            occurrenceCount: number;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        Booking: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            date: string;
+            startTime: components["schemas"]["LocalTime"];
+            endTime: components["schemas"]["LocalTime"];
+            status: components["schemas"]["BookingStatus"];
+        };
+        StatusChange: {
+            /** Format: uuid */
+            bookingId?: string;
+            /** @enum {string} */
+            fromStatus?: "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
+            /** @enum {string} */
+            toStatus: "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
+            /**
+             * Format: uuid
+             * @description Absent when the user was deleted; the client shows a deleted-user label
+             */
+            changedBy?: string;
+            /** Format: date-time */
+            changedAt: string;
+        };
+        BookingRequestDetail: components["schemas"]["BookingRequest"] & {
+            bookings: components["schemas"]["Booking"][];
+            history: components["schemas"]["StatusChange"][];
+        };
+        BookingRequestPage: {
+            items: components["schemas"]["BookingRequest"][];
+            page: number;
+            size: number;
+            totalItems: number;
+        };
+        RoomOccupiedProblem: components["schemas"]["Problem"] & {
+            /** @description Present with code ROOM_OCCUPIED; empty when another request took the slot concurrently and the client must reload the occupancy */
+            conflicts?: {
+                /** Format: date */
+                date: string;
+                startTime: components["schemas"]["LocalTime"];
+                endTime: components["schemas"]["LocalTime"];
+            }[];
+        };
+        RoomHasActiveBookingsProblem: components["schemas"]["Problem"] & {
+            activeBookings?: number;
         };
     };
     responses: {
@@ -375,9 +762,29 @@ export interface components {
                 "application/problem+json": components["schemas"]["LoginBlockedProblem"];
             };
         };
+        /** @description Room, booking request, occurrence or event does not exist */
+        BookingNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description The request or room is no longer in a state that allows this action; codes BOOKING_REQUEST_ALREADY_RESOLVED (already resolved or changed concurrently), BOOKING_REQUEST_NOT_ACTIVE, BOOKING_ALREADY_STARTED, ROOM_NAME_TAKEN or ROOM_INACTIVE */
+        BookingStateConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
     };
     parameters: {
         UserId: string;
+        RoomId: string;
+        BookingRequestId: string;
     };
     requestBodies: never;
     headers: never;
@@ -733,6 +1140,445 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["StateConflict"];
+        };
+    };
+    listRooms: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active rooms */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Room"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createRoom: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoomInput"];
+            };
+        };
+        responses: {
+            /** @description Room created and active */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Room"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["BookingStateConflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    renameRoom: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: components["parameters"]["RoomId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoomInput"];
+            };
+        };
+        responses: {
+            /** @description Room renamed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Room"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["BookingNotFound"];
+            409: components["responses"]["BookingStateConflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    deactivateRoom: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: components["parameters"]["RoomId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Room deactivated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["BookingNotFound"];
+            /** @description The room still has pending or approved bookings with a future slot, or is already deactivated */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["RoomHasActiveBookingsProblem"];
+                };
+            };
+        };
+    };
+    getRoomOccupancy: {
+        parameters: {
+            query: {
+                date: string;
+                /** @description Community the caller acts for, used for ownCommunity; required for administrators (422 COMMUNITY_REQUIRED), moderators may omit it or send their own (another community gets 403) */
+                communityId?: string;
+            };
+            header?: never;
+            path: {
+                roomId: components["parameters"]["RoomId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Occupied slots ordered by start time */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomOccupancy"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["BookingNotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    listBookingRequests: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["BookingRequestStatus"][];
+                /** @description Administrators may filter by community or omit it to see all; moderators may omit it or send their own (another community gets 403) */
+                communityId?: string;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of booking requests ordered by first date */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingRequestPage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createBookingRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBookingRequest"];
+            };
+        };
+        responses: {
+            /** @description Request registered as pending */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingRequest"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["BookingNotFound"];
+            /** @description ROOM_OCCUPIED with the conflicting dates, or ROOM_INACTIVE; nothing is registered */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["RoomOccupiedProblem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getBookingRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingRequestId: components["parameters"]["BookingRequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Booking request */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingRequestDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["BookingNotFound"];
+        };
+    };
+    rectifyBookingRequestReason: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingRequestId: components["parameters"]["BookingRequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingReasonInput"];
+            };
+        };
+        responses: {
+            /** @description Reason corrected */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingRequest"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["BookingNotFound"];
+            409: components["responses"]["BookingStateConflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    approveBookingRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingRequestId: components["parameters"]["BookingRequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request approved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingRequest"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["BookingNotFound"];
+            409: components["responses"]["BookingStateConflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    rejectBookingRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingRequestId: components["parameters"]["BookingRequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RejectBookingRequest"];
+            };
+        };
+        responses: {
+            /** @description Request rejected; its slots are free again */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingRequest"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["BookingNotFound"];
+            409: components["responses"]["BookingStateConflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    cancelBookingRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingRequestId: components["parameters"]["BookingRequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request cancelled; its future slots are free again */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingRequest"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["BookingNotFound"];
+            409: components["responses"]["BookingStateConflict"];
+        };
+    };
+    cancelBooking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingRequestId: components["parameters"]["BookingRequestId"];
+                bookingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Occurrence cancelled; the rest of the series is unchanged */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BookingRequestDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["BookingNotFound"];
+            409: components["responses"]["BookingStateConflict"];
+        };
+    };
+    createEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEvent"];
+            };
+        };
+        responses: {
+            /** @description Event and its pending booking request registered */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Event"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["BookingNotFound"];
+            /** @description ROOM_OCCUPIED with the conflicting dates, or ROOM_INACTIVE; neither the event nor the booking request is saved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["RoomOccupiedProblem"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Event */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Event"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["BookingNotFound"];
         };
     };
 }

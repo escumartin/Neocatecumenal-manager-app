@@ -6,7 +6,19 @@ import { renderWithSession } from '@/screens/auth/support/test-support';
 function home() {
   const onOpenUsers = jest.fn();
   const onPasswordChange = jest.fn();
-  return { element: <Home onOpenUsers={onOpenUsers} onPasswordChange={onPasswordChange} />, onOpenUsers, onPasswordChange };
+  const element = (
+    <Home
+      onOpenUsers={onOpenUsers}
+      onOpenRooms={jest.fn()}
+      onRequestBooking={jest.fn()}
+      onOpenMyRequests={jest.fn()}
+      onOpenOccupancy={jest.fn()}
+      onOpenPendingRequests={jest.fn()}
+      onCreateEvent={jest.fn()}
+      onPasswordChange={onPasswordChange}
+    />
+  );
+  return { element, onOpenUsers, onPasswordChange };
 }
 
 describe('home', () => {
