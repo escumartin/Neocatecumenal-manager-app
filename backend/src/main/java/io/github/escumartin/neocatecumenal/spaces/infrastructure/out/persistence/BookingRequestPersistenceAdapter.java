@@ -42,6 +42,12 @@ public class BookingRequestPersistenceAdapter implements BookingRequestRepositor
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean existsByCommunity(CommunityId communityId) {
+        return repository.existsByCommunityId(communityId.value());
+    }
+
+    @Override
     @Transactional
     public BookingRequest save(BookingRequest request) {
         BookingRequestEntity entity = repository.findById(request.id().value())

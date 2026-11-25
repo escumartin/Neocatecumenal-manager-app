@@ -34,15 +34,17 @@ public class UsersController implements UsersApi {
     private final ListUsers listUsers;
     private final GetUser getUser;
     private final ResetUserPassword resetUserPassword;
+    private final TransactionRetry retry;
 
     UsersController(CreateUser createUser, UpdateUser updateUser, DeleteUser deleteUser, ListUsers listUsers,
-            GetUser getUser, ResetUserPassword resetUserPassword) {
+            GetUser getUser, ResetUserPassword resetUserPassword, TransactionRetry retry) {
         this.createUser = createUser;
         this.updateUser = updateUser;
         this.deleteUser = deleteUser;
         this.listUsers = listUsers;
         this.getUser = getUser;
         this.resetUserPassword = resetUserPassword;
+        this.retry = retry;
     }
 
     @Override
@@ -55,7 +57,7 @@ public class UsersController implements UsersApi {
 
     @Override
     public ResponseEntity<Void> deleteUser(UUID userId) {
-        deleteUser.delete(new UserId(userId));
+        retry.run(() -> deleteUser.delete(new UserId(userId)));
         return ResponseEntity.noContent().build();
     }
 
@@ -78,9 +80,10 @@ public class UsersController implements UsersApi {
 
     @Override
     public ResponseEntity<User> updateUser(UUID userId, UserInput userInput) {
-        User updated = UsersMapper.toUser(updateUser.update(new UpdateUserCommand(new UserId(userId),
+        UpdateUserCommand command = new UpdateUserCommand(new UserId(userId),
                 UsersMapper.displayName(userInput.getName()), UsersMapper.toDomain(userInput.getRole()),
-                new CommunityId(userInput.getCommunityId()))));
+                new CommunityId(userInput.getCommunityId()));
+        User updated = UsersMapper.toUser(retry.execute(() -> updateUser.update(command)));
         return ResponseEntity.ok(updated);
     }
 }

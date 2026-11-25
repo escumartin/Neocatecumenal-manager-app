@@ -40,6 +40,8 @@ export const usersText = {
     create: 'Crear usuario',
     save: 'Guardar cambios',
     saving: 'Guardando…',
+    communityHint:
+      'Si el usuario está vinculado a un hermano, no se le cambia la comunidad desde aquí: traslada al hermano desde Hermanos y los dos cambian a la vez.',
   },
   created: {
     title(name: string) {
@@ -76,10 +78,13 @@ export const usersText = {
     INVALID_FORMAT: 'Revisa el formato de los datos.',
     COMMUNITY_REQUIRED: 'Elige una comunidad.',
     COMMUNITY_NOT_FOUND: 'La comunidad elegida no existe.',
+    COMMUNITY_DEACTIVATED: 'La comunidad elegida está desactivada.',
   } as Record<string, string>,
   errors: {
     FORBIDDEN: 'No tienes permiso para hacer esto.',
     SELF_ACTION_FORBIDDEN: 'No puedes hacer esto con tu propia cuenta.',
+    USER_LINKED_TO_MEMBER:
+      'Este usuario está vinculado a un hermano. Para cambiarle de comunidad, traslada al hermano desde Hermanos: los dos cambian a la vez.',
     LAST_MODERATOR: 'No se puede: es el último moderador de su comunidad.',
     LAST_ADMINISTRATOR: 'No se puede: es el último administrador.',
     NOT_FOUND: 'El usuario ya no existe.',

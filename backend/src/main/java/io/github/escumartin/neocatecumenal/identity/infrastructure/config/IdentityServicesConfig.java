@@ -1,6 +1,9 @@
 package io.github.escumartin.neocatecumenal.identity.infrastructure.config;
 
+import io.github.escumartin.neocatecumenal.identity.CommunityCatalog;
+import io.github.escumartin.neocatecumenal.identity.CommunityProvisioner;
 import io.github.escumartin.neocatecumenal.identity.IdentityApi;
+import io.github.escumartin.neocatecumenal.identity.UserLinkGuard;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.AuthenticateSession;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.BootstrapIdentity;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.GetMyProfile;
@@ -10,7 +13,6 @@ import io.github.escumartin.neocatecumenal.identity.application.port.in.GetUser;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.ListUsers;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.UpdateUser;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.LogIn;
-import io.github.escumartin.neocatecumenal.identity.application.port.in.ListCommunities;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.LogOut;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.PurgeExpiredAccessData;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.AccessIdGenerator;
@@ -33,8 +35,8 @@ import io.github.escumartin.neocatecumenal.identity.application.service.DeleteUs
 import io.github.escumartin.neocatecumenal.identity.application.service.GetUserService;
 import io.github.escumartin.neocatecumenal.identity.application.service.ListUsersService;
 import io.github.escumartin.neocatecumenal.identity.application.service.UpdateUserService;
+import io.github.escumartin.neocatecumenal.identity.application.service.CommunityCatalogService;
 import io.github.escumartin.neocatecumenal.identity.application.service.IdentityApiService;
-import io.github.escumartin.neocatecumenal.identity.application.service.ListCommunitiesService;
 import io.github.escumartin.neocatecumenal.identity.application.service.LogInService;
 import io.github.escumartin.neocatecumenal.identity.application.service.LogOutService;
 import io.github.escumartin.neocatecumenal.identity.application.service.PurgeExpiredAccessDataService;
@@ -82,14 +84,14 @@ class IdentityServicesConfig {
     }
 
     @Bean
-    ListCommunities listCommunities(CommunityRepository communities) {
-        return new ListCommunitiesService(communities);
+    IdentityApi identityApi(CurrentSessionContext currentSession, UserRepository users,
+            CommunityRepository communities, PrivacyNoticeSettings privacyNotice, UpdateUser updateUser, DeleteUser deleteUser) {
+        return new IdentityApiService(currentSession, users, communities, privacyNotice, updateUser, deleteUser);
     }
 
     @Bean
-    IdentityApi identityApi(CurrentSessionContext currentSession, UserRepository users,
-            CommunityRepository communities, PrivacyNoticeSettings privacyNotice, ListCommunities listCommunities) {
-        return new IdentityApiService(currentSession, users, communities, privacyNotice, listCommunities);
+    CommunityCatalog communityCatalog(CommunityRepository communities) {
+        return new CommunityCatalogService(communities);
     }
 
     @Bean
@@ -103,14 +105,14 @@ class IdentityServicesConfig {
 
     @Bean
     UpdateUser updateUser(CurrentSessionContext currentSession, UserRepository users,
-            CommunityRepository communities, PrivacyNoticeSettings privacyNotice) {
-        return new UpdateUserService(currentSession, users, communities, privacyNotice);
+            CommunityRepository communities, PrivacyNoticeSettings privacyNotice, UserLinkGuard guard) {
+        return new UpdateUserService(currentSession, users, communities, privacyNotice, guard);
     }
 
     @Bean
     DeleteUser deleteUser(CurrentSessionContext currentSession, UserRepository users, SessionRepository sessions,
-            IdentityEventPublisher events, PrivacyNoticeSettings privacyNotice) {
-        return new DeleteUserService(currentSession, users, sessions, events, privacyNotice);
+            IdentityEventPublisher events, PrivacyNoticeSettings privacyNotice, UserLinkGuard guard) {
+        return new DeleteUserService(currentSession, users, sessions, events, privacyNotice, guard);
     }
 
     @Bean
@@ -165,7 +167,8 @@ class IdentityServicesConfig {
 
     @Bean
     BootstrapIdentity bootstrapIdentity(UserRepository users, CommunityRepository communities,
-            PasswordHasher hasher, AccessIdGenerator accessIds, InitialPasswordGenerator passwords) {
-        return new BootstrapIdentityService(users, communities, hasher, accessIds, passwords);
+            PasswordHasher hasher, AccessIdGenerator accessIds, InitialPasswordGenerator passwords,
+            CommunityProvisioner provisioner) {
+        return new BootstrapIdentityService(users, communities, hasher, accessIds, passwords, provisioner);
     }
 }

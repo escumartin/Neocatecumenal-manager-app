@@ -4,12 +4,18 @@ import io.github.escumartin.neocatecumenal.identity.application.port.out.Communi
 import io.github.escumartin.neocatecumenal.identity.domain.Community;
 import io.github.escumartin.neocatecumenal.identity.domain.CommunityId;
 import io.github.escumartin.neocatecumenal.identity.domain.CommunityNumber;
+import io.github.escumartin.neocatecumenal.identity.IdentityRuleViolation;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.core.NestedExceptionUtils;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 @Component
 public class CommunityPersistenceAdapter implements CommunityRepository {
+
+    private static final String FOREIGN_KEY_VIOLATION = "23503";
 
     private final CommunitySpringDataRepository repository;
 
@@ -22,6 +28,7 @@ public class CommunityPersistenceAdapter implements CommunityRepository {
         CommunityJpaEntity entity = new CommunityJpaEntity();
         entity.id = community.id().value();
         entity.number = community.number().value();
+        entity.active = community.active();
         return toDomain(repository.saveAndFlush(entity));
     }
 
@@ -40,7 +47,39 @@ public class CommunityPersistenceAdapter implements CommunityRepository {
         return repository.findAllByOrderByNumberAsc().stream().map(CommunityPersistenceAdapter::toDomain).toList();
     }
 
+    @Override
+    public void setActive(CommunityId id, boolean active) {
+        CommunityJpaEntity entity = repository.findById(id.value()).orElseThrow();
+        entity.active = active;
+        repository.saveAndFlush(entity);
+    }
+
+    @Override
+    public void renumber(CommunityId id, CommunityNumber number) {
+        CommunityJpaEntity entity = repository.findById(id.value()).orElseThrow();
+        entity.number = number.value();
+        repository.saveAndFlush(entity);
+    }
+
+    @Override
+    public void delete(CommunityId id) {
+        try {
+            repository.deleteById(id.value());
+            repository.flush();
+        } catch (DataIntegrityViolationException violation) {
+            if (isForeignKeyViolation(violation)) {
+                throw new IdentityRuleViolation("COMMUNITY_HAS_USERS");
+            }
+            throw violation;
+        }
+    }
+
+    private static boolean isForeignKeyViolation(DataIntegrityViolationException violation) {
+        Throwable cause = NestedExceptionUtils.getMostSpecificCause(violation);
+        return cause instanceof SQLException sql && FOREIGN_KEY_VIOLATION.equals(sql.getSQLState());
+    }
+
     private static Community toDomain(CommunityJpaEntity entity) {
-        return new Community(new CommunityId(entity.id), new CommunityNumber(entity.number));
+        return new Community(new CommunityId(entity.id), new CommunityNumber(entity.number), entity.active);
     }
 }

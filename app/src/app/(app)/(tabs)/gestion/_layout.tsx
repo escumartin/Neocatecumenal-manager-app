@@ -22,6 +22,29 @@ export default function GestionLayout() {
           title: navigationText.management.users,
         }}
       />
+      <Stack.Screen
+        name="comunidades/index"
+        options={{
+          ...detailStackOptions,
+          title: navigationText.management.communities,
+        }}
+      />
+      <Stack.Screen name="comunidades/nueva" options={formSheetOptions(navigationText.newCommunity)} />
+      <Stack.Screen name="comunidades/[communityId]" options={formSheetOptions(navigationText.editCommunity)} />
+      <Stack.Screen name="comunidades/responsable" options={formSheetOptions(navigationText.communityResponsible)} />
+      <Stack.Screen
+        name="hermanos/index"
+        options={{
+          ...detailStackOptions,
+          title: navigationText.management.members,
+        }}
+      />
+      <Stack.Screen name="hermanos/nuevo" options={formSheetOptions(navigationText.newMember)} />
+      <Stack.Screen name="hermanos/[memberId]" options={formSheetOptions(navigationText.editMember)} />
+      <Stack.Screen name="hermanos/contacto" options={formSheetOptions(navigationText.memberContact)} />
+      <Stack.Screen name="hermanos/vincular" options={formSheetOptions(navigationText.memberLink)} />
+      <Stack.Screen name="hermanos/trasladar" options={formSheetOptions(navigationText.memberTransfer)} />
+      <Stack.Screen name="hermanos/copia" options={formSheetOptions(navigationText.memberDataExport)} />
       <Stack.Screen name="usuarios/nuevo" options={formSheetOptions(navigationText.newUser)} />
       <Stack.Screen name="usuarios/[userId]" options={formSheetOptions(navigationText.editUser)} />
       <Stack.Screen

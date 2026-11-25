@@ -28,10 +28,11 @@ class BootstrapIdentityServiceTest {
     private final InMemoryUsers users = new InMemoryUsers();
     private final InMemoryCommunities communities = new InMemoryCommunities();
     private final FakeHasher hasher = new FakeHasher();
+    private final Fakes.InMemoryProvisioner provisioner = new Fakes.InMemoryProvisioner(communities);
 
     private BootstrapIdentityService service(Integer... accessIds) {
         return new BootstrapIdentityService(users, communities, hasher, new SequenceAccessIds(accessIds),
-                new FixedInitialPassword());
+                new FixedInitialPassword(), provisioner);
     }
 
     private static BootstrapCommand command(int administratorCommunity, int... numbers) {
@@ -127,5 +128,22 @@ class BootstrapIdentityServiceTest {
 
         assertThat(outcome.createdCommunities()).isEqualTo(1);
         assertThat(outcome.administrator()).isPresent();
+    }
+
+    @Test
+    void asksTheProvisionerOncePerDistinctCommunityNumber() {
+        service(111111).run(command(2, 1, 2, 3));
+
+        assertThat(provisioner.requested).containsExactly(1, 2, 3);
+    }
+
+    @Test
+    void createsTheAdministratorInTheCommunityTheProvisionerReturns() {
+        BootstrapOutcome outcome = service(123456).run(command(5, 5));
+
+        User administrator = users.findByAccessId(new AccessId(123456)).orElseThrow();
+        assertThat(outcome.administrator()).isPresent();
+        assertThat(administrator.communityId())
+                .isEqualTo(communities.findByNumber(new CommunityNumber(5)).orElseThrow().id());
     }
 }

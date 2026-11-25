@@ -46,10 +46,18 @@ public final class User {
     }
 
     public void update(Actor actor, UserChanges changes, MembershipCounts counts) {
+        checkUpdate(actor, changes, counts);
+        apply(changes);
+    }
+
+    public void checkUpdate(Actor actor, UserChanges changes, MembershipCounts counts) {
         if (!UserManagementPolicy.canEditName(actor, this)) {
             throw new DomainException("FORBIDDEN");
         }
         UserManagementPolicy.checkRoleOrCommunityChange(actor, this, changes.role(), changes.communityId(), counts);
+    }
+
+    public void apply(UserChanges changes) {
         this.name = changes.name();
         this.role = changes.role();
         this.communityId = changes.communityId();

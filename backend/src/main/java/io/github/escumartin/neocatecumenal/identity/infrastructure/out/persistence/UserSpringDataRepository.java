@@ -21,6 +21,14 @@ interface UserSpringDataRepository extends JpaRepository<UserJpaEntity, UUID> {
 
     Page<UserJpaEntity> findByCommunityId(UUID communityId, Pageable pageable);
 
+    @Query(value = "select * from identity_user where id = :id for update", nativeQuery = true)
+    Optional<UserJpaEntity> findByIdForUpdate(@Param("id") UUID id);
+
+    @Query(value = "select * from identity_user where id = :id for share", nativeQuery = true)
+    Optional<UserJpaEntity> findByIdForShare(@Param("id") UUID id);
+
+    List<UserJpaEntity> findByCommunityIdOrderByNameAscIdAsc(UUID communityId);
+
     @Query(value = "select id from identity_user where role = 'ADMINISTRATOR' order by id for update",
             nativeQuery = true)
     List<UUID> lockAdministratorIds();

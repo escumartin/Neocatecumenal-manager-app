@@ -9,7 +9,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.jayway.jsonpath.JsonPath;
 import io.github.escumartin.neocatecumenal.identity.TestUsers;
-import io.github.escumartin.neocatecumenal.identity.application.port.in.ListCommunities;
+import io.github.escumartin.neocatecumenal.identity.application.port.in.GetMyProfile;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.CommunityRepository;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.IssuedSessionToken;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.SessionRepository;
@@ -75,7 +75,7 @@ class ErrorResponsesIT {
     private JdbcTemplate jdbc;
 
     @MockitoBean
-    private ListCommunities listCommunities;
+    private GetMyProfile getMyProfile;
 
     private final HttpClient client = HttpClient.newHttpClient();
     private final ListAppender<ILoggingEvent> appender = new ListAppender<>();
@@ -169,9 +169,9 @@ class ErrorResponsesIT {
     @Test
     void anUnexpectedFailureIsAnInternalErrorProblemWithoutLeakingItsMessageAndIsLoggedWithItsCause()
             throws Exception {
-        when(listCommunities.list()).thenThrow(new IllegalStateException("leaky-internal-detail"));
+        when(getMyProfile.get()).thenThrow(new IllegalStateException("leaky-internal-detail"));
 
-        HttpResponse<String> response = send("GET", "/api/communities", null, null, true);
+        HttpResponse<String> response = send("GET", "/api/me", null, null, true);
 
         assertProblem(response, 500, "INTERNAL_ERROR");
         assertThat(response.body()).doesNotContain("leaky-internal-detail");

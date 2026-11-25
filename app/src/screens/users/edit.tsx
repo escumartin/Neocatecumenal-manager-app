@@ -170,6 +170,7 @@ function UserFields({ initial, api, communitiesApi, save, onCreated, onSaved, on
         <RadioSection title={usersText.form.role} options={ROLE_OPTIONS} value={role} onChange={setRole} />
       ) : null}
       <CommunityPicker selectedId={communityId} onSelect={setCommunityId} api={communitiesApi} />
+      {editing && isAdministrator ? <Text>{usersText.form.communityHint}</Text> : null}
       {problem && problem.field === null ? (
         <Text role="alert" accessibilityLiveRegion="assertive" className="text-destructive">
           {`⚠ ${problem.message}`}

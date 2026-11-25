@@ -1,5 +1,6 @@
 package io.github.escumartin.neocatecumenal.identity.application.service;
 
+import io.github.escumartin.neocatecumenal.identity.CommunityProvisioner;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.BootstrapCommand;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.BootstrapIdentity;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.BootstrapOutcome;
@@ -10,14 +11,15 @@ import io.github.escumartin.neocatecumenal.identity.application.port.out.Initial
 import io.github.escumartin.neocatecumenal.identity.application.port.out.PasswordHasher;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.UserRepository;
 import io.github.escumartin.neocatecumenal.identity.domain.AccessId;
-import io.github.escumartin.neocatecumenal.identity.domain.Community;
 import io.github.escumartin.neocatecumenal.identity.domain.CommunityId;
 import io.github.escumartin.neocatecumenal.identity.domain.CommunityNumber;
 import io.github.escumartin.neocatecumenal.identity.domain.PlainPassword;
 import io.github.escumartin.neocatecumenal.identity.domain.User;
 import io.github.escumartin.neocatecumenal.identity.domain.UserId;
 import io.github.escumartin.neocatecumenal.identity.domain.UserRole;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -32,14 +34,17 @@ public class BootstrapIdentityService implements BootstrapIdentity {
     private final PasswordHasher hasher;
     private final AccessIdGenerator accessIds;
     private final InitialPasswordGenerator passwords;
+    private final CommunityProvisioner provisioner;
 
     public BootstrapIdentityService(UserRepository users, CommunityRepository communities, PasswordHasher hasher,
-            AccessIdGenerator accessIds, InitialPasswordGenerator passwords) {
+            AccessIdGenerator accessIds, InitialPasswordGenerator passwords,
+            CommunityProvisioner provisioner) {
         this.users = users;
         this.communities = communities;
         this.hasher = hasher;
         this.accessIds = accessIds;
         this.passwords = passwords;
+        this.provisioner = provisioner;
     }
 
     @Override
@@ -48,24 +53,24 @@ public class BootstrapIdentityService implements BootstrapIdentity {
         Set<CommunityNumber> numbers = new LinkedHashSet<>(command.communityNumbers());
         numbers.add(command.administratorCommunity());
         int created = 0;
+        Map<CommunityNumber, CommunityId> ids = new HashMap<>();
         for (CommunityNumber number : numbers) {
             if (communities.findByNumber(number).isEmpty()) {
-                communities.save(new Community(new CommunityId(UUID.randomUUID()), number));
                 created++;
             }
+            ids.put(number, new CommunityId(provisioner.ensure(number.value())));
         }
         Optional<CreatedAdministrator> administrator = users.existsAdministrator()
                 ? Optional.empty()
-                : Optional.of(createAdministrator(command));
+                : Optional.of(createAdministrator(command, ids.get(command.administratorCommunity())));
         return new BootstrapOutcome(created, administrator);
     }
 
-    private CreatedAdministrator createAdministrator(BootstrapCommand command) {
-        Community community = communities.findByNumber(command.administratorCommunity()).orElseThrow();
+    private CreatedAdministrator createAdministrator(BootstrapCommand command, CommunityId communityId) {
         AccessId accessId = freeAccessId();
         PlainPassword password = passwords.next();
         users.save(User.register(new UserId(UUID.randomUUID()), accessId, command.administratorName(),
-                UserRole.ADMINISTRATOR, community.id(), hasher.hash(password)));
+                UserRole.ADMINISTRATOR, communityId, hasher.hash(password)));
         return new CreatedAdministrator(accessId, password);
     }
 

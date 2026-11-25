@@ -2,6 +2,7 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { PendingRequestsScreen } from '../pending-requests';
 import {
   chapel,
+  communities,
   fakeBookingRequestsApi,
   fakeCommunitiesApi,
   fakeRoomsApi,
@@ -264,6 +265,48 @@ describe('pending requests screen', () => {
 
     expect(await screen.findByText(hall.name)).toBeOnTheScreen();
     expect(screen.queryByText(bookingsText.list.roomUnavailable)).not.toBeOnTheScreen();
+  });
+
+  it('looks up the community numbers including the deactivated communities', async () => {
+    const communitiesApi = fakeCommunitiesApi();
+    const api = fakeBookingRequestsApi({ list: jest.fn().mockResolvedValue(pendingPage) });
+    await renderAs(
+      'ADMINISTRATOR',
+      <PendingRequestsScreen api={api} roomsApi={fakeRoomsApi()} communitiesApi={communitiesApi} />,
+    );
+    await screen.findByRole('heading', { name: hall.name });
+
+    expect(communitiesApi.list).toHaveBeenCalledWith({ includeDeactivated: true });
+  });
+
+  it('shows the number of a request of a deactivated community', async () => {
+    const communitiesApi = {
+      list: jest.fn().mockResolvedValue({
+        ok: true,
+        communities: [
+          { id: communities[0].id, number: 1, status: 'ACTIVE' },
+          { id: communities[1].id, number: 2, status: 'DEACTIVATED' },
+        ],
+      }),
+    };
+    const api = fakeBookingRequestsApi({ list: jest.fn().mockResolvedValue(pendingPage) });
+    await renderAs(
+      'ADMINISTRATOR',
+      <PendingRequestsScreen api={api} roomsApi={fakeRoomsApi()} communitiesApi={communitiesApi} />,
+    );
+
+    expect(await screen.findByText(bookingsText.resolve.community(2))).toBeOnTheScreen();
+  });
+
+  it('does not look up community numbers for a user who is not an administrator', async () => {
+    const communitiesApi = fakeCommunitiesApi();
+    await renderAs(
+      'MODERATOR',
+      <PendingRequestsScreen api={fakeBookingRequestsApi()} roomsApi={fakeRoomsApi()} communitiesApi={communitiesApi} />,
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(`⚠ ${bookingsText.resolve.forbidden}`);
+    expect(communitiesApi.list).not.toHaveBeenCalled();
   });
 
   it('reloads the pending requests when the screen regains focus', async () => {

@@ -35,6 +35,12 @@ public class EventPersistenceAdapter implements EventRepository {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean existsByCommunity(CommunityId communityId) {
+        return repository.existsByCommunityId(communityId.value());
+    }
+
+    @Override
     @Transactional
     public int anonymize(UserId userId) {
         return repository.clearCreator(userId.value());

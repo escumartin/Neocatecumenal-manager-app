@@ -62,6 +62,11 @@ final class InMemoryBookingRequests implements BookingRequestRepository {
     }
 
     @Override
+    public boolean existsByCommunity(CommunityId communityId) {
+        return stored.values().stream().anyMatch(request -> request.communityId().equals(communityId));
+    }
+
+    @Override
     public int anonymize(UserId userId) {
         int affected = 0;
         for (BookingRequest request : List.copyOf(stored.values())) {

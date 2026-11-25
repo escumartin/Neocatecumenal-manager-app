@@ -32,6 +32,11 @@ final class FakeSpaces implements SpacesApi {
     }
 
     @Override
+    public boolean hasBookingRequestsFor(UUID communityId) {
+        return false;
+    }
+
+    @Override
     public Optional<BookingRequestState> bookingRequestStatus(UUID bookingRequestId) {
         return Optional.ofNullable(states.get(bookingRequestId));
     }

@@ -25,6 +25,8 @@ public interface BookingRequestRepository {
     BookingRequestPage search(Optional<CommunityId> communityId, Set<BookingRequestStatus> statuses, int page,
             int size);
 
+    boolean existsByCommunity(CommunityId communityId);
+
     int anonymize(UserId userId);
 
     int deleteWithLastDateBefore(LocalDate date);

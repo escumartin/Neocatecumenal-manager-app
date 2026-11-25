@@ -187,7 +187,7 @@ class PendingStepsIT {
         acceptAs(bearer, CURRENT_VERSION).andExpect(status().isNoContent());
         changePasswordAs(bearer, INITIAL, CHOSEN).andExpect(status().isNoContent());
 
-        getAs(bearer, "/api/communities").andExpect(status().isOk());
+        getAs(bearer, "/api/rooms").andExpect(status().isOk());
         getAs(bearer, "/api/me")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pendingSteps", hasSize(0)));

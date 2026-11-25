@@ -1,4 +1,4 @@
-Verificado: 2026-11-23 (fuente: TFG, capítulos 1 y 4)
+Verificado: 2026-11-25 (fuentes: TFG, capítulos 1 y 4, y specs/003-comunidades-hermanos/spec.md)
 Flujo de solicitud y aprobación de salones (línea 57): fuente `specs/001-reservas-salones/spec.md` FR-005, no el TFG.
 
 # Dominio
@@ -13,8 +13,9 @@ dos grupos coincidan en el mismo salón y franja.
 
 | Término | Significado |
 |---|---|
-| Comunidad | grupo de hermanos identificado por un número; tiene un responsable obligatorio |
-| Hermano / Usuario | persona de una comunidad: nombre, apellidos, dirección, teléfono fijo, móvil, email, sexo, comunidad |
+| Comunidad | grupo de hermanos identificado por un número; nace en el estado explícito «sin responsable» y, una vez designado, siempre tiene uno |
+| Hermano → `Member` | persona de una comunidad: nombre, apellidos opcionales, móvil, teléfono fijo y email, cada contacto con su consentimiento; sin dirección ni sexo; puede no tener usuario |
+| Usuario | cuenta de acceso de Identidad y acceso; puede vincularse a un hermano (uno a uno, misma comunidad) sin compartir datos |
 | Lugar | salón parroquial, hotel o restaurante |
 | Reserva | ocupación de un lugar en una franja |
 | Evento | actividad con fecha y lugar; se especializa en Eucaristía, Palabra, Convivencia y Paso |
@@ -25,7 +26,8 @@ dos grupos coincidan en el mismo salón y franja.
 | Peregrinación | viaje con título, cuerpo, precio y fecha de salida; no guarda asistentes |
 | Noticia | aviso de ámbito general y público |
 | Ostiario | encargado de los salones; el principal reparte los salones de la parroquia |
-| Responsable, salmistas, acólita | roles dentro de una comunidad |
+| Responsable | hermano designado de la comunidad; no es un rol de la app y puede no ser moderador |
+| Salmistas, acólita | roles dentro de una comunidad |
 
 ## Roles de la app
 
@@ -35,7 +37,7 @@ Herencia: no identificado < registrado < moderador < administrador.
 |---|---|---|
 | No identificado | visitante | ver noticias e iniciar sesión |
 | Registrado | hermano | ver su comunidad (directorio de contactos, Palabras, Eucaristías, Convivencias, Pasos, Peregrinaciones), generar grupos, editar su teléfono fijo, móvil y email |
-| Moderador | responsable de comunidad | CRUD de noticias, eventos y usuarios solo de su comunidad |
+| Moderador | moderador de su comunidad | CRUD de noticias, eventos y usuarios solo de su comunidad |
 | Administrador | ostiario jefe | todo, en cualquier comunidad, más CRUD de comunidades y lugares |
 
 No hay autorregistro: el alta la hace un administrador o un moderador. Login con identificador numérico y contraseña.
@@ -59,13 +61,14 @@ El identificador de acceso es de 6 dígitos (100000–999999), lo genera el sist
 - El moderador solo opera sobre su comunidad.
 - El administrador elige comunidad antes de operar.
 - Borrar es definitivo y pide confirmación.
-- Cada comunidad tiene un responsable obligatorio.
+- Cada comunidad admite hermanos desde que nace, sin responsable; el administrador designa uno de sus hermanos y desde entonces no puede quedarse sin él.
 - Una comunidad no puede quedarse sin ningún moderador (por borrado, cambio de rol o cambio de comunidad).
 - El último administrador no puede borrarse ni perder el rol.
 
 ## Casos de uso (resumen)
 
 - Acceso: iniciar y cerrar sesión; el administrador o el moderador dan de alta, editan y borran usuarios.
+- Hermanos: el moderador da de alta, edita y borra hermanos de su comunidad; el directorio se limita a la propia comunidad.
 - Comunidades y lugares: el administrador gestiona comunidades y lugares; el registrado consulta el directorio y edita sus datos de contacto.
 - Agenda: el moderador y el administrador gestionan eventos (Eucaristías, Palabras, Convivencias, Pasos) con reserva de lugar; el registrado los consulta.
 - Peregrinaciones: consulta por el registrado; gestión por el administrador.

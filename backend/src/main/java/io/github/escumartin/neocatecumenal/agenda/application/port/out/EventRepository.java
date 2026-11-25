@@ -1,5 +1,6 @@
 package io.github.escumartin.neocatecumenal.agenda.application.port.out;
 
+import io.github.escumartin.neocatecumenal.agenda.domain.CommunityId;
 import io.github.escumartin.neocatecumenal.agenda.domain.Event;
 import io.github.escumartin.neocatecumenal.agenda.domain.EventId;
 import io.github.escumartin.neocatecumenal.agenda.domain.UserId;
@@ -11,6 +12,8 @@ public interface EventRepository {
     Event save(Event event);
 
     Optional<Event> findById(EventId id);
+
+    boolean existsByCommunity(CommunityId communityId);
 
     int anonymize(UserId userId);
 

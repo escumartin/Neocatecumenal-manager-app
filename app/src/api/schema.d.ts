@@ -136,9 +136,238 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Read-only list of communities ordered by number */
+        /** Communities ordered by number; active ones only unless an administrator asks for all */
         get: operations["listCommunities"];
         put?: never;
+        /** Create an active community without responsible (administrators only) */
+        post: operations["createCommunity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/communities/{communityId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                communityId: components["parameters"]["CommunityId"];
+            };
+            cookie?: never;
+        };
+        /** Community file for an administrator or a moderator of that community */
+        get: operations["getCommunity"];
+        /** Change number and name (administrators only) */
+        put: operations["updateCommunity"];
+        post?: never;
+        /** Delete permanently a community without responsible, members, users, booking requests or events (administrators only); the client confirms first */
+        delete: operations["deleteCommunity"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/communities/{communityId}/deactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                communityId: components["parameters"]["CommunityId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Deactivate a community; with moderators or administrators in it the request must carry confirmed true. Idempotent for an already deactivated community */
+        post: operations["deactivateCommunity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/communities/{communityId}/reactivation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                communityId: components["parameters"]["CommunityId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reactivate a deactivated community (administrators only). Idempotent for an already active community */
+        post: operations["reactivateCommunity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/communities/{communityId}/responsible": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                communityId: components["parameters"]["CommunityId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Designate or replace the responsible with a member of the same community (administrators only) */
+        put: operations["designateResponsible"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Directory of a community ordered by surnames, then given name; registered users and moderators see their own, administrators pass communityId. A deactivated community answers 409 COMMUNITY_DEACTIVATED except to administrators */
+        get: operations["listMembers"];
+        put?: never;
+        /** Add a member to an active community (moderator of that community or administrator) */
+        post: operations["createMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: components["parameters"]["MemberId"];
+            };
+            cookie?: never;
+        };
+        /** One member; a member of another community answers 404 as if it did not exist. On a deactivated community everyone but administrators gets 409 COMMUNITY_DEACTIVATED */
+        get: operations["getMember"];
+        /** Replace given name and surnames of the member; never changes the linked user. On a deactivated community moderators get 409 COMMUNITY_DEACTIVATED; administrators are exempt */
+        put: operations["renameMember"];
+        post?: never;
+        /** Delete the member and its consent record permanently; a linked user is deleted too under identity rules; the client confirms first. On a deactivated community moderators get 409 COMMUNITY_DEACTIVATED; administrators are exempt */
+        delete: operations["deleteMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/{memberId}/contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: components["parameters"]["MemberId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace contact details of a member; consent on behalf of a member without user needs channel and noticeGiven. On a deactivated community moderators get 409 COMMUNITY_DEACTIVATED; administrators are exempt */
+        put: operations["changeMemberContact"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/{memberId}/transfer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: components["parameters"]["MemberId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a member, and its linked user, to another active community (administrators only); moving to the member's own community is a 200 that changes nothing */
+        post: operations["transferMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/{memberId}/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: components["parameters"]["MemberId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Link the member one to one with a user of the same community; moderators only with registered users. On a deactivated community moderators get 409 COMMUNITY_DEACTIVATED; administrators are exempt */
+        put: operations["linkMember"];
+        post?: never;
+        /** Undo the link; administrators always, moderators only in their community with registered users, never the linked user. On a deactivated community moderators get 409 COMMUNITY_DEACTIVATED; administrators are exempt */
+        delete: operations["unlinkMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/members/{memberId}/data-export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: components["parameters"]["MemberId"];
+            };
+            cookie?: never;
+        };
+        /** Everything this context stores about the member, consent record included (moderator of that community or administrator). On a deactivated community moderators get 409 COMMUNITY_DEACTIVATED; administrators are exempt so that they can answer data requests */
+        get: operations["exportMemberData"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/member": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The member linked to the current user with the current consent per field; always available, also when the community is deactivated (data protection rights) */
+        get: operations["getMyMember"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/member/contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace own contact details; shared false withdraws consent and erases the value; always available, also when the community is deactivated (data protection rights) */
+        put: operations["changeMyContact"];
         post?: never;
         delete?: never;
         options?: never;
@@ -156,7 +385,10 @@ export interface paths {
         /** Users of a community (moderators see only their own; administrators must pass communityId) */
         get: operations["listUsers"];
         put?: never;
-        /** Create a user; the system generates the access id and the initial password */
+        /**
+         * Create a user; the system generates the access id and the initial password
+         * @description A deactivated community is rejected with 422 COMMUNITY_DEACTIVATED on communityId
+         */
         post: operations["createUser"];
         delete?: never;
         options?: never;
@@ -178,7 +410,10 @@ export interface paths {
          * @description A moderator asking for a user of another community gets 403; 404 only when the user does not exist
          */
         get: operations["getUser"];
-        /** Replace name, role and community; moderators may only change the name */
+        /**
+         * Replace name, role and community; moderators may only change the name
+         * @description A user linked to a member can only move to the community of that member, otherwise 409 USER_LINKED_TO_MEMBER; moving to a deactivated community is 422 COMMUNITY_DEACTIVATED on communityId
+         */
         put: operations["updateUser"];
         post?: never;
         /** Delete a user permanently; the client asks for confirmation first */
@@ -490,6 +725,10 @@ export interface components {
             /** Format: uuid */
             id: string;
             number: number;
+            name?: string;
+            status?: components["schemas"]["CommunityStatus"];
+            /** @description False means the explicit, visible state «sin responsable» */
+            hasResponsible?: boolean;
         };
         UserInput: {
             name: string;
@@ -529,13 +768,13 @@ export interface components {
              * @description Stable error code the client maps to a localised message
              * @enum {string}
              */
-            code: "UNAUTHENTICATED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_FAILED" | "INVALID_CREDENTIALS" | "LOGIN_TEMPORARILY_BLOCKED" | "PRIVACY_NOTICE_PENDING" | "PRIVACY_NOTICE_OUTDATED" | "PASSWORD_CHANGE_REQUIRED" | "LAST_ADMINISTRATOR" | "LAST_MODERATOR" | "SELF_ACTION_FORBIDDEN" | "CONCURRENT_MODIFICATION" | "BAD_REQUEST" | "METHOD_NOT_ALLOWED" | "NOT_ACCEPTABLE" | "UNSUPPORTED_MEDIA_TYPE" | "INTERNAL_ERROR" | "ROOM_OCCUPIED" | "BOOKING_REQUEST_ALREADY_RESOLVED" | "BOOKING_REQUEST_NOT_ACTIVE" | "BOOKING_ALREADY_STARTED" | "ROOM_NAME_TAKEN" | "ROOM_INACTIVE" | "ROOM_HAS_ACTIVE_BOOKINGS";
+            code: "UNAUTHENTICATED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_FAILED" | "INVALID_CREDENTIALS" | "LOGIN_TEMPORARILY_BLOCKED" | "PRIVACY_NOTICE_PENDING" | "PRIVACY_NOTICE_OUTDATED" | "PASSWORD_CHANGE_REQUIRED" | "LAST_ADMINISTRATOR" | "LAST_MODERATOR" | "SELF_ACTION_FORBIDDEN" | "CONCURRENT_MODIFICATION" | "BAD_REQUEST" | "METHOD_NOT_ALLOWED" | "NOT_ACCEPTABLE" | "UNSUPPORTED_MEDIA_TYPE" | "INTERNAL_ERROR" | "ROOM_OCCUPIED" | "BOOKING_REQUEST_ALREADY_RESOLVED" | "BOOKING_REQUEST_NOT_ACTIVE" | "BOOKING_ALREADY_STARTED" | "ROOM_NAME_TAKEN" | "ROOM_INACTIVE" | "ROOM_HAS_ACTIVE_BOOKINGS" | "COMMUNITY_NOT_EMPTY" | "COMMUNITY_HAS_HISTORY" | "COMMUNITY_HAS_RESPONSIBLE" | "COMMUNITY_HAS_PRIVILEGED_USERS" | "COMMUNITY_DEACTIVATED" | "RESPONSIBLE_REQUIRED" | "MEMBER_ALREADY_LINKED" | "USER_ALREADY_LINKED" | "MEMBER_NOT_LINKED" | "CONSENT_MANAGED_BY_MEMBER" | "USER_LINKED_TO_MEMBER";
         };
         ValidationProblem: components["schemas"]["Problem"] & {
             errors: {
                 field: string;
                 /** @enum {string} */
-                code: "REQUIRED" | "TOO_LONG" | "INVALID_FORMAT" | "COMMUNITY_REQUIRED" | "COMMUNITY_NOT_FOUND" | "PASSWORD_TOO_SHORT" | "PASSWORD_TOO_LONG" | "PASSWORD_TOO_COMMON" | "PASSWORD_CONTAINS_ACCESS_ID" | "CURRENT_PASSWORD_INCORRECT" | "END_NOT_AFTER_START" | "START_NOT_IN_FUTURE" | "RECURRENCE_UNTIL_BEFORE_DATE" | "RECURRENCE_TOO_LONG";
+                code: "REQUIRED" | "TOO_LONG" | "INVALID_FORMAT" | "COMMUNITY_REQUIRED" | "COMMUNITY_NOT_FOUND" | "PASSWORD_TOO_SHORT" | "PASSWORD_TOO_LONG" | "PASSWORD_TOO_COMMON" | "PASSWORD_CONTAINS_ACCESS_ID" | "CURRENT_PASSWORD_INCORRECT" | "END_NOT_AFTER_START" | "START_NOT_IN_FUTURE" | "RECURRENCE_UNTIL_BEFORE_DATE" | "RECURRENCE_TOO_LONG" | "COMMUNITY_NUMBER_TAKEN" | "COMMUNITY_DEACTIVATED" | "PHONE_INVALID" | "EMAIL_INVALID" | "CONSENT_REQUIRED" | "NOTICE_NOT_GIVEN" | "MEMBER_NOT_IN_COMMUNITY" | "USER_NOT_IN_COMMUNITY" | "USER_NOT_FOUND";
             }[];
         };
         LoginBlockedProblem: components["schemas"]["Problem"] & {
@@ -705,6 +944,130 @@ export interface components {
         RoomHasActiveBookingsProblem: components["schemas"]["Problem"] & {
             activeBookings?: number;
         };
+        /** @enum {string} */
+        CommunityStatus: "ACTIVE" | "DEACTIVATED";
+        CommunityInput: {
+            number: number;
+            /** @description Optional parish reference; blank means none. Length counted in code points; control and format characters (Unicode categories Cc and Cf, such as NUL, line breaks and bidirectional controls) and unpaired surrogates are rejected with 422 INVALID_FORMAT */
+            name?: string;
+        };
+        CommunityDetail: {
+            /** Format: uuid */
+            id: string;
+            number: number;
+            name?: string;
+            status: components["schemas"]["CommunityStatus"];
+            hasResponsible: boolean;
+            responsible?: components["schemas"]["MemberSummary"];
+            /** @description False when there is a responsible whose linked user is missing or not a MODERATOR; a warning, never a block */
+            responsibleIsModerator: boolean;
+        };
+        CommunityDeactivation: {
+            /** @description Must be true when the community has users with role MODERATOR or ADMINISTRATOR; otherwise 409 COMMUNITY_HAS_PRIVILEGED_USERS */
+            confirmed: boolean;
+        };
+        ResponsibleDesignation: {
+            /** Format: uuid */
+            memberId: string;
+        };
+        ContactFieldInput: {
+            /** @description True grants consent to store and show the value to the community; false withdraws it and erases the value */
+            shared: boolean;
+            /** @description Required when shared is true (REQUIRED); ignored when false. Phones: national 9 digits starting with 6, 7, 8 or 9, or international with leading + and up to 15 digits; spaces, dots, hyphens and parentheses are ignored and the value is stored normalised, otherwise PHONE_INVALID. Email: address syntax as in the HTML specification with a dot in the domain, otherwise EMAIL_INVALID */
+            value?: string;
+        };
+        ContactInput: {
+            mobile: components["schemas"]["ContactFieldInput"];
+            landline: components["schemas"]["ContactFieldInput"];
+            email: components["schemas"]["ContactFieldInput"];
+        };
+        /** @enum {string} */
+        ConsentChannel: "APP" | "VERBAL" | "WRITTEN";
+        OnBehalfConsent: {
+            /** @enum {string} */
+            channel: "VERBAL" | "WRITTEN";
+            /** @description The moderator confirms the data notice was given verbally or on paper; false gives NOTICE_NOT_GIVEN */
+            noticeGiven: boolean;
+        };
+        MemberContactInput: components["schemas"]["ContactInput"] & {
+            onBehalfConsent?: components["schemas"]["OnBehalfConsent"];
+        };
+        MemberNameInput: {
+            /** @description Length counted in code points; control and format characters (Unicode categories Cc and Cf, such as NUL, line breaks and bidirectional controls) and unpaired surrogates are rejected with 422 INVALID_FORMAT */
+            givenName: string;
+            /** @description Length counted in code points; control and format characters (Unicode categories Cc and Cf, such as NUL, line breaks and bidirectional controls) and unpaired surrogates are rejected with 422 INVALID_FORMAT */
+            surnames?: string;
+        };
+        MemberInput: components["schemas"]["MemberNameInput"] & {
+            /** Format: uuid */
+            communityId: string;
+            contact?: components["schemas"]["ContactInput"];
+            onBehalfConsent?: components["schemas"]["OnBehalfConsent"];
+        };
+        MemberTransfer: {
+            /** Format: uuid */
+            communityId: string;
+        };
+        MemberLink: {
+            /** Format: uuid */
+            userId: string;
+        };
+        MemberSummary: {
+            /** Format: uuid */
+            id: string;
+            givenName: string;
+            surnames?: string;
+        };
+        Member: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            communityId: string;
+            givenName: string;
+            surnames?: string;
+            /** @description Present only when consented */
+            mobile?: string;
+            /** @description Present only when consented */
+            landline?: string;
+            /** @description Present only when consented */
+            email?: string;
+            isResponsible: boolean;
+            /**
+             * Format: uuid
+             * @description Present only for moderators of the community and administrators
+             */
+            linkedUserId?: string;
+        };
+        /** @description Who recorded the decision. MEMBER is the member themself and carries no name; for MODERATOR or ADMINISTRATOR, name is that user's display name and nothing else; once that user is deleted, deleted is true, name is absent and the client shows «usuario eliminado» */
+        ConsentRecorder: {
+            /** @enum {string} */
+            role: "MEMBER" | "MODERATOR" | "ADMINISTRATOR";
+            name?: string;
+            deleted: boolean;
+        };
+        ConsentRecord: {
+            /** @enum {string} */
+            field: "MOBILE" | "LANDLINE" | "EMAIL";
+            /** @enum {string} */
+            decision: "GRANTED" | "WITHDRAWN";
+            channel: components["schemas"]["ConsentChannel"];
+            recordedBy: components["schemas"]["ConsentRecorder"];
+            noticeGiven: boolean;
+            /** Format: date-time */
+            recordedAt: string;
+        };
+        MyMember: {
+            member: components["schemas"]["Member"];
+            /** @description Latest record per field; a field without record was never consented */
+            currentConsents: components["schemas"]["ConsentRecord"][];
+        };
+        MemberDataExport: {
+            member: components["schemas"]["Member"];
+            communityNumber: number;
+            consentRecords: components["schemas"]["ConsentRecord"][];
+            /** Format: date-time */
+            exportedAt: string;
+        };
     };
     responses: {
         /** @description Not authenticated, session expired or user deleted */
@@ -780,11 +1143,31 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
+        /** @description Community or member does not exist, or the member belongs to a community the caller cannot see */
+        CommunityOrMemberNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description The change would break an invariant or the data changed concurrently; codes COMMUNITY_NOT_EMPTY, COMMUNITY_HAS_RESPONSIBLE, COMMUNITY_HAS_HISTORY, COMMUNITY_HAS_PRIVILEGED_USERS, COMMUNITY_DEACTIVATED, RESPONSIBLE_REQUIRED, MEMBER_ALREADY_LINKED, USER_ALREADY_LINKED, MEMBER_NOT_LINKED, LAST_MODERATOR, LAST_ADMINISTRATOR, SELF_ACTION_FORBIDDEN or CONCURRENT_MODIFICATION. COMMUNITY_DEACTIVATED is returned to moderators and registered users for any operation on the existing members of a deactivated community; administrators are exempt and the own-member endpoints under /api/me/member never return it. Adding a member to, or transferring a member into, a deactivated community is rejected for every role as 422 COMMUNITY_DEACTIVATED on communityId */
+        CommunityStateConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
     };
     parameters: {
         UserId: string;
         RoomId: string;
         BookingRequestId: string;
+        CommunityId: string;
+        MemberId: string;
     };
     requestBodies: never;
     headers: never;
@@ -960,7 +1343,10 @@ export interface operations {
     };
     listCommunities: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only administrators may set it to true, others get 403; also used as the id to number lookup of screens with history, such as pending booking requests, so deactivated communities keep showing their number */
+                includeDeactivated?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -978,6 +1364,522 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    createCommunity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommunityInput"];
+            };
+        };
+        responses: {
+            /** @description Community created, active and without responsible */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getCommunity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                communityId: components["parameters"]["CommunityId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Community with its responsible and the non-blocking moderator warning */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["CommunityOrMemberNotFound"];
+        };
+    };
+    updateCommunity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                communityId: components["parameters"]["CommunityId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommunityInput"];
+            };
+        };
+        responses: {
+            /** @description Community updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["CommunityOrMemberNotFound"];
+            409: components["responses"]["CommunityStateConflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    deleteCommunity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                communityId: components["parameters"]["CommunityId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Community deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["CommunityOrMemberNotFound"];
+            409: components["responses"]["CommunityStateConflict"];
+        };
+    };
+    deactivateCommunity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                communityId: components["parameters"]["CommunityId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommunityDeactivation"];
+            };
+        };
+        responses: {
+            /** @description Community deactivated, or already deactivated (nothing changes and no confirmation is needed); its data is kept */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["CommunityOrMemberNotFound"];
+            409: components["responses"]["CommunityStateConflict"];
+        };
+    };
+    reactivateCommunity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                communityId: components["parameters"]["CommunityId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Community active again, or already active (nothing changes) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["CommunityOrMemberNotFound"];
+        };
+    };
+    designateResponsible: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                communityId: components["parameters"]["CommunityId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResponsibleDesignation"];
+            };
+        };
+        responses: {
+            /** @description Responsible designated; the community is never left without one */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["CommunityOrMemberNotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    listMembers: {
+        parameters: {
+            query?: {
+                /** @description Required for administrators; for anyone else it must be absent or match their own community, otherwise 403 */
+                communityId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every member of the community; contact fields appear only when consented */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Member"][];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["CommunityStateConflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    createMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberInput"];
+            };
+        };
+        responses: {
+            /** @description Member created */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Member"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: components["parameters"]["MemberId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Member */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Member"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["CommunityOrMemberNotFound"];
+            409: components["responses"]["CommunityStateConflict"];
+        };
+    };
+    renameMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: components["parameters"]["MemberId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberNameInput"];
+            };
+        };
+        responses: {
+            /** @description Member renamed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Member"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["CommunityOrMemberNotFound"];
+            409: components["responses"]["CommunityStateConflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    deleteMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: components["parameters"]["MemberId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Member, consent record and, if linked, the user deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["CommunityOrMemberNotFound"];
+            409: components["responses"]["CommunityStateConflict"];
+        };
+    };
+    changeMemberContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: components["parameters"]["MemberId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberContactInput"];
+            };
+        };
+        responses: {
+            /** @description Contact updated; consent changes recorded per field */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Member"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["CommunityOrMemberNotFound"];
+            409: components["responses"]["CommunityStateConflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    transferMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: components["parameters"]["MemberId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberTransfer"];
+            };
+        };
+        responses: {
+            /** @description Member moved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Member"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["CommunityOrMemberNotFound"];
+            409: components["responses"]["CommunityStateConflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    linkMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: components["parameters"]["MemberId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberLink"];
+            };
+        };
+        responses: {
+            /** @description Linked; nothing is copied between member and user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Member"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["CommunityOrMemberNotFound"];
+            409: components["responses"]["CommunityStateConflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    unlinkMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: components["parameters"]["MemberId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unlinked; the member keeps its own name */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["CommunityOrMemberNotFound"];
+            409: components["responses"]["CommunityStateConflict"];
+        };
+    };
+    exportMemberData: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: components["parameters"]["MemberId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Data copy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberDataExport"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["CommunityOrMemberNotFound"];
+            409: components["responses"]["CommunityStateConflict"];
+        };
+    };
+    getMyMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Own member */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyMember"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    changeMyContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContactInput"];
+            };
+        };
+        responses: {
+            /** @description Contact and consent updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyMember"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
         };
     };
     listUsers: {

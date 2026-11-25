@@ -25,7 +25,9 @@ export function PendingRequestsScreen({ api, roomsApi, communitiesApi }: Props) 
   const { user, isAdministrator } = useCurrentUser();
   const { status, requests, reload, refresh, approve, reject } = usePendingRequests(api, isAdministrator);
   const { status: roomsStatus, rooms, reload: reloadRooms } = useRooms(roomsApi, isAdministrator);
-  const { communities } = useCommunities(communitiesApi, isAdministrator);
+  const { communities } = useCommunities(communitiesApi, isAdministrator, {
+    includeDeactivated: isAdministrator,
+  });
   useReloadOnFocus(refresh);
   const { refreshing, onRefresh } = usePullToRefresh(() => Promise.all([reload(), reloadRooms()]));
 
