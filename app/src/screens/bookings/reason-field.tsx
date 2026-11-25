@@ -11,14 +11,15 @@ type Props = {
   label: string;
   value: string;
   invalid: boolean;
+  showLabel?: boolean;
   problem?: string | null;
   onChangeText: (value: string) => void;
 };
 
-export function ReasonField({ label, value, invalid, problem, onChangeText }: Props) {
+export function ReasonField({ label, value, invalid, showLabel = true, problem, onChangeText }: Props) {
   return (
     <View className="gap-2">
-      <Text variant="strong">{label}</Text>
+      {showLabel ? <Text variant="strong">{label}</Text> : null}
       <Text>{bookingsText.reasonWarning}</Text>
       <Input
         accessibilityLabel={label}

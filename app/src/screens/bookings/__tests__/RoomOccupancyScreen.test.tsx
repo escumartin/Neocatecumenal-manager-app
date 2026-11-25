@@ -1,4 +1,5 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { pickValue } from '@/test/pick-value';
 import { RoomOccupancyScreen } from '@/screens/rooms/room-occupancy';
 import {
   chapel,
@@ -38,7 +39,7 @@ function screenWith(roomsApi = fakeRoomsApi()) {
 
 async function chooseRoomAndDate(room = hall.name, date = '2030-05-11') {
   await fireEvent.press(await screen.findByRole('radio', { name: room }));
-  await fireEvent.changeText(screen.getByLabelText(bookingsText.occupancy.date), date);
+  await pickValue(bookingsText.occupancy.date, date);
 }
 
 jest.mock('@/hooks/navigation/use-reload-on-focus', () => ({ useReloadOnFocus: jest.fn() }));
@@ -109,11 +110,21 @@ describe('room occupancy screen', () => {
     expect(await screen.findByText(bookingsText.occupancy.empty)).toBeOnTheScreen();
   });
 
-  it('does not query with a malformed date', async () => {
+  it('picks the day with a date field and keeps the query contract', async () => {
     const { element, roomsApi } = screenWith();
     await renderAs('MODERATOR', element);
 
-    await chooseRoomAndDate(hall.name, '11/05/2030');
+    await chooseRoomAndDate(hall.name, '2030-05-11');
+
+    expect(screen.getByRole('button', { name: 'Día' })).toBeOnTheScreen();
+    expect(roomsApi.occupancy).toHaveBeenLastCalledWith(hall.id, '2030-05-11', undefined);
+  });
+
+  it('does not query before a day is chosen', async () => {
+    const { element, roomsApi } = screenWith();
+    await renderAs('MODERATOR', element);
+
+    await fireEvent.press(await screen.findByRole('radio', { name: hall.name }));
 
     expect(roomsApi.occupancy).not.toHaveBeenCalled();
   });

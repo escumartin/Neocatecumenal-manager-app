@@ -44,14 +44,15 @@ describe('recurrence fields', () => {
     await renderFields({ enabled: true, until: '2030-07-02' });
 
     expect(screen.getByRole('checkbox', { name: bookingsText.recurrence.toggle })).toBeChecked();
-    expect(screen.getByLabelText(bookingsText.recurrence.until).props.value).toBe('2030-07-02');
+    expect(screen.getByLabelText(bookingsText.recurrence.until).props.accessibilityValue).toEqual({ text: '2 de julio de 2030' });
     expect(screen.getByText(bookingsText.recurrence.hint)).toBeOnTheScreen();
   });
 
-  it('reports the typed end date', async () => {
-    const props = await renderFields({ enabled: true });
+  it('reports the picked end date', async () => {
+    const props = await renderFields({ enabled: true, until: '2030-06-01' });
 
-    await fireEvent.changeText(screen.getByLabelText(bookingsText.recurrence.until), '2030-07-02');
+    await fireEvent.press(screen.getByLabelText(bookingsText.recurrence.until));
+    await fireEvent(screen.getByTestId('date-field-picker'), 'change', { type: 'set' }, new Date(2030, 6, 2));
 
     expect(props.onChangeUntil).toHaveBeenCalledWith('2030-07-02');
   });
@@ -70,5 +71,37 @@ describe('recurrence fields', () => {
     for (const text of screen.getAllByText(/\S/)) {
       expect(fontSizeOf(text)).toBeGreaterThanOrEqual(18);
     }
+  });
+
+  it('groups the end date in a section with its title and hint', async () => {
+    await renderFields({ enabled: true });
+
+    expect(screen.getByRole('heading', { name: bookingsText.recurrence.until })).toBeOnTheScreen();
+    expect(screen.getByText(bookingsText.recurrence.hint)).toBeOnTheScreen();
+  });
+
+  it('limits the end date from the first date to one year after it and opens on the first date', async () => {
+    await renderFields({ enabled: true, firstDate: '2030-05-11' });
+
+    await fireEvent.press(screen.getByLabelText(bookingsText.recurrence.until));
+
+    const picker = screen.getByTestId('date-field-picker');
+    expect(picker.props.minimumDate).toEqual(new Date(2030, 4, 11));
+    expect(picker.props.maximumDate).toEqual(new Date(2031, 4, 11));
+    expect(picker.props.value).toEqual(new Date(2030, 4, 11));
+  });
+
+  it('limits the end date from today when there is no first date yet', async () => {
+    await renderFields({ enabled: true });
+
+    await fireEvent.press(screen.getByLabelText(bookingsText.recurrence.until));
+
+    const today = new Date();
+    const minimum: Date = screen.getByTestId('date-field-picker').props.minimumDate;
+    expect([minimum.getFullYear(), minimum.getMonth(), minimum.getDate()]).toEqual([
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    ]);
   });
 });

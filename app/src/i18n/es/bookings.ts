@@ -31,7 +31,7 @@ export const bookingsText = {
   } as Record<BookingStatusName, string>,
   occupancy: {
     title: 'Ocupación de salones',
-    date: 'Día (AAAA-MM-DD)',
+    date: 'Día',
     choose: 'Elige un salón y un día para ver sus franjas ocupadas.',
     chooseCommunity: 'Elige una comunidad para ver la ocupación.',
     loading: 'Cargando ocupación…',
@@ -68,9 +68,10 @@ export const bookingsText = {
     roomsError: 'No hemos podido cargar los salones.',
     retry: 'Reintentar',
     noRooms: 'No hay salones disponibles.',
-    date: 'Fecha (AAAA-MM-DD)',
-    startTime: 'Hora de inicio (HH:MM)',
-    endTime: 'Hora de fin (HH:MM)',
+    when: 'Cuándo',
+    date: 'Fecha',
+    startTime: 'Hora de inicio',
+    endTime: 'Hora de fin',
     reason: 'Motivo',
     submit: 'Enviar solicitud',
     submitting: 'Enviando…',
@@ -78,7 +79,7 @@ export const bookingsText = {
   },
   recurrence: {
     toggle: 'Repetir cada semana',
-    until: 'Repetir hasta (AAAA-MM-DD)',
+    until: 'Repetir hasta',
     hint: 'El mismo día de la semana y la misma franja, como máximo hasta un año después de la primera fecha. Si alguna fecha está ocupada, no se registra ninguna.',
     fieldErrors: {
       REQUIRED: 'Indica hasta qué fecha se repite la solicitud.',
