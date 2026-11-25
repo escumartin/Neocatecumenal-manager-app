@@ -41,6 +41,9 @@ export function fakeMembersApi(
     create: jest.fn().mockResolvedValue({ ok: true, member: ana }),
     rename: jest.fn().mockResolvedValue({ ok: true, member: ana }),
     changeContact: jest.fn().mockResolvedValue({ ok: true, member: ana }),
+    link: jest.fn().mockResolvedValue({ ok: true, member: linked }),
+    unlink: jest.fn().mockResolvedValue({ ok: true }),
+    transfer: jest.fn().mockResolvedValue({ ok: true, member: ana }),
     ...overrides,
   };
 }

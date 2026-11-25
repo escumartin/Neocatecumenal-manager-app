@@ -13,6 +13,7 @@ export type MembersFailure = { ok: false; status: number; code?: string; fieldEr
 
 export type ListMembersResult = { ok: true; members: Member[] } | MembersFailure;
 export type MemberResult = { ok: true; member: Member } | MembersFailure;
+export type MemberOutcome = { ok: true } | MembersFailure;
 export type MyMemberResult = { ok: true; myMember: MyMember } | MembersFailure;
 
 export type MembersApi = {
@@ -24,6 +25,9 @@ export type MemberManagementApi = {
   create: (input: MemberInput) => Promise<MemberResult>;
   rename: (memberId: string, input: MemberNameInput) => Promise<MemberResult>;
   changeContact: (memberId: string, input: MemberContactInput) => Promise<MemberResult>;
+  link: (memberId: string, userId: string) => Promise<MemberResult>;
+  unlink: (memberId: string) => Promise<MemberOutcome>;
+  transfer: (memberId: string, communityId: string) => Promise<MemberResult>;
 };
 
 export type MyMemberApi = {
@@ -70,6 +74,26 @@ export function createMembersApi(client: ApiClient): MembersApi & MemberManageme
       const { data, error, response } = await client.PUT('/api/members/{memberId}/contact', {
         params: { path: { memberId } },
         body: input,
+      });
+      return data ? { ok: true, member: data } : failure(error, response);
+    },
+    async link(memberId, userId) {
+      const { data, error, response } = await client.PUT('/api/members/{memberId}/link', {
+        params: { path: { memberId } },
+        body: { userId },
+      });
+      return data ? { ok: true, member: data } : failure(error, response);
+    },
+    async unlink(memberId) {
+      const { error, response } = await client.DELETE('/api/members/{memberId}/link', {
+        params: { path: { memberId } },
+      });
+      return response.ok ? { ok: true } : failure(error, response);
+    },
+    async transfer(memberId, communityId) {
+      const { data, error, response } = await client.POST('/api/members/{memberId}/transfer', {
+        params: { path: { memberId } },
+        body: { communityId },
       });
       return data ? { ok: true, member: data } : failure(error, response);
     },

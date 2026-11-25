@@ -14,11 +14,11 @@ import java.util.UUID;
 public final class Member {
 
     private final MemberId id;
-    private final CommunityId communityId;
+    private CommunityId communityId;
     private PersonName name;
     private final Map<ContactField, String> contact;
     private final List<ConsentRecord> consents;
-    private final UserId linkedUserId;
+    private UserId linkedUserId;
 
     private Member(MemberId id, CommunityId communityId, PersonName name, Map<ContactField, String> contact,
             List<ConsentRecord> consents, UserId linkedUserId) {
@@ -46,6 +46,37 @@ public final class Member {
 
     public void rename(PersonName newName) {
         this.name = Objects.requireNonNull(newName);
+    }
+
+    public void link(LinkedUser user) {
+        if (!user.communityId().equals(communityId)) {
+            throw new CommunityFieldInvalid("userId", "USER_NOT_IN_COMMUNITY");
+        }
+        if (linkedUserId != null) {
+            throw new CommunityDomainException("MEMBER_ALREADY_LINKED");
+        }
+        this.linkedUserId = user.id();
+    }
+
+    public void unlink() {
+        if (linkedUserId == null) {
+            throw new CommunityDomainException("MEMBER_NOT_LINKED");
+        }
+        this.linkedUserId = null;
+    }
+
+    public void transferTo(Community origin, Community target) {
+        if (!origin.id().equals(communityId)) {
+            throw new IllegalArgumentException("origin is not the member's community");
+        }
+        if (target.id().equals(communityId)) {
+            return;
+        }
+        target.checkAcceptsNewMembers();
+        if (origin.isResponsible(id)) {
+            throw new CommunityDomainException("RESPONSIBLE_REQUIRED");
+        }
+        this.communityId = target.id();
     }
 
     public void changeContact(ContactChange change, Optional<ConsentContext> consent, Instant now) {

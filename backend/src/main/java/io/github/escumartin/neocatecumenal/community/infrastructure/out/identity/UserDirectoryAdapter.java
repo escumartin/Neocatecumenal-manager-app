@@ -30,6 +30,16 @@ public class UserDirectoryAdapter implements UserDirectory {
         return identity.user(id.value()).map(UserDirectoryAdapter::toLinkedUser);
     }
 
+    @Override
+    public Optional<LinkedUser> lockUser(UserId id) {
+        return identity.lockUser(id.value()).map(UserDirectoryAdapter::toLinkedUser);
+    }
+
+    @Override
+    public void moveUser(UserId id, CommunityId communityId) {
+        identity.moveUser(id.value(), communityId.value());
+    }
+
     private static LinkedUser toLinkedUser(UserRef user) {
         return new LinkedUser(new UserId(user.id()), ActorRole.valueOf(user.role().name()),
                 new CommunityId(user.communityId()), user.name());

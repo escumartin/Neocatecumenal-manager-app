@@ -3,9 +3,12 @@ package io.github.escumartin.neocatecumenal.community.infrastructure.in.rest;
 import io.github.escumartin.neocatecumenal.community.application.port.in.ChangeMemberContact;
 import io.github.escumartin.neocatecumenal.community.application.port.in.CreateMember;
 import io.github.escumartin.neocatecumenal.community.application.port.in.GetMember;
+import io.github.escumartin.neocatecumenal.community.application.port.in.LinkMember;
 import io.github.escumartin.neocatecumenal.community.application.port.in.ListMembers;
 import io.github.escumartin.neocatecumenal.community.application.port.in.MemberView;
 import io.github.escumartin.neocatecumenal.community.application.port.in.RenameMember;
+import io.github.escumartin.neocatecumenal.community.application.port.in.TransferMember;
+import io.github.escumartin.neocatecumenal.community.application.port.in.UnlinkMember;
 import io.github.escumartin.neocatecumenal.community.domain.Actor;
 import io.github.escumartin.neocatecumenal.community.domain.ActorRole;
 import io.github.escumartin.neocatecumenal.community.domain.CommunityDomainException;
@@ -13,6 +16,7 @@ import io.github.escumartin.neocatecumenal.community.domain.CommunityFieldInvali
 import io.github.escumartin.neocatecumenal.community.domain.CommunityId;
 import io.github.escumartin.neocatecumenal.community.domain.CommunityNotFound;
 import io.github.escumartin.neocatecumenal.community.domain.MemberId;
+import io.github.escumartin.neocatecumenal.community.domain.UserId;
 import io.github.escumartin.neocatecumenal.generated.api.MembersApi;
 import io.github.escumartin.neocatecumenal.generated.model.Member;
 import io.github.escumartin.neocatecumenal.generated.model.MemberContactInput;
@@ -41,10 +45,14 @@ public class MembersController implements MembersApi {
     private final GetMember getMember;
     private final RenameMember renameMember;
     private final ChangeMemberContact changeMemberContact;
+    private final LinkMember linkMember;
+    private final UnlinkMember unlinkMember;
+    private final TransferMember transferMember;
 
     MembersController(ActorResolver actors, TransactionRetry retry, ListMembers listMembers,
             CreateMember createMember, GetMember getMember, RenameMember renameMember,
-            ChangeMemberContact changeMemberContact) {
+            ChangeMemberContact changeMemberContact, LinkMember linkMember, UnlinkMember unlinkMember,
+            TransferMember transferMember) {
         this.actors = actors;
         this.retry = retry;
         this.listMembers = listMembers;
@@ -52,6 +60,9 @@ public class MembersController implements MembersApi {
         this.getMember = getMember;
         this.renameMember = renameMember;
         this.changeMemberContact = changeMemberContact;
+        this.linkMember = linkMember;
+        this.unlinkMember = unlinkMember;
+        this.transferMember = transferMember;
     }
 
     @Override
@@ -120,17 +131,33 @@ public class MembersController implements MembersApi {
 
     @Override
     public ResponseEntity<Member> linkMember(UUID memberId, MemberLink memberLink) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        Actor actor = actors.currentActor();
+        MemberView linked = retry.execute(() -> linkMember.link(actor, new MemberId(memberId),
+                new UserId(memberLink.getUserId())));
+        return ResponseEntity.ok(MembersMapper.toApi(linked, actor));
     }
 
     @Override
     public ResponseEntity<Void> unlinkMember(UUID memberId) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        Actor actor = actors.currentActor();
+        retry.run(() -> unlinkMember.unlink(actor, new MemberId(memberId)));
+        return ResponseEntity.noContent().build();
     }
 
     @Override
     public ResponseEntity<Member> transferMember(UUID memberId, MemberTransfer memberTransfer) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        Actor actor = actors.currentActor();
+        MemberView moved;
+        try {
+            moved = retry.execute(() -> transferMember.transfer(actor, new MemberId(memberId),
+                    new CommunityId(memberTransfer.getCommunityId())));
+        } catch (CommunityDomainException rule) {
+            if ("COMMUNITY_DEACTIVATED".equals(rule.code())) {
+                throw new CommunityFieldInvalid("communityId", "COMMUNITY_DEACTIVATED");
+            }
+            throw rule;
+        }
+        return ResponseEntity.ok(MembersMapper.toApi(moved, actor));
     }
 
     private static CommunityId communityToList(Actor actor, UUID requested) {

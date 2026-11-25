@@ -11,4 +11,8 @@ public interface UserDirectory {
     List<LinkedUser> usersOf(CommunityId communityId);
 
     Optional<LinkedUser> user(UserId id);
+
+    Optional<LinkedUser> lockUser(UserId id);
+
+    void moveUser(UserId id, CommunityId communityId);
 }

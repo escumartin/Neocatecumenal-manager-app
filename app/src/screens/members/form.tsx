@@ -26,6 +26,7 @@ import {
 import { CommunityPicker } from '@/screens/users/community-picker';
 import { ConsentSection, type ConsentChannelChoice } from './consent-section';
 import { ContactFields, contactMessages } from './contact-fields';
+import { MemberLinkActions } from './link-actions';
 
 type Props = {
   memberId?: string;
@@ -34,11 +35,31 @@ type Props = {
   communitiesApi?: CommunitiesApi;
   onSaved: () => void;
   onOpenContact?: (memberId: string) => void;
+  onOpenLink?: (memberId: string) => void;
+  onOpenTransfer?: (memberId: string) => void;
 };
 
-export function MemberForm({ memberId, communityId, api, communitiesApi, onSaved, onOpenContact }: Props) {
+export function MemberForm({
+  memberId,
+  communityId,
+  api,
+  communitiesApi,
+  onSaved,
+  onOpenContact,
+  onOpenLink,
+  onOpenTransfer,
+}: Props) {
   if (memberId) {
-    return <ExistingMember memberId={memberId} api={api} onSaved={onSaved} onOpenContact={onOpenContact} />;
+    return (
+      <ExistingMember
+        memberId={memberId}
+        api={api}
+        onSaved={onSaved}
+        onOpenContact={onOpenContact}
+        onOpenLink={onOpenLink}
+        onOpenTransfer={onOpenTransfer}
+      />
+    );
   }
   return <MemberFields initial={null} communityId={communityId} api={api} communitiesApi={communitiesApi} onSaved={onSaved} />;
 }
@@ -48,11 +69,15 @@ function ExistingMember({
   api,
   onSaved,
   onOpenContact,
+  onOpenLink,
+  onOpenTransfer,
 }: {
   memberId: string;
   api?: MemberManagementApi;
   onSaved: () => void;
   onOpenContact?: (memberId: string) => void;
+  onOpenLink?: (memberId: string) => void;
+  onOpenTransfer?: (memberId: string) => void;
 }) {
   const { status, member, reload } = useMember(memberId, api);
 
@@ -77,7 +102,17 @@ function ExistingMember({
     );
   }
 
-  return <MemberFields initial={member} api={api} onSaved={onSaved} onOpenContact={onOpenContact} />;
+  return (
+    <MemberFields
+      initial={member}
+      api={api}
+      onSaved={onSaved}
+      onOpenContact={onOpenContact}
+      onOpenLink={onOpenLink}
+      onOpenTransfer={onOpenTransfer}
+      onUnlinked={() => void reload()}
+    />
+  );
 }
 
 type FieldsProps = {
@@ -87,9 +122,22 @@ type FieldsProps = {
   communitiesApi?: CommunitiesApi;
   onSaved: () => void;
   onOpenContact?: (memberId: string) => void;
+  onOpenLink?: (memberId: string) => void;
+  onOpenTransfer?: (memberId: string) => void;
+  onUnlinked?: () => void;
 };
 
-function MemberFields({ initial, communityId, api, communitiesApi, onSaved, onOpenContact }: FieldsProps) {
+function MemberFields({
+  initial,
+  communityId,
+  api,
+  communitiesApi,
+  onSaved,
+  onOpenContact,
+  onOpenLink,
+  onOpenTransfer,
+  onUnlinked,
+}: FieldsProps) {
   const { save } = useMemberSave(initial?.id, api);
   const { user, isAdministrator } = useCurrentUser();
   const editing = initial !== null;
@@ -211,13 +259,22 @@ function MemberFields({ initial, communityId, api, communitiesApi, onSaved, onOp
         </FormField>
       </ListSection>
       {editing ? (
-        <ListSection>
-          <ListRow
-            title={membersText.form.contactRow}
-            icon="person.crop.rectangle"
-            onPress={() => onOpenContact?.(initial.id)}
+        <>
+          <ListSection>
+            <ListRow
+              title={membersText.form.contactRow}
+              icon="person.crop.rectangle"
+              onPress={() => onOpenContact?.(initial.id)}
+            />
+          </ListSection>
+          <MemberLinkActions
+            member={initial}
+            api={api}
+            onOpenLink={onOpenLink}
+            onOpenTransfer={onOpenTransfer}
+            onUnlinked={() => onUnlinked?.()}
           />
-        </ListSection>
+        </>
       ) : (
         <>
           <Text>{membersText.contact.notice}</Text>

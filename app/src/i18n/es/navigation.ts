@@ -21,6 +21,8 @@ export const navigationText = {
   newMember: 'Nuevo hermano',
   editMember: 'Hermano',
   memberContact: 'Datos de contacto',
+  memberLink: 'Vincular con un usuario',
+  memberTransfer: 'Trasladar hermano',
   directoryMember: 'Hermano',
   management: {
     users: 'Usuarios',

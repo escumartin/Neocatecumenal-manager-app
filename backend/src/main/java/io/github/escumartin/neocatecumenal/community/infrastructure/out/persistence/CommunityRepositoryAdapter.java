@@ -8,6 +8,8 @@ import io.github.escumartin.neocatecumenal.community.domain.CommunityId;
 import io.github.escumartin.neocatecumenal.community.domain.CommunityName;
 import io.github.escumartin.neocatecumenal.community.domain.CommunityNumber;
 import io.github.escumartin.neocatecumenal.community.domain.MemberId;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +23,9 @@ public class CommunityRepositoryAdapter implements CommunityRepository {
     private static final String NUMBER_CONSTRAINT = "uk_community_number";
 
     private final CommunityJpaRepository repository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     CommunityRepositoryAdapter(CommunityJpaRepository repository) {
         this.repository = repository;
@@ -66,8 +71,12 @@ public class CommunityRepositoryAdapter implements CommunityRepository {
     @Override
     @Transactional
     public List<Community> lockInIdOrder(CommunityId... ids) {
-        return repository.lockAllByIdIn(Arrays.stream(ids).map(CommunityId::value).toList()).stream()
-                .map(CommunityRepositoryAdapter::toDomain).toList();
+        return repository.lockRowsInOrder(Arrays.stream(ids).map(CommunityId::value).toList()).stream()
+                .map(id -> {
+                    CommunityJpaEntity entity = repository.findById(id).orElseThrow();
+                    entityManager.refresh(entity);
+                    return toDomain(entity);
+                }).toList();
     }
 
     @Override

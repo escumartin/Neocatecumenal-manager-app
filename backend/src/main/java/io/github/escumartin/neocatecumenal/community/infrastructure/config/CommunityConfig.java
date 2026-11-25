@@ -10,11 +10,15 @@ import io.github.escumartin.neocatecumenal.community.application.port.in.Designa
 import io.github.escumartin.neocatecumenal.community.application.port.in.GetCommunity;
 import io.github.escumartin.neocatecumenal.community.application.port.in.GetMember;
 import io.github.escumartin.neocatecumenal.community.application.port.in.GetOwnMember;
+import io.github.escumartin.neocatecumenal.community.application.port.in.GuardUserLink;
+import io.github.escumartin.neocatecumenal.community.application.port.in.LinkMember;
 import io.github.escumartin.neocatecumenal.community.application.port.in.ListCommunities;
 import io.github.escumartin.neocatecumenal.community.application.port.in.ListMembers;
 import io.github.escumartin.neocatecumenal.community.application.port.in.ProvisionCommunity;
 import io.github.escumartin.neocatecumenal.community.application.port.in.ReactivateCommunity;
 import io.github.escumartin.neocatecumenal.community.application.port.in.RenameMember;
+import io.github.escumartin.neocatecumenal.community.application.port.in.TransferMember;
+import io.github.escumartin.neocatecumenal.community.application.port.in.UnlinkMember;
 import io.github.escumartin.neocatecumenal.community.application.port.in.UpdateCommunity;
 import io.github.escumartin.neocatecumenal.community.application.port.out.CommunityHistory;
 import io.github.escumartin.neocatecumenal.community.application.port.out.CommunityRepository;
@@ -31,11 +35,15 @@ import io.github.escumartin.neocatecumenal.community.application.service.Designa
 import io.github.escumartin.neocatecumenal.community.application.service.GetCommunityService;
 import io.github.escumartin.neocatecumenal.community.application.service.GetMemberService;
 import io.github.escumartin.neocatecumenal.community.application.service.GetOwnMemberService;
+import io.github.escumartin.neocatecumenal.community.application.service.GuardUserLinkService;
+import io.github.escumartin.neocatecumenal.community.application.service.LinkMemberService;
 import io.github.escumartin.neocatecumenal.community.application.service.ListCommunitiesService;
 import io.github.escumartin.neocatecumenal.community.application.service.ListMembersService;
 import io.github.escumartin.neocatecumenal.community.application.service.ProvisionCommunityService;
 import io.github.escumartin.neocatecumenal.community.application.service.ReactivateCommunityService;
 import io.github.escumartin.neocatecumenal.community.application.service.RenameMemberService;
+import io.github.escumartin.neocatecumenal.community.application.service.TransferMemberService;
+import io.github.escumartin.neocatecumenal.community.application.service.UnlinkMemberService;
 import io.github.escumartin.neocatecumenal.community.application.service.UpdateCommunityService;
 import java.time.Clock;
 import org.springframework.context.annotation.Bean;
@@ -127,5 +135,25 @@ class CommunityConfig {
     ChangeOwnContact changeOwnContact(CommunityRepository communities, MemberRepository members,
             UserDirectory users, Clock clock) {
         return new ChangeOwnContactService(communities, members, users, clock);
+    }
+
+    @Bean
+    LinkMember linkMember(CommunityRepository communities, MemberRepository members, UserDirectory users) {
+        return new LinkMemberService(communities, members, users);
+    }
+
+    @Bean
+    UnlinkMember unlinkMember(CommunityRepository communities, MemberRepository members, UserDirectory users) {
+        return new UnlinkMemberService(communities, members, users);
+    }
+
+    @Bean
+    TransferMember transferMember(CommunityRepository communities, MemberRepository members, UserDirectory users) {
+        return new TransferMemberService(communities, members, users);
+    }
+
+    @Bean
+    GuardUserLink guardUserLink(CommunityRepository communities, MemberRepository members) {
+        return new GuardUserLinkService(communities, members);
     }
 }

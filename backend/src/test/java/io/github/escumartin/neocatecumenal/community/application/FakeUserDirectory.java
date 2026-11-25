@@ -13,6 +13,13 @@ final class FakeUserDirectory implements UserDirectory {
     final List<LinkedUser> users = new ArrayList<>();
     final List<CommunityId> queried = new ArrayList<>();
     final List<UserId> looked = new ArrayList<>();
+    final List<UserId> locked = new ArrayList<>();
+    final List<Move> moves = new ArrayList<>();
+    List<String> log = new ArrayList<>();
+    RuntimeException failOnMove;
+
+    record Move(UserId user, CommunityId community) {
+    }
 
     @Override
     public List<LinkedUser> usersOf(CommunityId communityId) {
@@ -24,5 +31,21 @@ final class FakeUserDirectory implements UserDirectory {
     public Optional<LinkedUser> user(UserId id) {
         looked.add(id);
         return users.stream().filter(user -> user.id().equals(id)).findFirst();
+    }
+
+    @Override
+    public Optional<LinkedUser> lockUser(UserId id) {
+        log.add("user-lock");
+        locked.add(id);
+        return users.stream().filter(user -> user.id().equals(id)).findFirst();
+    }
+
+    @Override
+    public void moveUser(UserId id, CommunityId communityId) {
+        log.add("user-move");
+        if (failOnMove != null) {
+            throw failOnMove;
+        }
+        moves.add(new Move(id, communityId));
     }
 }

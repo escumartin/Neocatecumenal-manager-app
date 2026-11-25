@@ -42,6 +42,8 @@ export default function GestionLayout() {
       <Stack.Screen name="hermanos/nuevo" options={formSheetOptions(navigationText.newMember)} />
       <Stack.Screen name="hermanos/[memberId]" options={formSheetOptions(navigationText.editMember)} />
       <Stack.Screen name="hermanos/contacto" options={formSheetOptions(navigationText.memberContact)} />
+      <Stack.Screen name="hermanos/vincular" options={formSheetOptions(navigationText.memberLink)} />
+      <Stack.Screen name="hermanos/trasladar" options={formSheetOptions(navigationText.memberTransfer)} />
       <Stack.Screen name="usuarios/nuevo" options={formSheetOptions(navigationText.newUser)} />
       <Stack.Screen name="usuarios/[userId]" options={formSheetOptions(navigationText.editUser)} />
       <Stack.Screen

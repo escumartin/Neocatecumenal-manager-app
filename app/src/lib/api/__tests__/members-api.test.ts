@@ -105,6 +105,62 @@ describe('members api', () => {
     expect(sentRequest(fetch).url).toBe(`http://localhost/api/members/${ID}/contact`);
     expect(await sentRequest(fetch).json()).toEqual(contact);
   });
+  it('links a member to a user with PUT .../link', async () => {
+    const { api, fetch } = apiWith(jsonResponse(200, member));
+    const userId = '6f1c1f1e-0000-4000-8000-000000000051';
+
+    expect(await api.link(ID, userId)).toEqual({ ok: true, member });
+    expect(sentRequest(fetch).method).toBe('PUT');
+    expect(sentRequest(fetch).url).toBe(`http://localhost/api/members/${ID}/link`);
+    expect(await sentRequest(fetch).json()).toEqual({ userId });
+  });
+
+  it('reports the code of a refused link', async () => {
+    const { api } = apiWith(jsonResponse(409, { code: 'USER_ALREADY_LINKED' }));
+
+    expect(await api.link(ID, COMMUNITY)).toEqual({ ok: false, status: 409, code: 'USER_ALREADY_LINKED' });
+  });
+
+  it('reports the field errors of a refused link', async () => {
+    const errors = [{ field: 'userId', code: 'USER_NOT_IN_COMMUNITY' }];
+    const { api } = apiWith(jsonResponse(422, { code: 'VALIDATION_FAILED', errors }));
+
+    expect(await api.link(ID, COMMUNITY)).toEqual({
+      ok: false,
+      status: 422,
+      code: 'VALIDATION_FAILED',
+      fieldErrors: errors,
+    });
+  });
+
+  it('unlinks a member with DELETE .../link', async () => {
+    const { api, fetch } = apiWith(new Response(null, { status: 204 }));
+
+    expect(await api.unlink(ID)).toEqual({ ok: true });
+    expect(sentRequest(fetch).method).toBe('DELETE');
+    expect(sentRequest(fetch).url).toBe(`http://localhost/api/members/${ID}/link`);
+  });
+
+  it('reports a refused unlink', async () => {
+    const { api } = apiWith(jsonResponse(403, { code: 'FORBIDDEN' }));
+
+    expect(await api.unlink(ID)).toEqual({ ok: false, status: 403, code: 'FORBIDDEN' });
+  });
+
+  it('transfers a member with POST .../transfer', async () => {
+    const { api, fetch } = apiWith(jsonResponse(200, member));
+
+    expect(await api.transfer(ID, COMMUNITY)).toEqual({ ok: true, member });
+    expect(sentRequest(fetch).method).toBe('POST');
+    expect(sentRequest(fetch).url).toBe(`http://localhost/api/members/${ID}/transfer`);
+    expect(await sentRequest(fetch).json()).toEqual({ communityId: COMMUNITY });
+  });
+
+  it('reports the code of a refused transfer', async () => {
+    const { api } = apiWith(jsonResponse(409, { code: 'RESPONSIBLE_REQUIRED' }));
+
+    expect(await api.transfer(ID, COMMUNITY)).toEqual({ ok: false, status: 409, code: 'RESPONSIBLE_REQUIRED' });
+  });
 });
 
 describe('my member api', () => {

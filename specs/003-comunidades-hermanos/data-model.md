@@ -27,7 +27,7 @@ Claves internas UUID. El número de comunidad es un atributo de negocio con unic
 | `CommunityStatus` | `ACTIVE`, `DEACTIVATED` | — |
 | `ActorRole` | `REGISTERED`, `MODERATOR`, `ADMINISTRATOR` | copia local de `identity.Role` |
 | `Actor` | `UserId id`, `ActorRole role`, `CommunityId communityId` | quien ejecuta el caso de uso |
-| `LinkedUser` | `UserId id`, `ActorRole role`, `CommunityId communityId` | vista local del usuario para validar el vínculo |
+| `LinkedUser` | `UserId id`, `ActorRole role`, `CommunityId communityId`, `String name` | vista local del usuario para validar el vínculo; `name` solo para mostrarlo, nunca se copia al hermano (FR-029) |
 
 ### Agregado `Community`
 
@@ -107,7 +107,7 @@ Comportamiento:
     FR-026). Hermano sin usuario: `ctx` debe ser `VERBAL`/`WRITTEN` con `noticeGiven = true`.
 - `link(LinkedUser user)`: `USER_NOT_IN_COMMUNITY` si `user.communityId != communityId`; `MEMBER_ALREADY_LINKED` si ya
   tiene. `unlink()`.
-- `transferTo(Community target)`: `target.checkAcceptsNewMembers()`; el servicio bloquea antes origen y destino en
+- `transferTo(Community origin, Community target)`: sin efecto si son la misma; `target.checkAcceptsNewMembers()`; el servicio bloquea antes origen y destino en
   orden de id, relee ambas con el bloqueo tomado (destino activo), bloquea y relee el hermano y comprueba que sigue en el
   origen bloqueado (si no, reintento); el responsable se comprueba con la comunidad origen bloqueada
   (`RESPONSIBLE_REQUIRED`) (R15).

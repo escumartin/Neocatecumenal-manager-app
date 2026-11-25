@@ -18,6 +18,7 @@ final class InMemoryCommunities implements CommunityRepository {
     final List<List<CommunityId>> lockCalls = new ArrayList<>();
     final List<String> events = new ArrayList<>();
     RuntimeException failOnSave;
+    Runnable onLock = () -> { };
 
     Community add(Community community) {
         stored.put(community.id(), community);
@@ -53,6 +54,7 @@ final class InMemoryCommunities implements CommunityRepository {
     public List<Community> lockInIdOrder(CommunityId... ids) {
         lockCalls.add(Arrays.asList(ids));
         events.add("lock");
+        onLock.run();
         return Arrays.stream(ids).map(stored::get).filter(java.util.Objects::nonNull).toList();
     }
 

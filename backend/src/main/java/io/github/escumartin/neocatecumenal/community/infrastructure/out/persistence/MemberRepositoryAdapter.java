@@ -10,6 +10,8 @@ import io.github.escumartin.neocatecumenal.community.domain.Member;
 import io.github.escumartin.neocatecumenal.community.domain.MemberId;
 import io.github.escumartin.neocatecumenal.community.domain.PersonName;
 import io.github.escumartin.neocatecumenal.community.domain.UserId;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +29,9 @@ public class MemberRepositoryAdapter implements MemberRepository {
     private static final String USER_CONSTRAINT = "uk_community_member_user";
 
     private final MemberJpaRepository repository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     MemberRepositoryAdapter(MemberJpaRepository repository) {
         this.repository = repository;
@@ -60,7 +65,10 @@ public class MemberRepositoryAdapter implements MemberRepository {
     @Override
     @Transactional
     public Optional<Member> lock(MemberId id) {
-        return repository.lockById(id.value()).map(MemberRepositoryAdapter::toDomain);
+        return repository.lockRow(id.value()).flatMap(repository::findById).map(entity -> {
+            entityManager.refresh(entity);
+            return toDomain(entity);
+        });
     }
 
     @Override
