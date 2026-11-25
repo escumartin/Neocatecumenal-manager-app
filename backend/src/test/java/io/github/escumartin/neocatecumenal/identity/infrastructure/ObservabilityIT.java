@@ -1,5 +1,7 @@
 package io.github.escumartin.neocatecumenal.identity.infrastructure;
 
+import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
+import org.springframework.context.annotation.Import;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -17,6 +19,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
+@Import(TestCommunityProvisionerConfig.class)
 class ObservabilityIT {
 
     @Container

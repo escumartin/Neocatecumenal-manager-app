@@ -16,6 +16,9 @@ class CommunityJpaEntity {
     @Column(nullable = false)
     int number;
 
+    @Column(nullable = false)
+    boolean active;
+
     protected CommunityJpaEntity() {
     }
 }

@@ -1,5 +1,7 @@
 package io.github.escumartin.neocatecumenal.identity.infrastructure;
 
+import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
+import org.springframework.context.annotation.Import;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -50,6 +52,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
+@Import(TestCommunityProvisionerConfig.class)
 class UserManagementLogsTest {
 
     private static final String ACTOR_NAME = "Qwerty Actorson";

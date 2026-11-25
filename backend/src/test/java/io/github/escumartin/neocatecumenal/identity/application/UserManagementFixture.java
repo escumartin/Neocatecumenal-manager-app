@@ -19,7 +19,8 @@ import java.util.UUID;
 final class UserManagementFixture {
 
     final Fakes.InMemoryUsers users = new Fakes.InMemoryUsers();
-    final Fakes.InMemoryCommunities communities = new Fakes.InMemoryCommunities();
+    final Fakes.InMemoryCommunities communities = new Fakes.InMemoryCommunities(users);
+    final Fakes.RecordingUserLinkGuard guard = new Fakes.RecordingUserLinkGuard(users);
     final Fakes.InMemorySessions sessions = new Fakes.InMemorySessions();
     final Fakes.FakeSessionContext currentSession = new Fakes.FakeSessionContext();
     final Fakes.RecordingEvents events = new Fakes.RecordingEvents();

@@ -1,5 +1,7 @@
 package io.github.escumartin.neocatecumenal.spaces.infrastructure;
 
+import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
+import org.springframework.context.annotation.Import;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.github.escumartin.neocatecumenal.spaces.application.port.out.BookingRequestRepository;
@@ -33,6 +35,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 @SpringBootTest
 @Testcontainers
+@Import(TestCommunityProvisionerConfig.class)
 class RoomOccupancyQueryIT {
 
     private static final LocalDateTime NOW = LocalDateTime.of(2030, 5, 10, 10, 0);

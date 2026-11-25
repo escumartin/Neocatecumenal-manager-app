@@ -1,6 +1,9 @@
 package io.github.escumartin.neocatecumenal.identity.application;
 
+import io.github.escumartin.neocatecumenal.identity.CommunityProvisioner;
+import io.github.escumartin.neocatecumenal.identity.IdentityRuleViolation;
 import io.github.escumartin.neocatecumenal.identity.UserDeleted;
+import io.github.escumartin.neocatecumenal.identity.UserLinkGuard;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.UserPage;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.AccessIdGenerator;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.AccessIdAlreadyTakenException;
@@ -107,6 +110,26 @@ final class Fakes {
         }
 
         @Override
+        public Optional<User> findByIdForUpdate(UserId id) {
+            calls.add("findByIdForUpdate");
+            return Optional.ofNullable(users.get(id));
+        }
+
+        @Override
+        public Optional<User> lockForShare(UserId id) {
+            calls.add("lockForShare");
+            return Optional.ofNullable(users.get(id));
+        }
+
+        @Override
+        public List<User> findAllByCommunity(CommunityId communityId) {
+            return users.values().stream()
+                    .filter(user -> user.communityId().equals(communityId))
+                    .sorted(Comparator.comparing((User user) -> user.name().value()))
+                    .toList();
+        }
+
+        @Override
         public Optional<User> findByAccessId(AccessId accessId) {
             return users.values().stream().filter(user -> user.accessId().equals(accessId)).findFirst();
         }
@@ -120,6 +143,37 @@ final class Fakes {
     static final class InMemoryCommunities implements CommunityRepository {
 
         final Map<CommunityId, Community> communities = new LinkedHashMap<>();
+        private final InMemoryUsers usersOfTheCommunities;
+
+        InMemoryCommunities() {
+            this(new InMemoryUsers());
+        }
+
+        InMemoryCommunities(InMemoryUsers usersOfTheCommunities) {
+            this.usersOfTheCommunities = usersOfTheCommunities;
+        }
+
+        @Override
+        public void setActive(CommunityId id, boolean active) {
+            Community current = communities.get(id);
+            communities.put(id, new Community(id, current.number(), active));
+        }
+
+        @Override
+        public void renumber(CommunityId id, CommunityNumber number) {
+            Community current = communities.get(id);
+            communities.put(id, new Community(id, number, current.active()));
+        }
+
+        @Override
+        public void delete(CommunityId id) {
+            boolean hasUsers = usersOfTheCommunities.users.values().stream()
+                    .anyMatch(user -> user.communityId().equals(id));
+            if (hasUsers) {
+                throw new IdentityRuleViolation("COMMUNITY_HAS_USERS");
+            }
+            communities.remove(id);
+        }
 
         @Override
         public Community save(Community community) {
@@ -129,6 +183,7 @@ final class Fakes {
 
         @Override
         public Optional<Community> findById(CommunityId id) {
+            usersOfTheCommunities.calls.add("communityFindById");
             return Optional.ofNullable(communities.get(id));
         }
 
@@ -353,6 +408,51 @@ final class Fakes {
 
         LoginThrottle.PairState pair(AccessId accessId, String ip) {
             return pairs.getOrDefault(pairKey(accessId, ip), LoginThrottle.PairState.empty());
+        }
+    }
+
+    static final class RecordingUserLinkGuard implements UserLinkGuard {
+
+        final InMemoryUsers users;
+        boolean allowsChange = true;
+        Runnable afterGuard = () -> { };
+        final List<UUID> released = new ArrayList<>();
+
+        RecordingUserLinkGuard(InMemoryUsers users) {
+            this.users = users;
+        }
+
+        @Override
+        public boolean allowsCommunityChange(UUID userId, UUID currentCommunityId, UUID targetCommunityId) {
+            users.calls.add("guard.allowsCommunityChange");
+            afterGuard.run();
+            return allowsChange;
+        }
+
+        @Override
+        public void releaseBeforeDeletion(UUID userId, UUID currentCommunityId) {
+            users.calls.add("guard.releaseBeforeDeletion");
+            released.add(userId);
+            afterGuard.run();
+        }
+    }
+
+    static final class InMemoryProvisioner implements CommunityProvisioner {
+
+        private final InMemoryCommunities communities;
+        final List<Integer> requested = new ArrayList<>();
+
+        InMemoryProvisioner(InMemoryCommunities communities) {
+            this.communities = communities;
+        }
+
+        @Override
+        public UUID ensure(int number) {
+            requested.add(number);
+            return communities.findByNumber(new CommunityNumber(number))
+                    .orElseGet(() -> communities.save(new Community(new CommunityId(UUID.randomUUID()),
+                            new CommunityNumber(number))))
+                    .id().value();
         }
     }
 }

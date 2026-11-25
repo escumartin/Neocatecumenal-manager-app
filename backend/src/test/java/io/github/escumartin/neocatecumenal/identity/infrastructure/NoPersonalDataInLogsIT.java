@@ -1,5 +1,6 @@
 package io.github.escumartin.neocatecumenal.identity.infrastructure;
 
+import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -47,7 +48,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 })
 @AutoConfigureMockMvc
 @Testcontainers
-@Import(NoPersonalDataInLogsIT.BootstrapConsoleConfig.class)
+@Import({NoPersonalDataInLogsIT.BootstrapConsoleConfig.class, TestCommunityProvisionerConfig.class})
 class NoPersonalDataInLogsIT {
 
     private static final String ADMINISTRATOR_NAME = "Zzyzx Bootstrapper";

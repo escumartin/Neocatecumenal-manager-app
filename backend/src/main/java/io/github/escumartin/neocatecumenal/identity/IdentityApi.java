@@ -11,4 +11,14 @@ public interface IdentityApi {
     List<CommunityRef> communities();
 
     Optional<CommunityRef> community(UUID id);
+
+    Optional<UserRef> user(UUID id);
+
+    Optional<UserRef> lockUser(UUID id);
+
+    List<UserRef> usersOf(UUID communityId);
+
+    void moveUser(UUID userId, UUID communityId);
+
+    void deleteUser(UUID userId);
 }

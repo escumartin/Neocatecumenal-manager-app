@@ -74,7 +74,7 @@ class ActorResolverTest {
     void administratorCanChooseAnExistingCommunity() {
         signedInAs(Role.ADMINISTRATOR);
         UUID chosen = UUID.randomUUID();
-        when(identity.community(chosen)).thenReturn(Optional.of(new CommunityRef(chosen, 7)));
+        when(identity.community(chosen)).thenReturn(Optional.of(new CommunityRef(chosen, 7, true)));
 
         Optional<CommunityId> requested = resolver.requestedCommunity(resolver.currentActor(), chosen);
 

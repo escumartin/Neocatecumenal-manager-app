@@ -15,4 +15,10 @@ public interface CommunityRepository {
     Optional<Community> findByNumber(CommunityNumber number);
 
     List<Community> findAll();
+
+    void setActive(CommunityId id, boolean active);
+
+    void renumber(CommunityId id, CommunityNumber number);
+
+    void delete(CommunityId id);
 }

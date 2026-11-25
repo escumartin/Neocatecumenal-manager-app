@@ -29,12 +29,12 @@ class ManageUsersServicesTest {
 
     private UpdateUserService updateService() {
         return new UpdateUserService(fixture.currentSession, fixture.users, fixture.communities,
-                fixture.privacyNotice);
+                fixture.privacyNotice, fixture.guard);
     }
 
     private DeleteUserService deleteService() {
         return new DeleteUserService(fixture.currentSession, fixture.users, fixture.sessions, fixture.events,
-                fixture.privacyNotice);
+                fixture.privacyNotice, fixture.guard);
     }
 
     private ListUsersService listService() {
@@ -209,7 +209,8 @@ class ManageUsersServicesTest {
         assertDomainCode(() -> deleteService().delete(target.id()), "LAST_MODERATOR");
         assertThat(fixture.users.findById(target.id())).isPresent();
         assertThat(fixture.events.published).isEmpty();
-        assertThat(fixture.users.calls).containsExactly("lockCommunity", "countModerators");
+        assertThat(fixture.users.calls).containsExactly("guard.releaseBeforeDeletion", "findByIdForUpdate",
+                "lockCommunity", "countModerators");
     }
 
     @Test
@@ -221,7 +222,8 @@ class ManageUsersServicesTest {
         assertDomainCode(() -> deleteService().delete(target.id()), "LAST_ADMINISTRATOR");
         assertThat(fixture.users.findById(target.id())).isPresent();
         assertThat(fixture.events.published).isEmpty();
-        assertThat(fixture.users.calls).first().isEqualTo("lockAdministrators");
+        assertThat(fixture.users.calls).containsExactly("guard.releaseBeforeDeletion", "findByIdForUpdate",
+                "lockAdministrators");
     }
 
     @Test

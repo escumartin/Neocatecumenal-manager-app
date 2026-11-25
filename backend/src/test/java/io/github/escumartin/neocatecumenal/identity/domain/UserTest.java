@@ -96,4 +96,41 @@ class UserTest {
 
         assertThat(user.pendingSteps(CURRENT_VERSION)).isEqualTo(List.of(PendingStep.PASSWORD_CHANGE));
     }
+
+    @Test
+    void checkingAnUpdateNeverChangesTheUser() {
+        User target = registered();
+        Actor administrator = new Actor(new UserId(UUID.randomUUID()), UserRole.ADMINISTRATOR,
+                new CommunityId(UUID.randomUUID()));
+        CommunityId destination = new CommunityId(UUID.randomUUID());
+
+        target.checkUpdate(administrator, new UserChanges(new DisplayName("New Name"), UserRole.MODERATOR,
+                destination), new MembershipCounts() {
+            @Override
+            public int administrators() {
+                return 2;
+            }
+
+            @Override
+            public long moderatorsIn(CommunityId communityId) {
+                return 2;
+            }
+        });
+
+        assertThat(target.name()).isEqualTo(new DisplayName("Test User"));
+        assertThat(target.role()).isEqualTo(UserRole.REGISTERED);
+        assertThat(target.communityId()).isNotEqualTo(destination);
+    }
+
+    @Test
+    void applyingChangesReplacesNameRoleAndCommunity() {
+        User target = registered();
+        CommunityId destination = new CommunityId(UUID.randomUUID());
+
+        target.apply(new UserChanges(new DisplayName("New Name"), UserRole.MODERATOR, destination));
+
+        assertThat(target.name()).isEqualTo(new DisplayName("New Name"));
+        assertThat(target.role()).isEqualTo(UserRole.MODERATOR);
+        assertThat(target.communityId()).isEqualTo(destination);
+    }
 }

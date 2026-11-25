@@ -1,5 +1,7 @@
 package io.github.escumartin.neocatecumenal.identity.infrastructure;
 
+import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
+import org.springframework.context.annotation.Import;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -49,6 +51,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
+@Import(TestCommunityProvisionerConfig.class)
 class PendingStepsIT {
 
     private static final AtomicInteger ACCESS_IDS = new AtomicInteger(500000);
@@ -187,7 +190,7 @@ class PendingStepsIT {
         acceptAs(bearer, CURRENT_VERSION).andExpect(status().isNoContent());
         changePasswordAs(bearer, INITIAL, CHOSEN).andExpect(status().isNoContent());
 
-        getAs(bearer, "/api/communities").andExpect(status().isOk());
+        getAs(bearer, "/api/rooms").andExpect(status().isOk());
         getAs(bearer, "/api/me")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pendingSteps", hasSize(0)));

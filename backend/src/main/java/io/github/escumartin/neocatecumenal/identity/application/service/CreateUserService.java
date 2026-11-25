@@ -13,6 +13,7 @@ import io.github.escumartin.neocatecumenal.identity.application.port.out.Passwor
 import io.github.escumartin.neocatecumenal.identity.application.port.out.PrivacyNoticeSettings;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.UserRepository;
 import io.github.escumartin.neocatecumenal.identity.domain.Actor;
+import io.github.escumartin.neocatecumenal.identity.domain.Community;
 import io.github.escumartin.neocatecumenal.identity.domain.DomainException;
 import io.github.escumartin.neocatecumenal.identity.domain.PlainPassword;
 import io.github.escumartin.neocatecumenal.identity.domain.User;
@@ -66,8 +67,11 @@ public class CreateUserService implements CreateUser {
         if (!UserManagementPolicy.canCreate(actor, command.role(), command.communityId())) {
             throw new DomainException("FORBIDDEN");
         }
-        if (communities.findById(command.communityId()).isEmpty()) {
-            throw new FieldValidationException("communityId", "COMMUNITY_NOT_FOUND");
+        users.lockCommunity(command.communityId());
+        Community community = communities.findById(command.communityId())
+                .orElseThrow(() -> new FieldValidationException("communityId", "COMMUNITY_NOT_FOUND"));
+        if (!community.active()) {
+            throw new FieldValidationException("communityId", "COMMUNITY_DEACTIVATED");
         }
         PlainPassword initialPassword = passwords.next();
         User created = users.save(User.register(new UserId(UUID.randomUUID()), accessIds.next(), command.name(),

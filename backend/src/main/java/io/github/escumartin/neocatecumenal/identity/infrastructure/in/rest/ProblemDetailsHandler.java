@@ -10,6 +10,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import io.github.escumartin.neocatecumenal.identity.StaleLockOrderException;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.FieldValidationException;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.UserNotFoundException;
 import io.github.escumartin.neocatecumenal.identity.domain.DomainException;
@@ -102,6 +103,8 @@ public class ProblemDetailsHandler implements AuthenticationEntryPoint, AccessDe
                     "SELF_ACTION_FORBIDDEN");
             case "LAST_MODERATOR" -> respond(HttpStatus.CONFLICT, "La comunidad se quedaría sin moderador",
                     "LAST_MODERATOR");
+            case "USER_LINKED_TO_MEMBER" -> respond(HttpStatus.CONFLICT,
+                    "El usuario está vinculado a un hermano de otra comunidad", "USER_LINKED_TO_MEMBER");
             case "LAST_ADMINISTRATOR" -> respond(HttpStatus.CONFLICT, "El sistema se quedaría sin administrador",
                     "LAST_ADMINISTRATOR");
             case "REQUIRED", "INVALID_FORMAT", "TOO_LONG" ->
@@ -188,6 +191,11 @@ public class ProblemDetailsHandler implements AuthenticationEntryPoint, AccessDe
     @ExceptionHandler(FieldValidationException.class)
     public ResponseEntity<Map<String, Object>> invalidField(FieldValidationException exception) {
         return validationFailed(List.of(fieldError(exception.field(), exception.code())));
+    }
+
+    @ExceptionHandler(StaleLockOrderException.class)
+    public ResponseEntity<Map<String, Object>> staleLockOrder() {
+        return respond(HttpStatus.CONFLICT, "El usuario ha cambiado mientras se editaba", "CONCURRENT_MODIFICATION");
     }
 
     @ExceptionHandler(OptimisticLockingFailureException.class)

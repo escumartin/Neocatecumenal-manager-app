@@ -11,6 +11,8 @@ import io.github.escumartin.neocatecumenal.identity.domain.PrivacyConsent;
 import io.github.escumartin.neocatecumenal.identity.domain.User;
 import io.github.escumartin.neocatecumenal.identity.domain.UserId;
 import io.github.escumartin.neocatecumenal.identity.domain.UserRole;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -27,6 +29,9 @@ public class UserPersistenceAdapter implements UserRepository {
     private static final String ACCESS_ID_CONSTRAINT = "uk_identity_user_access_id";
 
     private final UserSpringDataRepository repository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     UserPersistenceAdapter(UserSpringDataRepository repository) {
         this.repository = repository;
@@ -49,6 +54,27 @@ public class UserPersistenceAdapter implements UserRepository {
     @Override
     public Optional<User> findById(UserId id) {
         return repository.findById(id.value()).map(UserPersistenceAdapter::toDomain);
+    }
+
+    @Override
+    public Optional<User> findByIdForUpdate(UserId id) {
+        return repository.findByIdForUpdate(id.value()).map(this::refreshed);
+    }
+
+    @Override
+    public Optional<User> lockForShare(UserId id) {
+        return repository.findByIdForShare(id.value()).map(this::refreshed);
+    }
+
+    @Override
+    public List<User> findAllByCommunity(CommunityId communityId) {
+        return repository.findByCommunityIdOrderByNameAscIdAsc(communityId.value()).stream()
+                .map(UserPersistenceAdapter::toDomain).toList();
+    }
+
+    private User refreshed(UserJpaEntity entity) {
+        entityManager.refresh(entity);
+        return toDomain(entity);
     }
 
     @Override

@@ -25,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.core.ApplicationModules;
@@ -35,6 +36,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @ApplicationModuleTest
 @Testcontainers
+@Import(TestCommunityProvisionerConfig.class)
 class IdentityApiModuleTest {
 
     @Container
@@ -107,14 +109,14 @@ class IdentityApiModuleTest {
         Community two = community(2);
 
         assertThat(identityApi.communities()).containsExactly(
-                new CommunityRef(two.id().value(), 2), new CommunityRef(nine.id().value(), 9));
+                new CommunityRef(two.id().value(), 2, true), new CommunityRef(nine.id().value(), 9, true));
     }
 
     @Test
     void communityIsFoundByIdAndEmptyWhenUnknown() {
         Community four = community(4);
 
-        assertThat(identityApi.community(four.id().value())).contains(new CommunityRef(four.id().value(), 4));
+        assertThat(identityApi.community(four.id().value())).contains(new CommunityRef(four.id().value(), 4, true));
         assertThat(identityApi.community(UUID.randomUUID())).isEmpty();
     }
 
@@ -129,6 +131,9 @@ class IdentityApiModuleTest {
 
         assertThat(exposed).containsExactlyInAnyOrder(
                 IdentityApi.class.getName(), CurrentUser.class.getName(), Role.class.getName(),
-                CommunityRef.class.getName(), UserDeleted.class.getName());
+                CommunityRef.class.getName(), UserDeleted.class.getName(), UserRef.class.getName(),
+                IdentityRuleViolation.class.getName(), StaleLockOrderException.class.getName(),
+                CommunityCatalog.class.getName(), UserLinkGuard.class.getName(),
+                CommunityProvisioner.class.getName());
     }
 }

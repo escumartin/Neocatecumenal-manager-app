@@ -1,5 +1,7 @@
 package io.github.escumartin.neocatecumenal.spaces.infrastructure;
 
+import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
+import org.springframework.context.annotation.Import;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
@@ -49,6 +51,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
+@Import(TestCommunityProvisionerConfig.class)
 class ResolutionControllerTest {
 
     private static final AtomicInteger ACCESS_IDS = new AtomicInteger(700000);

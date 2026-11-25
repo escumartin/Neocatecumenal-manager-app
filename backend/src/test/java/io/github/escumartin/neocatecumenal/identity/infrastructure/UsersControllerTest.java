@@ -1,5 +1,7 @@
 package io.github.escumartin.neocatecumenal.identity.infrastructure;
 
+import io.github.escumartin.neocatecumenal.identity.TestCommunityProvisionerConfig;
+import org.springframework.context.annotation.Import;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -51,6 +53,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Testcontainers
+@Import(TestCommunityProvisionerConfig.class)
 class UsersControllerTest {
 
     private static final AtomicInteger ACCESS_IDS = new AtomicInteger(200000);
