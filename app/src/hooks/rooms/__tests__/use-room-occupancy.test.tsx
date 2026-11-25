@@ -23,6 +23,12 @@ function fakeApi(overrides: Partial<RoomsApi> = {}): RoomsApi {
   };
 }
 
+function deferred() {
+  let resolve: (value: unknown) => void = () => undefined;
+  const promise = new Promise((r) => (resolve = r));
+  return { promise, resolve };
+}
+
 describe('useRoomOccupancy', () => {
   it('stays idle and does not call the server without a query', async () => {
     const api = fakeApi();
@@ -118,5 +124,124 @@ describe('useRoomOccupancy', () => {
     await act(() => result.current.reload());
 
     expect(result.current.status).toBe('error');
+  });
+
+  it('keeps the slots and the ready status while a silent refresh is pending', async () => {
+    let resolveRefresh: (value: unknown) => void = () => undefined;
+    const other = { ...slot, startTime: '20:00', endTime: '21:00' };
+    const api = fakeApi({
+      occupancy: jest
+        .fn()
+        .mockResolvedValueOnce({ ok: true, occupancy })
+        .mockReturnValueOnce(new Promise((resolve) => (resolveRefresh = resolve))),
+    });
+    const { result } = await renderHook(() => useRoomOccupancy(api, query));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    let refreshing: Promise<unknown> = Promise.resolve();
+    await act(async () => {
+      refreshing = result.current.refresh();
+    });
+
+    expect(result.current.status).toBe('ready');
+    expect(result.current.occupied).toEqual([slot]);
+
+    await act(async () => {
+      resolveRefresh({ ok: true, occupancy: { ...occupancy, occupied: [other] } });
+      await refreshing;
+    });
+
+    expect(result.current.status).toBe('ready');
+    expect(result.current.occupied).toEqual([other]);
+  });
+
+  it('keeps the slots when a silent refresh fails', async () => {
+    const api = fakeApi({
+      occupancy: jest
+        .fn()
+        .mockResolvedValueOnce({ ok: true, occupancy })
+        .mockResolvedValueOnce({ ok: false, status: 500 }),
+    });
+    const { result } = await renderHook(() => useRoomOccupancy(api, query));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    await act(() => result.current.refresh());
+
+    expect(result.current.status).toBe('ready');
+    expect(result.current.occupied).toEqual([slot]);
+  });
+
+  it('keeps the slots when a silent refresh rejects', async () => {
+    const api = fakeApi({
+      occupancy: jest
+        .fn()
+        .mockResolvedValueOnce({ ok: true, occupancy })
+        .mockRejectedValueOnce(new Error('network down')),
+    });
+    const { result } = await renderHook(() => useRoomOccupancy(api, query));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    await act(() => result.current.refresh());
+
+    expect(result.current.status).toBe('ready');
+    expect(result.current.occupied).toEqual([slot]);
+  });
+
+  it('ignores a stale refresh of the previous date after the query changes', async () => {
+    const stale = deferred();
+    const next = { ...slot, startTime: '10:00', endTime: '11:00' };
+    const api = fakeApi({
+      occupancy: jest
+        .fn()
+        .mockResolvedValueOnce({ ok: true, occupancy })
+        .mockReturnValueOnce(stale.promise)
+        .mockResolvedValueOnce({ ok: true, occupancy: { ...occupancy, date: '2030-05-12', occupied: [next] } }),
+    });
+    const { result, rerender } = await renderHook(
+      ({ date }: { date: string }) => useRoomOccupancy(api, { roomId, date }),
+      { initialProps: { date: '2030-05-11' } },
+    );
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    let refreshing: Promise<unknown> = Promise.resolve();
+    await act(async () => {
+      refreshing = result.current.refresh();
+    });
+    await rerender({ date: '2030-05-12' });
+    await waitFor(() => expect(result.current.occupied).toEqual([next]));
+    await act(async () => {
+      stale.resolve({ ok: true, occupancy });
+      await refreshing;
+    });
+
+    expect(result.current.status).toBe('ready');
+    expect(result.current.occupied).toEqual([next]);
+  });
+
+  it('ignores a stale refresh that resolves after a newer reload', async () => {
+    const stale = deferred();
+    const newest = { ...slot, startTime: '12:00', endTime: '13:00' };
+    const api = fakeApi({
+      occupancy: jest
+        .fn()
+        .mockResolvedValueOnce({ ok: true, occupancy })
+        .mockReturnValueOnce(stale.promise)
+        .mockResolvedValueOnce({ ok: true, occupancy: { ...occupancy, occupied: [newest] } }),
+    });
+    const { result } = await renderHook(() => useRoomOccupancy(api, query));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    let refreshing: Promise<unknown> = Promise.resolve();
+    await act(async () => {
+      refreshing = result.current.refresh();
+    });
+    await act(() => result.current.reload());
+    await act(async () => {
+      stale.resolve({ ok: true, occupancy });
+      await refreshing;
+    });
+
+    expect(result.current.status).toBe('ready');
+    expect(result.current.occupied).toEqual([newest]);
   });
 });

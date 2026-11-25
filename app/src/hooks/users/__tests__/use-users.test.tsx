@@ -18,6 +18,12 @@ function fakeApi(overrides: Partial<UsersApi> = {}): UsersApi {
   };
 }
 
+function deferred() {
+  let resolve: (value: unknown) => void = () => undefined;
+  const promise = new Promise((r) => (resolve = r));
+  return { promise, resolve };
+}
+
 describe('useUsers', () => {
   it('loads the users of the community', async () => {
     const api = fakeApi();
@@ -99,5 +105,130 @@ describe('useUsers', () => {
 
     expect(outcome).toEqual({ ok: true, user: created });
     expect(api.create).toHaveBeenCalledWith({ name: 'Ana', role: 'REGISTERED', communityId });
+  });
+
+  it('keeps the data and the ready status while a silent refresh is pending', async () => {
+    let resolveRefresh: (value: unknown) => void = () => undefined;
+    const api = fakeApi({
+      list: jest
+        .fn()
+        .mockResolvedValueOnce({ ok: true, users: [first] })
+        .mockReturnValueOnce(new Promise((resolve) => (resolveRefresh = resolve))),
+    });
+    const { result } = await renderHook(() => useUsers(communityId, api));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    let refreshing: Promise<unknown> = Promise.resolve();
+    await act(async () => {
+      refreshing = result.current.refresh();
+    });
+
+    expect(result.current.status).toBe('ready');
+    expect(result.current.users).toEqual([first]);
+
+    await act(async () => {
+      resolveRefresh({ ok: true, users: [second] });
+      await refreshing;
+    });
+
+    expect(result.current.status).toBe('ready');
+    expect(result.current.users).toEqual([second]);
+  });
+
+  it('keeps the data when a silent refresh fails', async () => {
+    const api = fakeApi({
+      list: jest
+        .fn()
+        .mockResolvedValueOnce({ ok: true, users: [first] })
+        .mockResolvedValueOnce({ ok: false, status: 500 }),
+    });
+    const { result } = await renderHook(() => useUsers(communityId, api));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    await act(() => result.current.refresh());
+
+    expect(result.current.status).toBe('ready');
+    expect(result.current.users).toEqual([first]);
+  });
+
+  it('keeps the data when a silent refresh rejects', async () => {
+    const api = fakeApi({
+      list: jest
+        .fn()
+        .mockResolvedValueOnce({ ok: true, users: [first] })
+        .mockRejectedValueOnce(new Error('network down')),
+    });
+    const { result } = await renderHook(() => useUsers(communityId, api));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    await act(() => result.current.refresh());
+
+    expect(result.current.status).toBe('ready');
+    expect(result.current.users).toEqual([first]);
+  });
+
+  it('ignores a stale refresh of the previous community after the community changes', async () => {
+    const otherCommunity = '6f1c1f1e-0000-4000-8000-000000000012';
+    const stale = deferred();
+    const api = fakeApi({
+      list: jest
+        .fn()
+        .mockResolvedValueOnce({ ok: true, users: [first] })
+        .mockReturnValueOnce(stale.promise)
+        .mockResolvedValueOnce({ ok: true, users: [second] }),
+    });
+    const { result, rerender } = await renderHook(({ id }: { id: string }) => useUsers(id, api), {
+      initialProps: { id: communityId },
+    });
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    let refreshing: Promise<unknown> = Promise.resolve();
+    await act(async () => {
+      refreshing = result.current.refresh();
+    });
+    await rerender({ id: otherCommunity });
+    await waitFor(() => expect(result.current.users).toEqual([second]));
+    await act(async () => {
+      stale.resolve({ ok: true, users: [first] });
+      await refreshing;
+    });
+
+    expect(result.current.status).toBe('ready');
+    expect(result.current.users).toEqual([second]);
+  });
+
+  it('ignores a stale refresh that resolves after a newer reload', async () => {
+    const stale = deferred();
+    const api = fakeApi({
+      list: jest
+        .fn()
+        .mockResolvedValueOnce({ ok: true, users: [first] })
+        .mockReturnValueOnce(stale.promise)
+        .mockResolvedValueOnce({ ok: true, users: [second] }),
+    });
+    const { result } = await renderHook(() => useUsers(communityId, api));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    let refreshing: Promise<unknown> = Promise.resolve();
+    await act(async () => {
+      refreshing = result.current.refresh();
+    });
+    await act(() => result.current.reload());
+    await act(async () => {
+      stale.resolve({ ok: true, users: [first] });
+      await refreshing;
+    });
+
+    expect(result.current.status).toBe('ready');
+    expect(result.current.users).toEqual([second]);
+  });
+
+  it('does not call the server on refresh when disabled', async () => {
+    const api = fakeApi();
+    const { result } = await renderHook(() => useUsers(communityId, api, false));
+
+    await act(() => result.current.refresh());
+
+    expect(api.list).not.toHaveBeenCalled();
   });
 });

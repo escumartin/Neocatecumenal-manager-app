@@ -31,11 +31,11 @@ export function RoomOccupancyScreen({ roomsApi, communitiesApi }: Props) {
   const day = date.trim();
   const needsCommunity = canChooseCommunity && communityId === null;
   const ready = roomId !== null && isDate(day) && !needsCommunity;
-  const { status, occupied, reload } = useRoomOccupancy(
+  const { status, occupied, reload, refresh } = useRoomOccupancy(
     roomsApi,
     ready ? { roomId, date: day, ...(communityId ? { communityId } : {}) } : null,
   );
-  useReloadOnFocus(reload);
+  useReloadOnFocus(refresh);
   const { refreshing, onRefresh } = usePullToRefresh(reload);
 
   if (user === null) {

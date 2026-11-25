@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { bookingRequestsApi } from '@/lib/api';
 import type {
   BookingRequest,
@@ -31,7 +31,10 @@ export function usePendingRequests(
     requests: [],
   });
 
+  const sequence = useRef(0);
+
   useEffect(() => {
+    const id = ++sequence.current;
     if (!enabled) {
       return;
     }
@@ -40,7 +43,7 @@ export function usePendingRequests(
       .list(QUERY)
       .then(toState, () => FAILED)
       .then((next) => {
-        if (active) {
+        if (active && id === sequence.current) {
           setState(next);
         }
       });
@@ -50,17 +53,38 @@ export function usePendingRequests(
   }, [api, enabled]);
 
   const reload = useCallback(async () => {
+    const id = ++sequence.current;
     setState((current) => ({ ...current, status: 'loading' }));
+    let next = FAILED;
     try {
-      setState(toState(await api.list(QUERY)));
+      next = toState(await api.list(QUERY));
     } catch {
-      setState(FAILED);
+      next = FAILED;
+    }
+    if (id === sequence.current) {
+      setState(next);
     }
   }, [api]);
+
+  const refresh = useCallback(async () => {
+    if (!enabled) {
+      return;
+    }
+    const id = ++sequence.current;
+    try {
+      const result = await api.list(QUERY);
+      if (result.ok && id === sequence.current) {
+        setState(toState(result));
+      }
+    } catch {
+      return;
+    }
+  }, [api, enabled]);
 
   const settle = useCallback(
     async (bookingRequestId: string, result: BookingRequestResult) => {
       if (result.ok) {
+        sequence.current++;
         setState((current) => ({
           ...current,
           requests: current.requests.filter(
@@ -68,7 +92,11 @@ export function usePendingRequests(
           ),
         }));
       } else if (result.code === 'BOOKING_REQUEST_ALREADY_RESOLVED') {
-        setState(toState(await api.list(QUERY)));
+        const id = ++sequence.current;
+        const next = toState(await api.list(QUERY));
+        if (id === sequence.current) {
+          setState(next);
+        }
       }
       return result;
     },
@@ -91,6 +119,7 @@ export function usePendingRequests(
     status: state.status,
     requests: state.requests,
     reload,
+    refresh,
     approve,
     reject,
   };

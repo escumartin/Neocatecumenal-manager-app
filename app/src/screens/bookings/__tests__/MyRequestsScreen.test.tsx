@@ -350,4 +350,20 @@ describe('my requests screen', () => {
 
     await waitFor(() => expect(hapticSuccess).toHaveBeenCalledTimes(1));
   });
+
+  it('keeps the list and hides the loading state while the focus reload is pending', async () => {
+    const page = { ok: true, page: { items: [pending, approved], page: 0, size: 100, totalItems: 2 } };
+    const list = jest.fn().mockResolvedValueOnce(page).mockReturnValueOnce(new Promise(() => undefined));
+    const { element } = screenWith(fakeBookingRequestsApi({ list }));
+    await renderAs('MODERATOR', element);
+    await screen.findByText(hall.name);
+
+    await act(async () => {
+      void mockedReloadOnFocus.mock.calls.at(-1)?.[0]();
+    });
+
+    expect(list).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText(bookingsText.list.loading)).not.toBeOnTheScreen();
+    expect(screen.getByText(hall.name)).toBeOnTheScreen();
+  });
 });

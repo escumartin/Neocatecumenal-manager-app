@@ -393,4 +393,21 @@ describe('user list', () => {
 
     expect(api.list).toHaveBeenCalledTimes(2);
   });
+
+  it('keeps the users and hides the loading state while the focus reload is pending', async () => {
+    const api = fakeUsersApi({
+      list: jest.fn().mockResolvedValueOnce({ ok: true, users: [ana, luis] }).mockReturnValueOnce(new Promise(() => undefined)),
+    });
+    const { element } = list(api);
+    await renderAs('MODERATOR', element);
+    await screen.findByText('Ana');
+
+    await act(async () => {
+      void mockedReloadOnFocus.mock.calls.at(-1)?.[0]();
+    });
+
+    expect(api.list).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText(usersText.loading)).not.toBeOnTheScreen();
+    expect(screen.getByText('Ana')).toBeOnTheScreen();
+  });
 });
