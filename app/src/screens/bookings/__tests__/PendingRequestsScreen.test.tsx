@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 import { PendingRequestsScreen } from '../pending-requests';
 import {
   chapel,
@@ -12,6 +12,7 @@ import {
 } from '../support/test-support';
 import { fontSizeOf, minHeightOf } from '../support/layout-checks';
 import { bookingsText } from '@/i18n/es/bookings';
+import { useReloadOnFocus } from '@/hooks/navigation/use-reload-on-focus';
 
 const pendingPage = {
   ok: true,
@@ -28,6 +29,17 @@ function screenWith(overrides: Parameters<typeof fakeBookingRequestsApi>[0] = {}
 
 async function openRejection(roomName: string) {
   await fireEvent.press(await screen.findByRole('button', { name: bookingsText.resolve.rejectFor(roomName) }));
+}
+
+jest.mock('@/hooks/navigation/use-reload-on-focus', () => ({ useReloadOnFocus: jest.fn() }));
+
+const mockedReloadOnFocus = jest.mocked(useReloadOnFocus);
+
+async function regainFocus() {
+  const reload = mockedReloadOnFocus.mock.calls.at(-1)?.[0];
+  await act(async () => {
+    await reload?.();
+  });
 }
 
 describe('pending requests screen', () => {
@@ -246,5 +258,15 @@ describe('pending requests screen', () => {
 
     expect(await screen.findByText(hall.name)).toBeOnTheScreen();
     expect(screen.queryByText(bookingsText.list.roomUnavailable)).not.toBeOnTheScreen();
+  });
+
+  it('reloads the pending requests when the screen regains focus', async () => {
+    const { element, api } = screenWith();
+    await renderAs('ADMINISTRATOR', element);
+    await screen.findByRole('heading', { name: hall.name });
+
+    await regainFocus();
+
+    expect(api.list).toHaveBeenCalledTimes(2);
   });
 });

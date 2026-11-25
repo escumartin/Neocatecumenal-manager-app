@@ -134,6 +134,7 @@ export function RequestBookingScreen({ api = bookingRequestsApi, roomsApi, commu
     <ScrollView
       className="flex-1 bg-background"
       contentContainerClassName="gap-6 p-6"
+      contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
     >
       <Text variant="title">{bookingsText.request.title}</Text>

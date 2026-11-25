@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { RoomOccupancyScreen } from '@/screens/rooms/room-occupancy';
 import {
   chapel,
@@ -12,6 +12,7 @@ import {
 import { fontSizeOf, minHeightOf } from '../support/layout-checks';
 import { bookingsText } from '@/i18n/es/bookings';
 import { communitiesText } from '@/i18n/es/communities';
+import { useReloadOnFocus } from '@/hooks/navigation/use-reload-on-focus';
 
 const occupied = [
   {
@@ -38,6 +39,17 @@ function screenWith(roomsApi = fakeRoomsApi()) {
 async function chooseRoomAndDate(room = hall.name, date = '2030-05-11') {
   await fireEvent.press(await screen.findByRole('radio', { name: room }));
   await fireEvent.changeText(screen.getByLabelText(bookingsText.occupancy.date), date);
+}
+
+jest.mock('@/hooks/navigation/use-reload-on-focus', () => ({ useReloadOnFocus: jest.fn() }));
+
+const mockedReloadOnFocus = jest.mocked(useReloadOnFocus);
+
+async function regainFocus() {
+  const reload = mockedReloadOnFocus.mock.calls.at(-1)?.[0];
+  await act(async () => {
+    await reload?.();
+  });
 }
 
 describe('room occupancy screen', () => {
@@ -186,5 +198,16 @@ describe('room occupancy screen', () => {
     ]) {
       expect(fontSizeOf(text)).toBeGreaterThanOrEqual(18);
     }
+  });
+
+  it('reloads the occupancy when the screen regains focus', async () => {
+    const { element, roomsApi } = screenWith();
+    await renderAs('MODERATOR', element);
+    await chooseRoomAndDate();
+    await waitFor(() => expect(roomsApi.occupancy).toHaveBeenCalledTimes(1));
+
+    await regainFocus();
+
+    expect(roomsApi.occupancy).toHaveBeenCalledTimes(2);
   });
 });

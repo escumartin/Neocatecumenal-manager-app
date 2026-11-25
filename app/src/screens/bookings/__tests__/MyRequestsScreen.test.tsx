@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 import { MyRequestsScreen } from '../my-requests';
 import {
   approved,
@@ -12,6 +12,7 @@ import {
 } from '../support/test-support';
 import { fontSizeOf, minHeightOf } from '../support/layout-checks';
 import { bookingsText } from '@/i18n/es/bookings';
+import { useReloadOnFocus } from '@/hooks/navigation/use-reload-on-focus';
 
 function screenWith(api = fakeBookingRequestsApi(), onRequest = jest.fn()) {
   return {
@@ -19,6 +20,17 @@ function screenWith(api = fakeBookingRequestsApi(), onRequest = jest.fn()) {
     onRequest,
     element: <MyRequestsScreen api={api} roomsApi={fakeRoomsApi()} onRequest={onRequest} />,
   };
+}
+
+jest.mock('@/hooks/navigation/use-reload-on-focus', () => ({ useReloadOnFocus: jest.fn() }));
+
+const mockedReloadOnFocus = jest.mocked(useReloadOnFocus);
+
+async function regainFocus() {
+  const reload = mockedReloadOnFocus.mock.calls.at(-1)?.[0];
+  await act(async () => {
+    await reload?.();
+  });
 }
 
 describe('my requests screen', () => {
@@ -272,5 +284,15 @@ describe('my requests screen', () => {
 
     expect((await screen.findAllByText(bookingsText.list.roomLoading)).length).toBeGreaterThan(0);
     expect(screen.queryByText(bookingsText.list.unknownRoom)).not.toBeOnTheScreen();
+  });
+
+  it('reloads the requests when the screen regains focus', async () => {
+    const { element, api } = screenWith();
+    await renderAs('MODERATOR', element);
+    await screen.findByText(hall.name);
+
+    await regainFocus();
+
+    expect(api.list).toHaveBeenCalledTimes(2);
   });
 });

@@ -12,6 +12,8 @@ import {
 } from '../support/test-support';
 import { bookingsText } from '@/i18n/es/bookings';
 
+jest.mock('@/hooks/navigation/use-reload-on-focus', () => ({ useReloadOnFocus: jest.fn() }));
+
 const started = {
   ...approved,
   id: '6f1c1f1e-0000-4000-8000-000000000045',

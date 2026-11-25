@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Text } from 'react-native';
 import { SessionGuard } from '../session-guard';
 import { SessionProvider, type SessionApi } from '@/hooks/session/use-session';
@@ -22,8 +22,8 @@ const me = {
   currentPrivacyNoticeVersion: '1',
 };
 
-async function renderGuard(getMe: SessionApi['getMe'], logOut = jest.fn().mockResolvedValue(undefined)) {
-  const api = { logIn: jest.fn(), logOut, getMe } as unknown as SessionApi;
+async function renderGuard(getMe: SessionApi['getMe']) {
+  const api = { logIn: jest.fn(), logOut: jest.fn(), getMe } as unknown as SessionApi;
   const store = { read: jest.fn().mockResolvedValue(null), save: jest.fn(), clear: jest.fn() };
   await render(
     <SessionProvider api={api} store={store}>
@@ -32,7 +32,6 @@ async function renderGuard(getMe: SessionApi['getMe'], logOut = jest.fn().mockRe
       </SessionGuard>
     </SessionProvider>,
   );
-  return logOut;
 }
 
 describe('session guard', () => {
@@ -43,25 +42,18 @@ describe('session guard', () => {
     expect(screen.queryByText('protected content')).toBeNull();
   });
 
-  it('shows the protected content with a logout button for an authenticated user', async () => {
+  it('shows the protected content without a logout button for an authenticated user', async () => {
     await renderGuard(jest.fn().mockResolvedValue({ ok: true, me }));
 
     expect(await screen.findByText('protected content')).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: identity.logout })).toBeOnTheScreen();
-  });
-
-  it('returns to the login after logging out', async () => {
-    const logOut = await renderGuard(jest.fn().mockResolvedValue({ ok: true, me }));
-    await screen.findByText('protected content');
-
-    await fireEvent.press(screen.getByRole('button', { name: identity.logout }));
-
-    await waitFor(() => expect(logOut).toHaveBeenCalled());
-    expect(await screen.findByText('redirect:/login')).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: identity.logout })).toBeNull();
   });
 
   it('sends a user with the privacy notice pending to it before anything else', async () => {
-    const pending = { ...me, pendingSteps: ['PASSWORD_CHANGE', 'PRIVACY_NOTICE'] as ('PRIVACY_NOTICE' | 'PASSWORD_CHANGE')[] };
+    const pending = {
+      ...me,
+      pendingSteps: ['PASSWORD_CHANGE', 'PRIVACY_NOTICE'] as ('PRIVACY_NOTICE' | 'PASSWORD_CHANGE')[],
+    };
     await renderGuard(jest.fn().mockResolvedValue({ ok: true, me: pending }));
 
     expect(await screen.findByText('redirect:/privacy-notice')).toBeOnTheScreen();

@@ -1,14 +1,26 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { UserList } from '../list';
 import { ana, communities, communitiesApi, fakeUsersApi, luis, renderAs } from '../support/test-support';
 import { communitiesText } from '@/i18n/es/communities';
 import { usersText } from '@/i18n/es/users';
+import { useReloadOnFocus } from '@/hooks/navigation/use-reload-on-focus';
 
 function list(api = fakeUsersApi()) {
   const onCreate = jest.fn();
   const onEdit = jest.fn();
   const element = <UserList api={api} communitiesApi={communitiesApi} onCreate={onCreate} onEdit={onEdit} />;
   return { element, api, onCreate, onEdit };
+}
+
+jest.mock('@/hooks/navigation/use-reload-on-focus', () => ({ useReloadOnFocus: jest.fn() }));
+
+const mockedReloadOnFocus = jest.mocked(useReloadOnFocus);
+
+async function regainFocus() {
+  const reload = mockedReloadOnFocus.mock.calls.at(-1)?.[0];
+  await act(async () => {
+    await reload?.();
+  });
 }
 
 describe('user list', () => {
@@ -152,5 +164,15 @@ describe('user list', () => {
     await fireEvent.press(screen.getByRole('button', { name: usersText.delete.confirm }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(`⚠ ${usersText.errors.SELF_ACTION_FORBIDDEN}`);
+  });
+
+  it('reloads the users when the screen regains focus', async () => {
+    const { element, api } = list();
+    await renderAs('MODERATOR', element);
+    await screen.findByText('Ana');
+
+    await regainFocus();
+
+    expect(api.list).toHaveBeenCalledTimes(2);
   });
 });

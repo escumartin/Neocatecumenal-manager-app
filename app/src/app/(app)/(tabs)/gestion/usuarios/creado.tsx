@@ -7,8 +7,8 @@ export default function CreatedUserRoute() {
   const handoff = useCreatedUserHandoff();
 
   if (!handoff) {
-    return <Redirect href="/users" />;
+    return <Redirect href="/gestion/usuarios" />;
   }
 
-  return <UserCreated created={handoff.created} variant={handoff.kind} onDone={() => router.replace('/users')} />;
+  return <UserCreated created={handoff.created} variant={handoff.kind} onDone={() => router.dismiss()} />;
 }

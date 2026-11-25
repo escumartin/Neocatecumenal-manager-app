@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FlatList, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { useReloadOnFocus } from '@/hooks/navigation/use-reload-on-focus';
 import { usePendingRequests } from '@/hooks/bookings/use-pending-requests';
 import { useCommunities } from '@/hooks/communities/use-communities';
 import { useRooms } from '@/hooks/rooms/use-rooms';
@@ -24,6 +25,7 @@ export function PendingRequestsScreen({ api, roomsApi, communitiesApi }: Props) 
   const { status, requests, reload, approve, reject } = usePendingRequests(api, isAdministrator);
   const { status: roomsStatus, rooms, reload: reloadRooms } = useRooms(roomsApi, isAdministrator);
   const { communities } = useCommunities(communitiesApi, isAdministrator);
+  useReloadOnFocus(reload);
 
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -96,6 +98,7 @@ export function PendingRequestsScreen({ api, roomsApi, communitiesApi }: Props) 
     <FlatList
       className="flex-1 bg-background"
       contentContainerClassName="gap-4 p-6"
+      contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
       data={requests}
       keyExtractor={(request) => request.id}

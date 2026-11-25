@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FlatList, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { useReloadOnFocus } from '@/hooks/navigation/use-reload-on-focus';
 import { useBookingRequests } from '@/hooks/bookings/use-booking-requests';
 import { useRooms } from '@/hooks/rooms/use-rooms';
 import { useCurrentUser } from '@/hooks/session/use-current-user';
@@ -58,6 +59,7 @@ export function MyRequestsScreen({ api, roomsApi, onRequest }: Props) {
     rooms,
     reload: reloadRooms,
   } = useRooms(roomsApi, isModerator);
+  useReloadOnFocus(reload);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<Cancelling | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -221,6 +223,7 @@ export function MyRequestsScreen({ api, roomsApi, onRequest }: Props) {
       <FlatList
         className="flex-1 bg-background"
         contentContainerClassName="gap-4 p-6"
+        contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         data={requests}
         keyExtractor={(request) => request.id}

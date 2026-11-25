@@ -8,7 +8,7 @@ export default function NewUserRoute() {
     <UserEdit
       onCreated={(created) => {
         createdUserHandoff.set(created);
-        router.replace('/users/created');
+        router.replace('/gestion/usuarios/creado');
       }}
       onSaved={() => router.back()}
     />

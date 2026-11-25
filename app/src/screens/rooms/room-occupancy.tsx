@@ -3,6 +3,7 @@ import { ScrollView, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
+import { useReloadOnFocus } from '@/hooks/navigation/use-reload-on-focus';
 import { useRoomOccupancy } from '@/hooks/rooms/use-room-occupancy';
 import { useRooms } from '@/hooks/rooms/use-rooms';
 import { useCurrentUser } from '@/hooks/session/use-current-user';
@@ -31,6 +32,7 @@ export function RoomOccupancyScreen({ roomsApi, communitiesApi }: Props) {
     roomsApi,
     ready ? { roomId, date: day, ...(communityId ? { communityId } : {}) } : null,
   );
+  useReloadOnFocus(reload);
 
   if (user === null) {
     return (
@@ -59,6 +61,7 @@ export function RoomOccupancyScreen({ roomsApi, communitiesApi }: Props) {
     <ScrollView
       className="flex-1 bg-background"
       contentContainerClassName="gap-6 p-6"
+      contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
     >
       <Text variant="title">{bookingsText.occupancy.title}</Text>
