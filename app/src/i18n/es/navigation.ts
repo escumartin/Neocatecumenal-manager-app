@@ -3,6 +3,7 @@ export const navigationText = {
     agenda: 'Agenda',
     reservas: 'Reservas',
     gestion: 'Gestión',
+    comunidad: 'Comunidad',
     cuenta: 'Cuenta',
   },
   cancel: 'Cancelar',
@@ -20,6 +21,7 @@ export const navigationText = {
   newMember: 'Nuevo hermano',
   editMember: 'Hermano',
   memberContact: 'Datos de contacto',
+  directoryMember: 'Hermano',
   management: {
     users: 'Usuarios',
     rooms: 'Salones',

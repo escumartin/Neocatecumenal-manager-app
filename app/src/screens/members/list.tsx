@@ -43,6 +43,9 @@ export function MembersList({ api, communitiesApi, onCreate, onOpen }: Props) {
       {(!signedIn || status === 'loading') && !needsChoice && !refreshing ? (
         <StateView kind="loading" message={membersText.list.loading} />
       ) : null}
+      {status === 'deactivated' ? (
+        <StateView kind="empty" icon="person.3" message={membersText.list.deactivated} />
+      ) : null}
       {status === 'error' ? (
         <StateView
           kind="error"

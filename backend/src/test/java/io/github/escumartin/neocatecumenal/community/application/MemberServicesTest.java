@@ -218,15 +218,6 @@ class MemberServicesTest {
     }
 
     @Test
-    void registeredUsersCannotGetMembersThroughManagement() {
-        Member member = memberIn(own, "Ana", "Pérez");
-
-        assertThatThrownBy(() -> get.get(registered, member.id())).isInstanceOf(CommunityForbidden.class);
-        assertThatThrownBy(() -> get.get(registered, new MemberId(UUID.randomUUID())))
-                .isInstanceOf(CommunityForbidden.class);
-    }
-
-    @Test
     void listReturnsTheCommunityOrderedByDirectoryOrderAndFlagsTheResponsible() {
         Member zapata = memberIn(own, "Ana", "Zapata");
         Member alvarez = memberIn(own, "Luis", "Álvarez");

@@ -8,7 +8,7 @@ type State = { status: MemberStatus; member: Member | null };
 
 const FAILED: State = { status: 'error', member: null };
 
-export function useMember(memberId: string, api: MemberManagementApi = membersApi) {
+export function useMember(memberId: string, api: Pick<MemberManagementApi, 'get'> = membersApi) {
   const [state, setState] = useState<State>({ status: 'loading', member: null });
 
   useEffect(() => {

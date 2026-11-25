@@ -2,12 +2,16 @@ import { useCallback, useEffect, useState } from 'react';
 import { membersApi } from '@/lib/api';
 import type { ListMembersResult, Member, MembersApi } from '@/lib/api/members-api';
 
-export type MembersStatus = 'idle' | 'loading' | 'ready' | 'error';
+export type MembersStatus = 'idle' | 'loading' | 'ready' | 'deactivated' | 'error';
 
 type State = { key: string | null; status: MembersStatus; members: Member[] };
 
 function toState(key: string, result: ListMembersResult): State {
-  return result.ok ? { key, status: 'ready', members: result.members } : { key, status: 'error', members: [] };
+  if (result.ok) {
+    return { key, status: 'ready', members: result.members };
+  }
+  const deactivated = result.status === 409 && result.code === 'COMMUNITY_DEACTIVATED';
+  return { key, status: deactivated ? 'deactivated' : 'error', members: [] };
 }
 
 export function useMembers(communityId: string | undefined, api: MembersApi = membersApi, enabled = true) {

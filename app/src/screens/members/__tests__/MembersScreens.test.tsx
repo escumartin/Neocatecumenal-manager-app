@@ -106,6 +106,15 @@ describe('members list', () => {
     expect(await screen.findByText('Ana Pérez')).toBeOnTheScreen();
   });
 
+  it('explains that the community is deactivated instead of leaving the list blank', async () => {
+    const { element } = list(
+      fakeMembersApi({ list: jest.fn().mockResolvedValue({ ok: false, status: 409, code: 'COMMUNITY_DEACTIVATED' }) }),
+    );
+    await renderAs('MODERATOR', element);
+
+    expect(await screen.findByText(membersText.list.deactivated)).toBeOnTheScreen();
+  });
+
   it('opens the create form and the member file', async () => {
     const { element, onCreate, onOpen } = list();
     await renderAs('MODERATOR', element);

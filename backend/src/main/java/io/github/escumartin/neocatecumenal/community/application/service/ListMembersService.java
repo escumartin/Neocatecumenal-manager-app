@@ -26,8 +26,9 @@ public class ListMembersService implements ListMembers {
     @Override
     @Transactional(readOnly = true)
     public List<MemberView> list(Actor actor, CommunityId communityId) {
-        MemberAccessPolicy.requireCanManageMembers(actor, communityId);
+        MemberAccessPolicy.requireCanViewDirectory(actor, communityId);
         Community community = communities.findById(communityId).orElseThrow(CommunityNotFound::new);
+        MemberAccessPolicy.requireDirectoryAvailable(actor, community.status());
         return DirectoryOrder.sorted(members.findByCommunity(communityId)).stream()
                 .map(member -> new MemberView(member, community.responsibleMemberId().filter(member.id()::equals)
                         .isPresent()))

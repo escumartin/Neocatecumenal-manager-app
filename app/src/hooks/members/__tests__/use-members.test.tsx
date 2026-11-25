@@ -33,6 +33,17 @@ describe('useMembers', () => {
     await waitFor(() => expect(second.result.current.status).toBe('error'));
   });
 
+  it('reports a deactivated community apart from other errors', async () => {
+    const deactivated = fakeMembersApi({
+      list: jest.fn().mockResolvedValue({ ok: false, status: 409, code: 'COMMUNITY_DEACTIVATED' }),
+    });
+
+    const { result } = await renderHook(() => useMembers(undefined, deactivated));
+
+    await waitFor(() => expect(result.current.status).toBe('deactivated'));
+    expect(result.current.members).toEqual([]);
+  });
+
   it('shows loading and no stale members when the community changes', async () => {
     const api = fakeMembersApi({
       list: jest
