@@ -1,7 +1,11 @@
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { Button } from '@/components/ui/button';
+import { FormField } from '@/components/ui/form-field';
+import { FormScroll } from '@/components/ui/form-scroll';
 import { Input } from '@/components/ui/input';
+import { ListSection } from '@/components/ui/list-section';
+import { RadioSection } from '@/components/ui/radio-section';
 import { Text } from '@/components/ui/text';
 import { useCurrentUser } from '@/hooks/session/use-current-user';
 import { useUser } from '@/hooks/users/use-user';
@@ -9,6 +13,7 @@ import { useUsers } from '@/hooks/users/use-users';
 import { messageForUsersFailure, usersText } from '@/i18n/es/users';
 import type { CommunitiesApi } from '@/lib/api/communities-api';
 import type { CreatedUser, User, UsersApi, UsersFailure } from '@/lib/api/users-api';
+import { hapticFailure, hapticSuccess } from '@/lib/haptics';
 import { canManageAccount } from '@/lib/users/can-manage-account';
 import { CommunityPicker } from './community-picker';
 import { DeleteUser } from './delete-user';
@@ -18,7 +23,10 @@ type Role = User['role'];
 
 type Problem = { field: 'name' | null; message: string };
 
-const ROLES: Role[] = ['REGISTERED', 'MODERATOR', 'ADMINISTRATOR'];
+const ROLE_OPTIONS = (['REGISTERED', 'MODERATOR', 'ADMINISTRATOR'] as Role[]).map((value) => ({
+  value,
+  label: usersText.roles[value],
+}));
 
 type Props = {
   userId?: string;
@@ -94,10 +102,12 @@ function UserFields({ initial, api, communitiesApi, save, onCreated, onSaved, on
   async function submit() {
     if (name.trim().length === 0) {
       setProblem({ field: 'name', message: usersText.fieldErrors.REQUIRED });
+      hapticFailure();
       return;
     }
     if (communityId === null) {
       setProblem({ field: null, message: usersText.fieldErrors.COMMUNITY_REQUIRED });
+      hapticFailure();
       return;
     }
     setSubmitting(true);
@@ -107,20 +117,25 @@ function UserFields({ initial, api, communitiesApi, save, onCreated, onSaved, on
       if (editing) {
         const result = await save(input);
         if (result.ok) {
+          hapticSuccess();
           onSaved();
         } else {
           setProblem(problemFor(result));
+          hapticFailure();
         }
       } else {
         const result = await create(input);
         if (result.ok) {
+          hapticSuccess();
           onCreated(result.user);
         } else {
           setProblem(problemFor(result));
+          hapticFailure();
         }
       }
     } catch {
       setProblem({ field: null, message: usersText.errors.UNKNOWN });
+      hapticFailure();
     } finally {
       setSubmitting(false);
     }
@@ -129,51 +144,30 @@ function UserFields({ initial, api, communitiesApi, save, onCreated, onSaved, on
   const nameProblem = problem?.field === 'name' ? problem.message : undefined;
 
   return (
-    <ScrollView
-      className="flex-1 bg-background"
-      contentContainerClassName="gap-6 p-6"
-      contentInsetAdjustmentBehavior="automatic"
-      keyboardShouldPersistTaps="handled"
-    >
+    <FormScroll>
       <Text variant="title">{editing ? usersText.form.editTitle : usersText.form.createTitle}</Text>
-      <View className="gap-2">
-        <Text variant="strong">{usersText.form.name}</Text>
-        <Input
-          accessibilityLabel={usersText.form.name}
-          accessibilityHint={nameProblem}
-          invalid={nameProblem !== undefined}
-          autoComplete="name"
-          maxLength={100}
-          value={name}
-          onChangeText={setName}
-        />
-        {nameProblem ? (
-          <Text role="alert" accessibilityLiveRegion="assertive" className="text-destructive">
-            {`⚠ ${nameProblem}`}
-          </Text>
-        ) : null}
-      </View>
+      <ListSection title={usersText.form.name}>
+        <FormField>
+          <Input
+            accessibilityLabel={usersText.form.name}
+            accessibilityHint={nameProblem}
+            invalid={nameProblem !== undefined}
+            autoComplete="name"
+            maxLength={100}
+            returnKeyType="done"
+            value={name}
+            onChangeText={setName}
+            onSubmitEditing={submit}
+          />
+          {nameProblem ? (
+            <Text role="alert" accessibilityLiveRegion="assertive" className="text-destructive">
+              {`⚠ ${nameProblem}`}
+            </Text>
+          ) : null}
+        </FormField>
+      </ListSection>
       {isAdministrator ? (
-        <View role="radiogroup" accessibilityLabel={usersText.form.role} className="gap-3">
-          <Text variant="heading">{usersText.form.role}</Text>
-          {ROLES.map((option) => {
-            const label = usersText.roles[option];
-            const selected = option === role;
-            return (
-              <Button
-                key={option}
-                role="radio"
-                variant={selected ? 'default' : 'outline'}
-                accessibilityLabel={label}
-                aria-checked={selected}
-                accessibilityState={{ checked: selected }}
-                onPress={() => setRole(option)}
-              >
-                <Text>{selected ? `✓ ${label}` : label}</Text>
-              </Button>
-            );
-          })}
-        </View>
+        <RadioSection title={usersText.form.role} options={ROLE_OPTIONS} value={role} onChange={setRole} />
       ) : null}
       <CommunityPicker selectedId={communityId} onSelect={setCommunityId} api={communitiesApi} />
       {problem && problem.field === null ? (
@@ -194,6 +188,6 @@ function UserFields({ initial, api, communitiesApi, save, onCreated, onSaved, on
       {initial && onDeleted && canManage ? (
         <DeleteUser user={initial} api={api} onDeleted={onDeleted} />
       ) : null}
-    </ScrollView>
+    </FormScroll>
   );
 }

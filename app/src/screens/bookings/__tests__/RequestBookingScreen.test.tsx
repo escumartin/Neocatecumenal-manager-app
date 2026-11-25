@@ -1,5 +1,6 @@
 import { fireEvent, screen } from '@testing-library/react-native';
 import { RequestBookingScreen } from '../request-booking';
+import { pickValue } from '@/test/pick-value';
 import {
   chapel,
   communities,
@@ -13,6 +14,13 @@ import {
 import { fontSizeOf, minHeightOf } from '../support/layout-checks';
 import { bookingsText } from '@/i18n/es/bookings';
 import { communitiesText } from '@/i18n/es/communities';
+import { hapticFailure, hapticSuccess } from '@/lib/haptics';
+
+jest.mock('@/lib/haptics', () => ({ hapticSuccess: jest.fn(), hapticFailure: jest.fn() }));
+
+afterEach(() => {
+  jest.clearAllMocks();
+});
 
 function screenWith(api = fakeBookingRequestsApi(), onCreated = jest.fn()) {
   return {
@@ -29,11 +37,20 @@ function screenWith(api = fakeBookingRequestsApi(), onCreated = jest.fn()) {
   };
 }
 
-async function fill(reason = 'Catequesis semanal') {
+async function fill(
+  reason = 'Catequesis semanal',
+  slot = { date: '2030-05-11', startTime: '18:00', endTime: '20:00' },
+) {
   await fireEvent.press(await screen.findByRole('radio', { name: hall.name }));
-  await fireEvent.changeText(screen.getByLabelText(bookingsText.request.date), '2030-05-11');
-  await fireEvent.changeText(screen.getByLabelText(bookingsText.request.startTime), '18:00');
-  await fireEvent.changeText(screen.getByLabelText(bookingsText.request.endTime), '20:00');
+  if (slot.date) {
+    await pickValue(bookingsText.request.date, slot.date);
+  }
+  if (slot.startTime) {
+    await pickValue(bookingsText.request.startTime, slot.startTime);
+  }
+  if (slot.endTime) {
+    await pickValue(bookingsText.request.endTime, slot.endTime);
+  }
   await fireEvent.changeText(screen.getByLabelText(bookingsText.request.reason), reason);
 }
 
@@ -207,7 +224,7 @@ describe('request booking screen', () => {
     );
 
     await fireEvent.press(await screen.findByRole('radio', { name: hall.name }));
-    await fireEvent.changeText(screen.getByLabelText(bookingsText.request.date), '2030-05');
+    await pickValue(bookingsText.request.startTime, '18:00');
 
     expect(roomsApi.occupancy).not.toHaveBeenCalled();
   });
@@ -253,10 +270,11 @@ describe('request booking screen', () => {
 
     await fill();
     await screen.findByText(bookingsText.occupancy.empty);
+    const queriesBeforeSubmit = (roomsApi.occupancy as jest.Mock).mock.calls.length;
     await fireEvent.press(screen.getByRole('button', { name: bookingsText.request.submit }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(`⚠ ${bookingsText.occupied.withoutDates}`);
-    expect(roomsApi.occupancy).toHaveBeenCalledTimes(2);
+    expect(roomsApi.occupancy).toHaveBeenCalledTimes(queriesBeforeSubmit + 1);
   });
 
   it('gives every button a role, a label and a height of at least 48 points', async () => {
@@ -326,7 +344,7 @@ describe('request booking screen with a weekly repetition', () => {
   it('sends the weekly recurrence with its end date', async () => {
     const { create, onCreated } = await openSeries();
 
-    await fireEvent.changeText(screen.getByLabelText(bookingsText.recurrence.until), '2030-07-02');
+    await pickValue(bookingsText.recurrence.until, '2030-07-02');
     await fireEvent.press(screen.getByRole('button', { name: bookingsText.request.submit }));
 
     expect(create).toHaveBeenCalledWith({
@@ -349,19 +367,18 @@ describe('request booking screen with a weekly repetition', () => {
     expect(create).not.toHaveBeenCalled();
   });
 
-  it('rejects a malformed end date without calling the server', async () => {
+  it('keeps the end date marked as required until one is chosen', async () => {
     const { create } = await openSeries();
 
-    await fireEvent.changeText(screen.getByLabelText(bookingsText.recurrence.until), '2/7/2030');
     await fireEvent.press(screen.getByRole('button', { name: bookingsText.request.submit }));
 
-    expect(await screen.findByText(`⚠ ${bookingsText.recurrence.fieldErrors.INVALID_FORMAT}`)).toBeOnTheScreen();
+    expect(await screen.findByText(`⚠ ${bookingsText.recurrence.fieldErrors.REQUIRED}`)).toBeOnTheScreen();
     expect(create).not.toHaveBeenCalled();
   });
 
   it('stops sending the recurrence when the repetition is switched off again', async () => {
     const { create } = await openSeries();
-    await fireEvent.changeText(screen.getByLabelText(bookingsText.recurrence.until), '2030-07-02');
+    await pickValue(bookingsText.recurrence.until, '2030-07-02');
 
     await fireEvent.press(screen.getByRole('checkbox', { name: bookingsText.recurrence.toggle }));
     await fireEvent.press(screen.getByRole('button', { name: bookingsText.request.submit }));
@@ -378,11 +395,11 @@ describe('request booking screen with a weekly repetition', () => {
     });
     await openSeries(create);
 
-    await fireEvent.changeText(screen.getByLabelText(bookingsText.recurrence.until), '2032-07-02');
+    await pickValue(bookingsText.recurrence.until, '2032-07-02');
     await fireEvent.press(screen.getByRole('button', { name: bookingsText.request.submit }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(`⚠ ${bookingsText.recurrence.fieldErrors[code]}`);
-    expect(screen.getByLabelText(bookingsText.recurrence.until).props.value).toBe('2032-07-02');
+    expect(screen.getByLabelText(bookingsText.recurrence.until).props.accessibilityValue).toEqual({ text: '2 de julio de 2032' });
   });
 
   it('lists every conflicting date when the series collides and keeps the form filled', async () => {
@@ -397,13 +414,13 @@ describe('request booking screen with a weekly repetition', () => {
     });
     const { onCreated } = await openSeries(create);
 
-    await fireEvent.changeText(screen.getByLabelText(bookingsText.recurrence.until), '2030-07-02');
+    await pickValue(bookingsText.recurrence.until, '2030-07-02');
     await fireEvent.press(screen.getByRole('button', { name: bookingsText.request.submit }));
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(/25\/05\/2030/);
     expect(alert).toHaveTextContent(/08\/06\/2030/);
-    expect(screen.getByLabelText(bookingsText.recurrence.until).props.value).toBe('2030-07-02');
+    expect(screen.getByLabelText(bookingsText.recurrence.until).props.accessibilityValue).toEqual({ text: '2 de julio de 2030' });
     expect(onCreated).not.toHaveBeenCalled();
   });
 
@@ -418,12 +435,11 @@ describe('request booking screen with a weekly repetition', () => {
     }
   });
 
-  it('flags only the date field when the date is malformed', async () => {
+  it('flags only the date field when no date is chosen', async () => {
     const { element, api } = screenWith();
     await renderAs('MODERATOR', element);
 
-    await fill();
-    await fireEvent.changeText(screen.getByLabelText(bookingsText.request.date), '11/05/2030');
+    await fill('Catequesis semanal', { date: '', startTime: '18:00', endTime: '20:00' });
     await fireEvent.press(screen.getByRole('button', { name: bookingsText.request.submit }));
 
     const date = await screen.findByLabelText(bookingsText.request.date);
@@ -476,10 +492,130 @@ describe('request booking screen with a weekly repetition', () => {
     const { element } = screenWith();
     await renderAs('MODERATOR', element);
 
-    await fill();
-    await fireEvent.changeText(screen.getByLabelText(bookingsText.request.startTime), 'tarde');
+    await fill('Catequesis semanal', { date: '2030-05-11', startTime: '', endTime: '20:00' });
     await fireEvent.press(screen.getByRole('button', { name: bookingsText.request.submit }));
 
     expect(await screen.findAllByRole('alert')).toHaveLength(1);
+  });
+});
+
+describe('request booking screen form behaviour', () => {
+  it('groups the choices under section headers', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+    await screen.findByRole('radio', { name: hall.name });
+
+    for (const header of [bookingsText.request.room, bookingsText.request.when, bookingsText.request.reason]) {
+      expect(screen.getByRole('heading', { name: header })).toBeOnTheScreen();
+    }
+  });
+
+  it('marks the chosen room as checked', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+
+    await fireEvent.press(await screen.findByRole('radio', { name: hall.name }));
+
+    expect(screen.getByRole('radio', { name: hall.name })).toBeChecked();
+    expect(screen.getByRole('radio', { name: chapel.name })).not.toBeChecked();
+  });
+
+  it('offers the date and the times as pickers that show the chosen value', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+    await fill();
+
+    expect(screen.getByLabelText(bookingsText.request.date).props.accessibilityValue).toEqual({ text: '11 de mayo de 2030' });
+    expect(screen.getByLabelText(bookingsText.request.startTime).props.accessibilityValue).toEqual({ text: '18 horas' });
+    expect(screen.getByLabelText(bookingsText.request.endTime).props.accessibilityValue).toEqual({ text: '20 horas' });
+  });
+
+  it('lifts the form above the keyboard on iOS and keeps taps working', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+    await screen.findByRole('radio', { name: hall.name });
+
+    expect(screen.root?.props.automaticallyAdjustKeyboardInsets).toBe(true);
+    expect(screen.root?.props.keyboardShouldPersistTaps).toBe('handled');
+  });
+
+  it('gives success feedback when the request is sent', async () => {
+    const create = jest.fn().mockResolvedValue({ ok: true, request: pending });
+    const { element } = screenWith(fakeBookingRequestsApi({ create }));
+    await renderAs('MODERATOR', element);
+
+    await fill();
+    await fireEvent.press(screen.getByRole('button', { name: bookingsText.request.submit }));
+
+    await screen.findByRole('status');
+    expect(hapticSuccess).toHaveBeenCalledTimes(1);
+    expect(hapticFailure).not.toHaveBeenCalled();
+  });
+
+  it('gives error feedback when the form is invalid', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+
+    await fill('   ');
+    await fireEvent.press(screen.getByRole('button', { name: bookingsText.request.submit }));
+
+    await screen.findByText(`⚠ ${bookingsText.fieldErrors.REQUIRED}`);
+    expect(hapticFailure).toHaveBeenCalledTimes(1);
+    expect(hapticSuccess).not.toHaveBeenCalled();
+  });
+
+  it('gives error feedback when the server refuses the request', async () => {
+    const create = jest.fn().mockResolvedValue({ ok: false, status: 409, code: 'ROOM_INACTIVE' });
+    const { element } = screenWith(fakeBookingRequestsApi({ create }));
+    await renderAs('MODERATOR', element);
+
+    await fill();
+    await fireEvent.press(screen.getByRole('button', { name: bookingsText.request.submit }));
+
+    await screen.findByRole('alert');
+    expect(hapticFailure).toHaveBeenCalledTimes(1);
+    expect(hapticSuccess).not.toHaveBeenCalled();
+  });
+
+  it('gives error feedback when the call throws', async () => {
+    const create = jest.fn().mockRejectedValue(new Error('network down'));
+    const { element } = screenWith(fakeBookingRequestsApi({ create }));
+    await renderAs('MODERATOR', element);
+
+    await fill();
+    await fireEvent.press(screen.getByRole('button', { name: bookingsText.request.submit }));
+
+    await screen.findByRole('alert');
+    expect(hapticFailure).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not allow a booking date before today', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+    await screen.findByRole('radio', { name: hall.name });
+
+    await fireEvent.press(screen.getByLabelText(bookingsText.request.date));
+
+    const minimum: Date = screen.getByTestId('date-field-picker').props.minimumDate;
+    const today = new Date();
+    expect([minimum.getFullYear(), minimum.getMonth(), minimum.getDate(), minimum.getHours()]).toEqual([
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+      0,
+    ]);
+  });
+
+  it('limits the end date of the repetition from the chosen date', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+    await fill();
+    await fireEvent.press(screen.getByRole('checkbox', { name: bookingsText.recurrence.toggle }));
+
+    await fireEvent.press(screen.getByLabelText(bookingsText.recurrence.until));
+
+    const picker = screen.getByTestId('date-field-picker');
+    expect(picker.props.minimumDate).toEqual(new Date(2030, 4, 11));
+    expect(picker.props.maximumDate).toEqual(new Date(2031, 4, 11));
   });
 });

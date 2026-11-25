@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
-import { Input } from '@/components/ui/input';
+import { DateField } from '@/components/ui/date-field';
 import { ListRow } from '@/components/ui/list-row';
 import { ListSection } from '@/components/ui/list-section';
 import { StateView } from '@/components/ui/state-view';
@@ -98,13 +98,7 @@ export function RoomOccupancyScreen({ roomsApi, communitiesApi }: Props) {
       <CommunityPicker selectedId={communityId} onSelect={setCommunityId} api={communitiesApi} />
       <View className="gap-2">
         <Text variant="strong">{bookingsText.occupancy.date}</Text>
-        <Input
-          accessibilityLabel={bookingsText.occupancy.date}
-          keyboardType="numbers-and-punctuation"
-          maxLength={10}
-          value={date}
-          onChangeText={setDate}
-        />
+        <DateField label={bookingsText.occupancy.date} mode="date" value={date} onChange={setDate} />
       </View>
       {ready ? (
         <OccupiedSlots status={status} occupied={occupied} onReload={() => void reload()} />

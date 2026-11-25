@@ -67,6 +67,8 @@ export function RoomNameForm({
         accessibilityHint={problem ?? undefined}
         invalid={problem !== null}
         maxLength={80}
+        returnKeyType="done"
+        onSubmitEditing={() => void submit()}
         value={name}
         onChangeText={setName}
       />

@@ -1,7 +1,15 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { TextInput } from 'react-native';
 import { ChangePassword } from '../change-password';
 import { renderWithSession } from '../support/test-support';
 import { identity } from '@/i18n/es/identity';
+import { hapticFailure, hapticSuccess } from '@/lib/haptics';
+
+jest.mock('@/lib/haptics', () => ({ hapticSuccess: jest.fn(), hapticFailure: jest.fn() }));
+
+afterEach(() => {
+  jest.clearAllMocks();
+});
 
 const text = identity.changePassword;
 const pending = { pendingSteps: ['PASSWORD_CHANGE' as const] };
@@ -148,5 +156,80 @@ describe('change password', () => {
 
     await screen.findByLabelText(text.newLabel);
     expect(screen.queryByRole('button', { name: text.cancel })).not.toBeOnTheScreen();
+  });
+
+  it('moves from the current password to the new one with the next key', async () => {
+    await renderWithSession(<ChangePassword onDone={jest.fn()} />, pending);
+
+    const current = await screen.findByLabelText(text.currentLabel);
+    const focus = jest.spyOn(TextInput.prototype, 'focus');
+    expect(current.props.returnKeyType).toBe('next');
+    expect(current.props.submitBehavior).toBe('submit');
+
+    await fireEvent(current, 'submitEditing');
+
+    expect(focus).toHaveBeenCalledTimes(1);
+  });
+
+  it('finishes with the done key of the new password', async () => {
+    const { api } = await renderWithSession(<ChangePassword onDone={jest.fn()} />, pending);
+
+    await fill('abcd234567', 'a much longer passphrase');
+    const next = screen.getByLabelText(text.newLabel);
+    expect(next.props.returnKeyType).toBe('done');
+    await fireEvent(next, 'submitEditing');
+
+    await waitFor(() => expect(api.changePassword).toHaveBeenCalledTimes(1));
+  });
+
+  it('lifts the form above the keyboard on iOS', async () => {
+    await renderWithSession(<ChangePassword onDone={jest.fn()} />, pending);
+    await screen.findByLabelText(text.currentLabel);
+
+    expect(screen.root?.props.automaticallyAdjustKeyboardInsets).toBe(true);
+  });
+
+  it('gives success feedback when the password is changed', async () => {
+    await renderWithSession(<ChangePassword onDone={jest.fn()} />, pending);
+
+    await fill('abcd234567', 'a much longer passphrase');
+    await fireEvent.press(screen.getByRole('button', { name: text.submit }));
+
+    await waitFor(() => expect(hapticSuccess).toHaveBeenCalledTimes(1));
+    expect(hapticFailure).not.toHaveBeenCalled();
+  });
+
+  it('gives error feedback when a field is missing', async () => {
+    await renderWithSession(<ChangePassword onDone={jest.fn()} />, pending);
+
+    await fill('abcd234567', '');
+    await fireEvent.press(screen.getByRole('button', { name: text.submit }));
+
+    await screen.findByRole('alert');
+    expect(hapticFailure).toHaveBeenCalledTimes(1);
+    expect(hapticSuccess).not.toHaveBeenCalled();
+  });
+
+  it('gives error feedback when the server refuses the change', async () => {
+    const { api } = await renderWithSession(<ChangePassword onDone={jest.fn()} />, pending);
+    (api.changePassword as jest.Mock).mockResolvedValue({ ok: false, status: 500 });
+
+    await fill('abcd234567', 'a much longer passphrase');
+    await fireEvent.press(screen.getByRole('button', { name: text.submit }));
+
+    await screen.findByRole('alert');
+    expect(hapticFailure).toHaveBeenCalledTimes(1);
+    expect(hapticSuccess).not.toHaveBeenCalled();
+  });
+
+  it('gives error feedback when the call throws', async () => {
+    const { api } = await renderWithSession(<ChangePassword onDone={jest.fn()} />, pending);
+    (api.changePassword as jest.Mock).mockRejectedValue(new Error('network down'));
+
+    await fill('abcd234567', 'a much longer passphrase');
+    await fireEvent.press(screen.getByRole('button', { name: text.submit }));
+
+    await screen.findByRole('alert');
+    expect(hapticFailure).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { DateField } from '@/components/ui/date-field';
+import { FormField } from '@/components/ui/form-field';
+import { FormScroll } from '@/components/ui/form-scroll';
+import { ListSection } from '@/components/ui/list-section';
 import { Text } from '@/components/ui/text';
 import { useRoomOccupancy } from '@/hooks/rooms/use-room-occupancy';
 import { useRooms } from '@/hooks/rooms/use-rooms';
@@ -9,11 +12,14 @@ import { useCurrentUser } from '@/hooks/session/use-current-user';
 import { bookingsText, messageForBookingFailure } from '@/i18n/es/bookings';
 import { useCreateBookingRequest } from '@/hooks/bookings/use-create-booking-request';
 import { bookingRequestsApi } from '@/lib/api';
+import { hapticFailure, hapticSuccess } from '@/lib/haptics';
 import type { BookingRequestsApi } from '@/lib/api/booking-requests-api';
 import type { CommunitiesApi } from '@/lib/api/communities-api';
 import type { RoomsApi } from '@/lib/api/rooms-api';
+import { startOfDay } from '@/lib/bookings/date-value';
 import { firstInvalidSlotField, isDate } from '@/lib/bookings/validation';
 import { OccupiedSlots } from '@/screens/rooms/occupied-slots';
+import { RoomChoice } from '@/screens/rooms/room-choice';
 import { CommunityPicker } from '@/screens/users/community-picker';
 import { FieldProblem } from './field-problem';
 import { ReasonField } from './reason-field';
@@ -103,6 +109,7 @@ export function RequestBookingScreen({ api = bookingRequestsApi, roomsApi, commu
     setSent(false);
     if (invalid !== null || roomId === null) {
       setProblem(invalid);
+      hapticFailure();
       return;
     }
     setProblem(null);
@@ -118,100 +125,74 @@ export function RequestBookingScreen({ api = bookingRequestsApi, roomsApi, commu
       });
       if (result.ok) {
         setSent(true);
+        hapticSuccess();
         onCreated?.();
       } else {
         setProblem({ field: null, message: messageForBookingFailure(result) });
+        hapticFailure();
         if (result.code === 'ROOM_OCCUPIED') {
           void occupancy.reload();
         }
       }
     } catch {
       setProblem({ field: null, message: bookingsText.errors.UNKNOWN });
+      hapticFailure();
     }
   }
 
   return (
-    <ScrollView
-      className="flex-1 bg-background"
-      contentContainerClassName="gap-6 p-6"
-      contentInsetAdjustmentBehavior="automatic"
-      keyboardShouldPersistTaps="handled"
-    >
+    <FormScroll>
       <Text variant="title">{bookingsText.request.title}</Text>
-      <View role="radiogroup" accessibilityLabel={bookingsText.request.room} className="gap-3">
-        <Text variant="heading">{bookingsText.request.room}</Text>
-        {status === 'loading' ? <Text role="status">{bookingsText.request.loadingRooms}</Text> : null}
-        {status === 'error' ? (
-          <View className="gap-3">
-            <Text role="alert" accessibilityLiveRegion="assertive" className="text-destructive">
-              {`⚠ ${bookingsText.request.roomsError}`}
-            </Text>
-            <Button variant="outline" accessibilityLabel={bookingsText.request.retry} onPress={() => void reload()}>
-              <Text>{bookingsText.request.retry}</Text>
-            </Button>
-          </View>
-        ) : null}
-        {status === 'ready' && rooms.length === 0 ? <Text>{bookingsText.request.noRooms}</Text> : null}
-        {rooms.map((room) => {
-          const selected = room.id === roomId;
-          return (
-            <Button
-              key={room.id}
-              role="radio"
-              variant={selected ? 'default' : 'outline'}
-              accessibilityLabel={room.name}
-              aria-checked={selected}
-              accessibilityState={{ checked: selected }}
-              onPress={() => setRoomId(room.id)}
-            >
-              <Text>{selected ? `✓ ${room.name}` : room.name}</Text>
-            </Button>
-          );
-        })}
-      </View>
+      <RoomChoice
+        title={bookingsText.request.room}
+        text={bookingsText.request}
+        status={status}
+        rooms={rooms}
+        selectedId={roomId}
+        onSelect={setRoomId}
+        onRetry={() => void reload()}
+      />
       <CommunityPicker selectedId={communityId} onSelect={setCommunityId} api={communitiesApi} />
-      <View className="gap-2">
-        <Text variant="strong">{bookingsText.request.date}</Text>
-        <Input
-          accessibilityLabel={bookingsText.request.date}
-          accessibilityHint={problemOf('date') ?? undefined}
-          invalid={problemOf('date') !== null}
-          keyboardType="numbers-and-punctuation"
-          maxLength={10}
-          value={date}
-          onChangeText={setDate}
-        />
-        <FieldProblem message={problemOf('date')} />
-      </View>
-      <View className="gap-2">
-        <Text variant="strong">{bookingsText.request.startTime}</Text>
-        <Input
-          accessibilityLabel={bookingsText.request.startTime}
-          accessibilityHint={problemOf('startTime') ?? undefined}
-          invalid={problemOf('startTime') !== null}
-          keyboardType="numbers-and-punctuation"
-          maxLength={5}
-          value={startTime}
-          onChangeText={setStartTime}
-        />
-        <FieldProblem message={problemOf('startTime')} />
-      </View>
-      <View className="gap-2">
-        <Text variant="strong">{bookingsText.request.endTime}</Text>
-        <Input
-          accessibilityLabel={bookingsText.request.endTime}
-          accessibilityHint={problemOf('endTime') ?? undefined}
-          invalid={problemOf('endTime') !== null}
-          keyboardType="numbers-and-punctuation"
-          maxLength={5}
-          value={endTime}
-          onChangeText={setEndTime}
-        />
-        <FieldProblem message={problemOf('endTime')} />
-      </View>
+      <ListSection title={bookingsText.request.when}>
+        <FormField label={bookingsText.request.date}>
+          <DateField
+            label={bookingsText.request.date}
+            mode="date"
+            minimumDate={startOfDay(new Date())}
+            value={date}
+            hint={problemOf('date') ?? undefined}
+            invalid={problemOf('date') !== null}
+            onChange={setDate}
+          />
+          <FieldProblem message={problemOf('date')} />
+        </FormField>
+        <FormField label={bookingsText.request.startTime}>
+          <DateField
+            label={bookingsText.request.startTime}
+            mode="time"
+            value={startTime}
+            hint={problemOf('startTime') ?? undefined}
+            invalid={problemOf('startTime') !== null}
+            onChange={setStartTime}
+          />
+          <FieldProblem message={problemOf('startTime')} />
+        </FormField>
+        <FormField label={bookingsText.request.endTime}>
+          <DateField
+            label={bookingsText.request.endTime}
+            mode="time"
+            value={endTime}
+            hint={problemOf('endTime') ?? undefined}
+            invalid={problemOf('endTime') !== null}
+            onChange={setEndTime}
+          />
+          <FieldProblem message={problemOf('endTime')} />
+        </FormField>
+      </ListSection>
       <RecurrenceFields
         enabled={repeats}
         until={until}
+        firstDate={day}
         invalid={problemOf('until') !== null}
         problem={problemOf('until')}
         onToggle={setRepeats}
@@ -227,18 +208,23 @@ export function RequestBookingScreen({ api = bookingRequestsApi, roomsApi, commu
           />
         </View>
       ) : null}
-      <ReasonField
-        label={bookingsText.request.reason}
-        value={reason}
-        invalid={problemOf('reason') !== null}
-        problem={problemOf('reason')}
-        onChangeText={setReason}
-      />
+      <ListSection title={bookingsText.request.reason}>
+        <FormField>
+          <ReasonField
+            showLabel={false}
+            label={bookingsText.request.reason}
+            value={reason}
+            invalid={problemOf('reason') !== null}
+            problem={problemOf('reason')}
+            onChangeText={setReason}
+          />
+        </FormField>
+      </ListSection>
       <FieldProblem message={problem?.field === null ? problem.message : null} />
       {sent ? <Text role="status">{bookingsText.request.sent}</Text> : null}
       <Button accessibilityLabel={bookingsText.request.submit} disabled={submitting} onPress={() => void submit()}>
         <Text>{submitting ? bookingsText.request.submitting : bookingsText.request.submit}</Text>
       </Button>
-    </ScrollView>
+    </FormScroll>
   );
 }

@@ -99,14 +99,23 @@ Components are copied into `components/ui/` and restyled only through the tokens
 | Select, Checkbox, Radio, Switch | hit area 48 minimum, visible label, selected state shows check icon |
 | Card | `card` surface, `lg` radius, 16-24 padding, hairline border, no nested cards |
 | Tabs / bottom nav | max 5 items, icon + text label always, active uses `accent` surface and primary text |
-| Dialog / Alert dialog | for destructive confirmation only; sheets for forms |
+| Dialog / Alert dialog | for destructive confirmation only; forms open as `formSheet` routes (`formSheetOptions`: new booking, new event, new and edit user), not as dialogs; the other forms are screens inside their tab stack |
 | Badge (`StatusBadge`) | body-strong 18 px, icon plus text, colour from success/warning/destructive, neutral for muted states; never colour alone |
 | ListSection | grouped list: `card` surface, `lg` radius, hairline border, optional header above and muted footer below, both 18 px body text |
 | ListRow | whole row pressable, min height 48 (`min-h-12`), hairline separator between rows, optional leading symbol, title (body-strong), subtitle (muted, 18 px body), trailing value (shrinks, right aligned, stacked under the subtitle above 1.3 font scale) and a chevron on pressable rows unless destructive or `accessory="none"`; radio rows expose `aria-checked`; symbols come from `expo-symbols` with a text glyph fallback on web |
+| RadioSection | single choice (room, event type, role): a `ListSection` of radio `ListRow`s inside a `radiogroup` labelled with the section title; the check mark sits at the trailing edge of the selected row; replaces full-width buttons with a leading check |
+| DateField | date or time choice with the value format of the API (`AAAA-MM-DD`, `HH:MM`) converted at the boundary (`lib/bookings/date-value`). Field outline and height like Input (`min-h-13`, `border-field`), label as accessibility label, chosen value as accessibility value (long date, time spoken as hours and minutes), `accessibilityState.expanded`, placeholder "Elegir" when empty on native only. `minimumDate` and `maximumDate` limit the choice (native picker and web `min` / `max`): event and booking dates start today; "Repetir hasta" runs from the chosen date to one year after it and opens on that date. iOS: pressing opens an inline calendar (date) or spinner (time) from `@react-native-community/datetimepicker`, themed with the colour scheme and given accessibility focus, with a Listo button; an empty field stays empty until the user changes the picker or presses Listo, which takes the shown date. Android: native dialog that writes only when confirmed, never when dismissed. Web (`date-field.web.tsx`): `input type=date` or `time` with the hint as `aria-description`, no placeholder; `:root { color-scheme: light dark }` in `global.css` makes native web inputs follow dark mode |
+| FormField, FormScroll | `FormField` is one cell of a form `ListSection` (optional label and description above the control, `p-4`); `FormScroll` is the form container: `ScrollView` with `automaticallyAdjustKeyboardInsets` and taps kept working while the keyboard is open, wrapped in a `KeyboardAvoidingView` (`padding`) on Android |
 | StateView | one component for loading (`ActivityIndicator` + text), empty (icon + text) and error (card with message and a Retry button); lists add pull-to-refresh |
 | Avatar | 40 / 56, initials fallback |
 | Toast | 5 s minimum, dismissible, never the only feedback |
 | Skeleton, Progress | respect reduced motion |
+
+## Forms
+
+- Fields are grouped in `ListSection` cards with a header; inputs inside keep `min-h-13` and the 1.5 px `border-field` outline.
+- Single-line text fields set `returnKeyType`: `next` and focus the following field when one follows, `done` on the last, which submits where sensible. Multiline fields (the booking reason) keep the return key for new lines and set none.
+- Date and time never use free-text inputs: `DateField`.
 
 ## Screens and states
 
@@ -116,7 +125,7 @@ Every data screen implements loading, empty, error and content states with plain
 
 - Rows open their detail or edit on tap. Deleting is a long-press on the row, also exposed as a `delete` accessibility action and announced by an accessibility hint, with a hint in the section footer. Both are offered only when `canManageAccount(me, target)` (`src/lib/users`) allows it: never on the own account, and a moderator only on registered users.
 - Confirmation is a native `Alert.alert` on iOS and Android (`src/lib/confirm.ts`); on web `confirm.ts` reports that it showed nothing and the caller (`users/list.tsx`, `users/delete-user.tsx`, `rooms/rooms-admin.tsx`) opens the `AlertDialog`.
-- Haptics (`src/lib/haptics.ts`): light impact on successful save, error notification on failure; no-op on web.
+- Haptics (`src/lib/haptics.ts`): light impact on successful save, error notification on failure; no-op on web. Every form gives error feedback on a validation or API failure and success feedback on save.
 
 ## Motion
 

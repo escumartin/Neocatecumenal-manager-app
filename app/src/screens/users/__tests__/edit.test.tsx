@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { Alert, Platform } from 'react-native';
 import { UserEdit } from '../edit';
 import { ana, communities, communitiesApi, fakeUsersApi, renderAs } from '../support/test-support';
@@ -78,8 +78,10 @@ describe('user edit', () => {
 
     await fireEvent.press(await screen.findByRole('radio', { name: usersText.roles.MODERATOR }));
 
-    expect(screen.getByRole('radio', { name: usersText.roles.MODERATOR })).toBeChecked();
-    expect(screen.getByText(`✓ ${usersText.roles.MODERATOR}`)).toBeOnTheScreen();
+    const chosen = screen.getByRole('radio', { name: usersText.roles.MODERATOR });
+    expect(chosen).toBeChecked();
+    expect(within(chosen).getByTestId('list-row-check', { includeHiddenElements: true })).toBeOnTheScreen();
+    expect(screen.getByRole('radio', { name: usersText.roles.REGISTERED })).not.toBeChecked();
   });
 
   it('asks for a name without calling the server when it is blank', async () => {
@@ -176,6 +178,96 @@ describe('user edit', () => {
     await screen.findByLabelText(usersText.form.name);
 
     expect(screen.root?.props.keyboardShouldPersistTaps).toBe('handled');
+  });
+
+  it('lifts the form above the keyboard on iOS', async () => {
+    const { element } = form();
+    await renderAs('MODERATOR', element);
+    await screen.findByLabelText(usersText.form.name);
+
+    expect(screen.root?.props.automaticallyAdjustKeyboardInsets).toBe(true);
+  });
+
+  it('groups the name and the role under section headers', async () => {
+    const { element } = form();
+    await renderAs('ADMINISTRATOR', element);
+    await screen.findByLabelText(usersText.form.name);
+
+    expect(screen.getByRole('heading', { name: usersText.form.name })).toBeOnTheScreen();
+    expect(screen.getByRole('heading', { name: usersText.form.role })).toBeOnTheScreen();
+  });
+
+  it('saves from the done key of the name field', async () => {
+    const api = fakeUsersApi({ create: jest.fn().mockResolvedValue({ ok: true, user: created }) });
+    const { element } = form({ api });
+    await renderAs('MODERATOR', element);
+
+    const name = await screen.findByLabelText(usersText.form.name);
+    expect(name.props.returnKeyType).toBe('done');
+    await fireEvent.changeText(name, 'Ana');
+    await fireEvent(name, 'submitEditing');
+
+    await waitFor(() => expect(api.create).toHaveBeenCalledTimes(1));
+  });
+
+  it('gives success feedback when a user is created', async () => {
+    const api = fakeUsersApi({ create: jest.fn().mockResolvedValue({ ok: true, user: created }) });
+    const { element } = form({ api });
+    await renderAs('MODERATOR', element);
+
+    await fireEvent.changeText(await screen.findByLabelText(usersText.form.name), 'Ana');
+    await fireEvent.press(screen.getByRole('button', { name: usersText.form.create }));
+
+    await waitFor(() => expect(hapticSuccess).toHaveBeenCalledTimes(1));
+    expect(hapticFailure).not.toHaveBeenCalled();
+  });
+
+  it('gives success feedback when a user is saved', async () => {
+    const api = fakeUsersApi({ update: jest.fn().mockResolvedValue({ ok: true, user: ana }) });
+    const { element } = form({ userId: ana.id, api });
+    await renderAs('MODERATOR', element);
+
+    await screen.findByDisplayValue('Ana');
+    await fireEvent.press(screen.getByRole('button', { name: usersText.form.save }));
+
+    await waitFor(() => expect(hapticSuccess).toHaveBeenCalledTimes(1));
+  });
+
+  it('gives error feedback when the name is blank', async () => {
+    const { element } = form();
+    await renderAs('MODERATOR', element);
+
+    await fireEvent.changeText(await screen.findByLabelText(usersText.form.name), '   ');
+    await fireEvent.press(screen.getByRole('button', { name: usersText.form.create }));
+
+    await screen.findByRole('alert');
+    expect(hapticFailure).toHaveBeenCalledTimes(1);
+    expect(hapticSuccess).not.toHaveBeenCalled();
+  });
+
+  it('gives error feedback when the server refuses the save', async () => {
+    const api = fakeUsersApi({ create: jest.fn().mockResolvedValue({ ok: false, status: 403, code: 'FORBIDDEN' }) });
+    const { element } = form({ api });
+    await renderAs('MODERATOR', element);
+
+    await fireEvent.changeText(await screen.findByLabelText(usersText.form.name), 'Ana');
+    await fireEvent.press(screen.getByRole('button', { name: usersText.form.create }));
+
+    await screen.findByRole('alert');
+    expect(hapticFailure).toHaveBeenCalledTimes(1);
+    expect(hapticSuccess).not.toHaveBeenCalled();
+  });
+
+  it('gives error feedback when the save throws', async () => {
+    const api = fakeUsersApi({ create: jest.fn().mockRejectedValue(new Error('network down')) });
+    const { element } = form({ api });
+    await renderAs('MODERATOR', element);
+
+    await fireEvent.changeText(await screen.findByLabelText(usersText.form.name), 'Ana');
+    await fireEvent.press(screen.getByRole('button', { name: usersText.form.create }));
+
+    await screen.findByRole('alert');
+    expect(hapticFailure).toHaveBeenCalledTimes(1);
   });
 
   it('shows a forbidden message when the server denies the creation', async () => {

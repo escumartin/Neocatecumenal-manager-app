@@ -1,5 +1,6 @@
 import { fireEvent, screen } from '@testing-library/react-native';
 import { CreateEventScreen } from '../create-event';
+import { pickValue } from '@/test/pick-value';
 import { fakeEventsApi, wordEvent } from '../support/test-support';
 import {
   chapel,
@@ -12,6 +13,14 @@ import {
 import { fontSizeOf, minHeightOf } from '@/screens/bookings/support/layout-checks';
 import { communitiesText } from '@/i18n/es/communities';
 import { eventsText } from '@/i18n/es/events';
+import { Keyboard } from 'react-native';
+import { hapticFailure, hapticSuccess } from '@/lib/haptics';
+
+jest.mock('@/lib/haptics', () => ({ hapticSuccess: jest.fn(), hapticFailure: jest.fn() }));
+
+afterEach(() => {
+  jest.clearAllMocks();
+});
 
 function screenWith(api = fakeEventsApi(), onCreated = jest.fn()) {
   return {
@@ -23,13 +32,19 @@ function screenWith(api = fakeEventsApi(), onCreated = jest.fn()) {
   };
 }
 
-async function fill(title = 'Palabra de apertura') {
+async function fill(title = 'Palabra de apertura', slot = { date: '2030-05-11', startTime: '18:00', endTime: '20:00' }) {
   await fireEvent.press(await screen.findByRole('radio', { name: eventsText.types.WORD }));
   await fireEvent.press(screen.getByRole('radio', { name: hall.name }));
   await fireEvent.changeText(screen.getByLabelText(eventsText.create.eventTitle), title);
-  await fireEvent.changeText(screen.getByLabelText(eventsText.create.date), '2030-05-11');
-  await fireEvent.changeText(screen.getByLabelText(eventsText.create.startTime), '18:00');
-  await fireEvent.changeText(screen.getByLabelText(eventsText.create.endTime), '20:00');
+  if (slot.date) {
+    await pickValue(eventsText.create.date, slot.date);
+  }
+  if (slot.startTime) {
+    await pickValue(eventsText.create.startTime, slot.startTime);
+  }
+  if (slot.endTime) {
+    await pickValue(eventsText.create.endTime, slot.endTime);
+  }
 }
 
 async function submit() {
@@ -169,12 +184,11 @@ describe('create event screen', () => {
     expect(api.create).not.toHaveBeenCalled();
   });
 
-  it('rejects a malformed date or time without calling the server', async () => {
+  it('asks for the date without calling the server when none is chosen', async () => {
     const { element, api } = screenWith();
     await renderAs('MODERATOR', element);
 
-    await fill();
-    await fireEvent.changeText(screen.getByLabelText(eventsText.create.date), '11/05/2030');
+    await fill('Palabra de apertura', { date: '', startTime: '18:00', endTime: '20:00' });
     await submit();
 
     expect(await screen.findByText(`⚠ ${eventsText.fieldErrors.INVALID_FORMAT}`)).toBeOnTheScreen();
@@ -333,12 +347,11 @@ describe('create event screen', () => {
     expect(api.create).not.toHaveBeenCalled();
   });
 
-  it('flags only the start time when it is malformed', async () => {
+  it('flags only the start time when none is chosen', async () => {
     const { element } = screenWith();
     await renderAs('MODERATOR', element);
 
-    await fill();
-    await fireEvent.changeText(screen.getByLabelText(eventsText.create.startTime), '6pm');
+    await fill('Palabra de apertura', { date: '2030-05-11', startTime: '', endTime: '20:00' });
     await submit();
 
     const start = await screen.findByLabelText(eventsText.create.startTime);
@@ -348,5 +361,126 @@ describe('create event screen', () => {
     expect(screen.getByLabelText(eventsText.create.date).props['aria-invalid']).toBeFalsy();
     expect(screen.getByLabelText(eventsText.create.endTime).props['aria-invalid']).toBeFalsy();
     expect(await screen.findAllByRole('alert')).toHaveLength(1);
+  });
+
+  it('offers the date and the times as pickers that show the chosen value', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+    await fill();
+
+    expect(screen.getByLabelText(eventsText.create.date).props.accessibilityValue).toEqual({ text: '11 de mayo de 2030' });
+    expect(screen.getByLabelText(eventsText.create.startTime).props.accessibilityValue).toEqual({ text: '18 horas' });
+    expect(screen.getByLabelText(eventsText.create.endTime).props.accessibilityValue).toEqual({ text: '20 horas' });
+  });
+
+  it('groups the choices under section headers', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+    await screen.findByRole('radio', { name: hall.name });
+
+    for (const header of [
+      eventsText.create.type,
+      eventsText.create.eventTitle,
+      eventsText.create.room,
+      eventsText.create.when,
+    ]) {
+      expect(screen.getByRole('heading', { name: header })).toBeOnTheScreen();
+    }
+  });
+
+  it('marks the chosen room as checked', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+
+    await fireEvent.press(await screen.findByRole('radio', { name: hall.name }));
+
+    expect(screen.getByRole('radio', { name: hall.name })).toBeChecked();
+    expect(screen.getByRole('radio', { name: chapel.name })).not.toBeChecked();
+  });
+
+  it('lifts the form above the keyboard on iOS and keeps taps working', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+    await screen.findByRole('radio', { name: hall.name });
+
+    expect(screen.root?.props.automaticallyAdjustKeyboardInsets).toBe(true);
+    expect(screen.root?.props.keyboardShouldPersistTaps).toBe('handled');
+  });
+
+  it('closes the keyboard from the title with the done key', async () => {
+    const dismiss = jest.spyOn(Keyboard, 'dismiss').mockImplementation(() => undefined);
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+    const title = await screen.findByLabelText(eventsText.create.eventTitle);
+
+    expect(title.props.returnKeyType).toBe('done');
+    await fireEvent(title, 'submitEditing');
+    expect(dismiss).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not allow an event date before today', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+    await screen.findByRole('radio', { name: hall.name });
+
+    await fireEvent.press(screen.getByLabelText(eventsText.create.date));
+
+    const minimum: Date = screen.getByTestId('date-field-picker').props.minimumDate;
+    const today = new Date();
+    expect([minimum.getFullYear(), minimum.getMonth(), minimum.getDate(), minimum.getHours()]).toEqual([
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+      0,
+    ]);
+  });
+
+  it('gives success feedback when the event is saved', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+
+    await fill();
+    await submit();
+
+    await screen.findByRole('status');
+    expect(hapticSuccess).toHaveBeenCalledTimes(1);
+    expect(hapticFailure).not.toHaveBeenCalled();
+  });
+
+  it('gives error feedback when the form is invalid', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+
+    await fill('   ');
+    await submit();
+
+    await screen.findByText(`⚠ ${eventsText.fieldErrors.TITLE_REQUIRED}`);
+    expect(hapticFailure).toHaveBeenCalledTimes(1);
+    expect(hapticSuccess).not.toHaveBeenCalled();
+  });
+
+  it('gives error feedback when the server refuses the event', async () => {
+    const create = jest.fn().mockResolvedValue({ ok: false, status: 409, code: 'ROOM_INACTIVE' });
+    const { element } = screenWith(fakeEventsApi({ create }));
+    await renderAs('MODERATOR', element);
+
+    await fill();
+    await submit();
+
+    await screen.findByRole('alert');
+    expect(hapticFailure).toHaveBeenCalledTimes(1);
+    expect(hapticSuccess).not.toHaveBeenCalled();
+  });
+
+  it('gives error feedback when the call throws', async () => {
+    const create = jest.fn().mockRejectedValue(new Error('network down'));
+    const { element } = screenWith(fakeEventsApi({ create }));
+    await renderAs('MODERATOR', element);
+
+    await fill();
+    await submit();
+
+    await screen.findByRole('alert');
+    expect(hapticFailure).toHaveBeenCalledTimes(1);
   });
 });

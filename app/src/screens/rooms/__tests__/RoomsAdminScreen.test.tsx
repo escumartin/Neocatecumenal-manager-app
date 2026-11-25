@@ -107,6 +107,19 @@ describe('rooms admin screen', () => {
     expect(screen.getByLabelText(roomsText.add.name).props.value).toBe('');
   });
 
+  it('submits the name with the done key', async () => {
+    const created = { id: '6f1c1f1e-0000-4000-8000-000000000033', name: 'Aula', active: true };
+    const api = fakeRoomsApi({ create: jest.fn().mockResolvedValue({ ok: true, room: created }) });
+    await renderAs('ADMINISTRATOR', <RoomsAdminScreen api={api} />);
+    const field = await screen.findByLabelText(roomsText.add.name);
+
+    expect(field.props.returnKeyType).toBe('done');
+    await fireEvent.changeText(field, 'Aula');
+    await fireEvent(field, 'submitEditing');
+
+    expect(api.create).toHaveBeenCalledWith('Aula');
+  });
+
   it('asks for a name without calling the server when the field is blank', async () => {
     const api = fakeRoomsApi();
     await renderAs('ADMINISTRATOR', <RoomsAdminScreen api={api} />);

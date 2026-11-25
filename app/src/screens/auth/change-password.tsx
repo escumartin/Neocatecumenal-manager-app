@@ -1,10 +1,14 @@
-import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { useRef, useState, type ComponentRef } from 'react';
+import { TextInput } from 'react-native';
 import { Button } from '@/components/ui/button';
+import { FormField } from '@/components/ui/form-field';
+import { FormScroll } from '@/components/ui/form-scroll';
 import { Input } from '@/components/ui/input';
+import { ListSection } from '@/components/ui/list-section';
 import { Text } from '@/components/ui/text';
 import { useSession } from '@/hooks/session/use-session';
 import { identity } from '@/i18n/es/identity';
+import { hapticFailure, hapticSuccess } from '@/lib/haptics';
 
 const MAX_PASSWORD_LENGTH = 64;
 
@@ -24,16 +28,19 @@ export function ChangePassword({ onDone, onCancel }: Props) {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [visible, setVisible] = useState(false);
+  const newPasswordRef = useRef<ComponentRef<typeof TextInput>>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function submit() {
     if (currentPassword.length === 0) {
       setProblem({ field: 'currentPassword', message: text.fieldErrors.REQUIRED });
+      hapticFailure();
       return;
     }
     if (newPassword.length === 0) {
       setProblem({ field: 'newPassword', message: text.fieldErrors.REQUIRED });
+      hapticFailure();
       return;
     }
     setSubmitting(true);
@@ -43,14 +50,17 @@ export function ChangePassword({ onDone, onCancel }: Props) {
       result = await changePassword(currentPassword, newPassword);
     } catch {
       setProblem({ field: null, message: identity.errors.UNKNOWN_ACTION });
+      hapticFailure();
       return;
     } finally {
       setSubmitting(false);
     }
     if (result.ok) {
+      hapticSuccess();
       onDone();
       return;
     }
+    hapticFailure();
     const fieldError = result.fieldErrors?.[0];
     const message = fieldError && text.fieldErrors[fieldError.code];
     if (fieldError && message) {
@@ -73,44 +83,47 @@ export function ChangePassword({ onDone, onCancel }: Props) {
   }
 
   return (
-    <ScrollView
-      className="flex-1 bg-background"
-      contentContainerClassName="gap-6 p-6"
-      keyboardShouldPersistTaps="handled"
-    >
+    <FormScroll>
       <Text variant="display">{text.title}</Text>
       <Text variant="muted">{text.intro}</Text>
-      <View className="gap-2">
-        <Text variant="strong">{text.currentLabel}</Text>
-        <Input
-          accessibilityLabel={text.currentLabel}
-          accessibilityHint={fieldMessage('currentPassword')}
-          secureTextEntry={!visible}
-          autoComplete="current-password"
-          autoCapitalize="none"
-          autoCorrect={false}
-          maxLength={MAX_PASSWORD_LENGTH}
-          value={currentPassword}
-          onChangeText={setCurrentPassword}
-        />
-        {alert('currentPassword')}
-      </View>
-      <View className="gap-2">
-        <Text variant="strong">{text.newLabel}</Text>
-        <Input
-          accessibilityLabel={text.newLabel}
-          accessibilityHint={fieldMessage('newPassword')}
-          secureTextEntry={!visible}
-          autoComplete="new-password"
-          autoCapitalize="none"
-          autoCorrect={false}
-          maxLength={MAX_PASSWORD_LENGTH}
-          value={newPassword}
-          onChangeText={setNewPassword}
-          onSubmitEditing={submit}
-        />
-        {alert('newPassword')}
-      </View>
+      <ListSection title={text.currentLabel}>
+        <FormField>
+          <Input
+            accessibilityLabel={text.currentLabel}
+            accessibilityHint={fieldMessage('currentPassword')}
+            secureTextEntry={!visible}
+            autoComplete="current-password"
+            autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={MAX_PASSWORD_LENGTH}
+            returnKeyType="next"
+            submitBehavior="submit"
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
+            onSubmitEditing={() => newPasswordRef.current?.focus()}
+          />
+          {alert('currentPassword')}
+        </FormField>
+      </ListSection>
+      <ListSection title={text.newLabel}>
+        <FormField>
+          <Input
+            ref={newPasswordRef}
+            accessibilityLabel={text.newLabel}
+            accessibilityHint={fieldMessage('newPassword')}
+            secureTextEntry={!visible}
+            autoComplete="new-password"
+            autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={MAX_PASSWORD_LENGTH}
+            returnKeyType="done"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            onSubmitEditing={submit}
+          />
+          {alert('newPassword')}
+        </FormField>
+      </ListSection>
       <Button
         variant="ghost"
         accessibilityLabel={visible ? text.hide : text.show}
@@ -127,6 +140,6 @@ export function ChangePassword({ onDone, onCancel }: Props) {
           <Text>{text.cancel}</Text>
         </Button>
       ) : null}
-    </ScrollView>
+    </FormScroll>
   );
 }
