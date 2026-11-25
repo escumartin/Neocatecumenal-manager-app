@@ -23,7 +23,11 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,11 +69,19 @@ class RoomDeactivationVsRequestIT {
     private final Actor administrator = new Actor(new UserId(UUID.randomUUID()), ActorRole.ADMINISTRATOR,
             COMMUNITY);
     private Room room;
+    private ExecutorService executor;
 
     @BeforeEach
     void setUp() {
+        executor = Executors.newFixedThreadPool(2);
         jdbc.execute("truncate booking_status_change, booking, booking_request, room cascade");
         room = rooms.save(Room.create(administrator, new RoomName("Main hall")));
+    }
+
+    @AfterEach
+    void tearDown() throws InterruptedException {
+        executor.shutdownNow();
+        assertThat(executor.awaitTermination(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
     }
 
     private void request() {
@@ -77,14 +89,19 @@ class RoomDeactivationVsRequestIT {
                 .plusDays(7), new TimeSlot(LocalTime.of(18, 0), LocalTime.of(20, 0)), new Reason("Catechesis"));
     }
 
-    private void awaitBlockedBackend() throws InterruptedException {
-        for (int attempt = 0; attempt < 100; attempt++) {
-            Integer waiting = jdbc.queryForObject(
-                    "select count(*) from pg_stat_activity where wait_event_type = 'Lock'", Integer.class);
+    private void awaitBlockedBackend(Future<?> blocked) throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(TIMEOUT_SECONDS);
+        while (System.nanoTime() < deadline) {
+            if (blocked.isDone()) {
+                blocked.get();
+                throw new AssertionError("The operation finished without waiting for the lock");
+            }
+            Integer waiting = jdbc.queryForObject("select count(*) from pg_stat_activity where datname = "
+                    + "current_database() and cardinality(pg_blocking_pids(pid)) > 0", Integer.class);
             if (waiting != null && waiting > 0) {
                 return;
             }
-            Thread.sleep(100);
+            Thread.sleep(50);
         }
         throw new AssertionError("No backend is waiting for a lock");
     }
@@ -110,11 +127,14 @@ class RoomDeactivationVsRequestIT {
                     roomLocked.countDown();
                     await(requestBlocked);
                     deactivateRoom.deactivate(administrator, room.id());
-                }));
+                }), executor);
         assertThat(roomLocked.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
-        CompletableFuture<Void> request = CompletableFuture.runAsync(this::request);
-        awaitBlockedBackend();
-        requestBlocked.countDown();
+        CompletableFuture<Void> request = CompletableFuture.runAsync(this::request, executor);
+        try {
+            awaitBlockedBackend(request);
+        } finally {
+            requestBlocked.countDown();
+        }
 
         deactivation.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertThatThrownBy(() -> request.get(TIMEOUT_SECONDS, TimeUnit.SECONDS))
@@ -134,12 +154,15 @@ class RoomDeactivationVsRequestIT {
                     request();
                     requestDone.countDown();
                     await(deactivationBlocked);
-                }));
+                }), executor);
         assertThat(requestDone.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).isTrue();
         CompletableFuture<Void> deactivation = CompletableFuture.runAsync(
-                () -> deactivateRoom.deactivate(administrator, room.id()));
-        awaitBlockedBackend();
-        deactivationBlocked.countDown();
+                () -> deactivateRoom.deactivate(administrator, room.id()), executor);
+        try {
+            awaitBlockedBackend(deactivation);
+        } finally {
+            deactivationBlocked.countDown();
+        }
 
         request.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         assertThatThrownBy(() -> deactivation.get(TIMEOUT_SECONDS, TimeUnit.SECONDS))
