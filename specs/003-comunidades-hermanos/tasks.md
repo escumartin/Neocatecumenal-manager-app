@@ -372,12 +372,12 @@
 
 ### Tests (escribir primero, ver fallar)
 
-- [ ] T107 [P] Test de logs transversal en `BT/community/infrastructure/NoPersonalDataInLogsIT.java`: con el logger capturado, recorrer alta, edición, retirada, vínculo, traslado, borrado y copia con nombres, apellidos, teléfonos y correos sintéticos y comprobar que ninguno aparece en la salida (FR-021, SC-009)
-- [ ] T108 [P] Test de aislamiento transversal en `BT/community/infrastructure/CommunityIsolationIT.java`: matriz de permisos de todas las operaciones de `CommunitiesApi`, `MembersApi` y `MyMemberApi` por rol y comunidad con la cadena de seguridad real; 0 casos en que un registrado o un moderador ve o modifica hermanos de otra comunidad (SC-005)
+- [x] T107 [P] Test de logs transversal en `BT/community/infrastructure/NoPersonalDataInLogsIT.java`: con el logger capturado, recorrer alta, edición, retirada, vínculo, traslado, borrado y copia con nombres, apellidos, teléfonos y correos sintéticos y comprobar que ninguno aparece en la salida (FR-021, SC-009)
+- [x] T108 [P] Test de aislamiento transversal en `BT/community/infrastructure/CommunityIsolationIT.java`: matriz de permisos de todas las operaciones de `CommunitiesApi`, `MembersApi` y `MyMemberApi` por rol y comunidad con la cadena de seguridad real; 0 casos en que un registrado o un moderador ve o modifica hermanos de otra comunidad (SC-005)
 
 ### Implementation
 
-- [ ] T109 Actualizar `.agents/context/dominio.md` con las decisiones de la spec: «Hermano → `Member`», el estado explícito «sin responsable», contacto con consentimiento por campo (móvil, fijo y correo) y quitar dirección y sexo del glosario del hermano (plan.md Pendientes)
+- [x] T109 Actualizar `.agents/context/dominio.md` con las decisiones de la spec: «Hermano → `Member`», el estado explícito «sin responsable», contacto con consentimiento por campo (móvil, fijo y correo) y quitar dirección y sexo del glosario del hermano (plan.md Pendientes)
 - [ ] T110 **Para el usuario**: redactar el texto legal del aviso de datos de contacto (qué datos se guardan, para qué, quién los ve y base legal) y entregarlo para los recursos del cliente; la tarea la hace el usuario, no el asistente, y bloquea el cierre de T111
 - [ ] T111 Incorporar el texto del usuario al aviso de datos en `A/i18n/es/members.ts` y mostrarlo en el alta con consentimiento verbal o escrito, en Mis datos de contacto y en la copia de datos (FR-022); hasta recibir el texto, las pantallas usan un marcador sin contenido legal inventado
 - [ ] T112 Revisión manual de accesibilidad (FR-024, principio VII) según quickstart.md § 3, paso 10, en las pantallas de directorio, ficha, comunidades, hermanos y Mis datos de contacto: VoiceOver y TalkBack con etiquetas en cada acción (incluidas llamar y escribir), fuente al 200 % sin cortes, movimiento reducido, contraste AA en claro y oscuro, objetivos ≥ 48 px y texto ≥ 18 px

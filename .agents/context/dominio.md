@@ -13,8 +13,9 @@ dos grupos coincidan en el mismo salón y franja.
 
 | Término | Significado |
 |---|---|
-| Comunidad | grupo de hermanos identificado por un número; tiene un responsable obligatorio |
-| Hermano / Usuario | persona de una comunidad: nombre, apellidos, dirección, teléfono fijo, móvil, email, sexo, comunidad |
+| Comunidad | grupo de hermanos identificado por un número; nace en el estado explícito «sin responsable» y, una vez designado, siempre tiene uno |
+| Hermano → `Member` | persona de una comunidad: nombre, apellidos opcionales, móvil, teléfono fijo y email, cada contacto con su consentimiento; sin dirección ni sexo; puede no tener usuario |
+| Usuario | cuenta de acceso de Identidad y acceso; puede vincularse a un hermano (uno a uno, misma comunidad) sin compartir datos |
 | Lugar | salón parroquial, hotel o restaurante |
 | Reserva | ocupación de un lugar en una franja |
 | Evento | actividad con fecha y lugar; se especializa en Eucaristía, Palabra, Convivencia y Paso |
@@ -59,7 +60,7 @@ El identificador de acceso es de 6 dígitos (100000–999999), lo genera el sist
 - El moderador solo opera sobre su comunidad.
 - El administrador elige comunidad antes de operar.
 - Borrar es definitivo y pide confirmación.
-- Cada comunidad tiene un responsable obligatorio.
+- Cada comunidad admite hermanos desde que nace, sin responsable; el administrador designa uno de sus hermanos y desde entonces no puede quedarse sin él.
 - Una comunidad no puede quedarse sin ningún moderador (por borrado, cambio de rol o cambio de comunidad).
 - El último administrador no puede borrarse ni perder el rol.
 
