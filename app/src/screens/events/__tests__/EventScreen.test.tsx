@@ -1,4 +1,4 @@
-import { fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen } from '@testing-library/react-native';
 import { EventScreen } from '../event-details';
 import { fakeEventsApi, wordEvent } from '../support/test-support';
 import { fakeRoomsApi, hall, renderAs } from '@/screens/bookings/support/test-support';
@@ -123,5 +123,35 @@ describe('event screen', () => {
 
     expect(await screen.findByText(eventsText.detail.roomUnavailable)).toBeOnTheScreen();
     expect(screen.queryByText(eventsText.detail.unknownRoom)).not.toBeOnTheScreen();
+  });
+
+  it('groups type, room, date and status in one list', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+    await screen.findByRole('heading', { name: wordEvent.title });
+
+    expect(screen.getAllByTestId('list-section-card')).toHaveLength(1);
+    expect(screen.getAllByTestId('list-section-cell')).toHaveLength(4);
+    expect(screen.getByText(eventsText.detail.statusLabel)).toBeOnTheScreen();
+  });
+
+  it('marks the status with a glyph next to its text', async () => {
+    const { element } = screenWith();
+    await renderAs('MODERATOR', element);
+    await screen.findByRole('heading', { name: wordEvent.title });
+
+    expect(screen.getAllByTestId('status-badge-glyph', { includeHiddenElements: true })).toHaveLength(1);
+  });
+
+  it('reloads the event on pull to refresh', async () => {
+    const { element, api } = screenWith();
+    await renderAs('MODERATOR', element);
+    await screen.findByRole('heading', { name: wordEvent.title });
+
+    await act(async () => {
+      await screen.getByTestId('event-scroll').props.refreshControl.props.onRefresh();
+    });
+
+    expect(api.get).toHaveBeenCalledTimes(2);
   });
 });

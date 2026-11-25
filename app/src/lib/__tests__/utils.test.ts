@@ -12,4 +12,8 @@ describe('cn', () => {
   it('lets a later colour override an earlier one', () => {
     expect(cn('text-foreground', 'text-destructive')).toBe('text-destructive');
   });
+
+  it('keeps the hairline top border next to a border colour', () => {
+    expect(cn('border-t-hairline border-border')).toBe('border-t-hairline border-border');
+  });
 });

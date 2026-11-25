@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
-import { Button } from '@/components/ui/button';
+import { RefreshControl, ScrollView, View } from 'react-native';
 import { Input } from '@/components/ui/input';
+import { ListRow } from '@/components/ui/list-row';
+import { ListSection } from '@/components/ui/list-section';
+import { StateView } from '@/components/ui/state-view';
 import { Text } from '@/components/ui/text';
+import { usePullToRefresh } from '@/hooks/navigation/use-pull-to-refresh';
 import { useReloadOnFocus } from '@/hooks/navigation/use-reload-on-focus';
 import { useRoomOccupancy } from '@/hooks/rooms/use-room-occupancy';
 import { useRooms } from '@/hooks/rooms/use-rooms';
@@ -33,21 +36,20 @@ export function RoomOccupancyScreen({ roomsApi, communitiesApi }: Props) {
     ready ? { roomId, date: day, ...(communityId ? { communityId } : {}) } : null,
   );
   useReloadOnFocus(reload);
+  const { refreshing, onRefresh } = usePullToRefresh(reload);
 
   if (user === null) {
     return (
-      <View className="flex-1 bg-background p-6">
-        <Text role="status">{bookingsText.occupancy.loading}</Text>
+      <View className="flex-1 bg-background p-4">
+        <StateView kind="loading" message={bookingsText.occupancy.loading} />
       </View>
     );
   }
 
   if (!isModerator) {
     return (
-      <View className="flex-1 bg-background p-6">
-        <Text role="alert" accessibilityLiveRegion="assertive" className="text-destructive">
-          {`⚠ ${bookingsText.forbidden}`}
-        </Text>
+      <View className="flex-1 bg-background p-4">
+        <StateView kind="error" message={bookingsText.forbidden} />
       </View>
     );
   }
@@ -59,46 +61,39 @@ export function RoomOccupancyScreen({ roomsApi, communitiesApi }: Props) {
 
   return (
     <ScrollView
+      testID="occupancy-scroll"
       className="flex-1 bg-background"
-      contentContainerClassName="gap-6 p-6"
+      contentContainerClassName="gap-6 p-4"
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} />}
     >
-      <Text variant="title">{bookingsText.occupancy.title}</Text>
       <View role="radiogroup" accessibilityLabel={bookingsText.request.room} className="gap-3">
-        <Text variant="heading">{bookingsText.request.room}</Text>
-        {roomsStatus === 'loading' ? <Text role="status">{bookingsText.request.loadingRooms}</Text> : null}
+        {roomsStatus === 'loading' ? <StateView kind="loading" message={bookingsText.request.loadingRooms} /> : null}
         {roomsStatus === 'error' ? (
-          <View className="gap-3">
-            <Text role="alert" accessibilityLiveRegion="assertive" className="text-destructive">
-              {`⚠ ${bookingsText.request.roomsError}`}
-            </Text>
-            <Button
-              variant="outline"
-              accessibilityLabel={bookingsText.request.retry}
-              onPress={() => void reloadRooms()}
-            >
-              <Text>{bookingsText.request.retry}</Text>
-            </Button>
-          </View>
+          <StateView
+            kind="error"
+            message={bookingsText.request.roomsError}
+            retryLabel={bookingsText.request.retry}
+            onRetry={() => void reloadRooms()}
+          />
         ) : null}
-        {roomsStatus === 'ready' && rooms.length === 0 ? <Text>{bookingsText.request.noRooms}</Text> : null}
-        {rooms.map((room) => {
-          const selected = room.id === roomId;
-          return (
-            <Button
-              key={room.id}
-              role="radio"
-              variant={selected ? 'default' : 'outline'}
-              accessibilityLabel={room.name}
-              aria-checked={selected}
-              accessibilityState={{ checked: selected }}
-              onPress={() => setRoomId(room.id)}
-            >
-              <Text>{selected ? `✓ ${room.name}` : room.name}</Text>
-            </Button>
-          );
-        })}
+        {roomsStatus === 'ready' && rooms.length === 0 ? (
+          <StateView kind="empty" icon="door.left.hand.open" message={bookingsText.request.noRooms} />
+        ) : null}
+        {rooms.length > 0 ? (
+          <ListSection title={bookingsText.request.room}>
+            {rooms.map((room) => (
+              <ListRow
+                key={room.id}
+                role="radio"
+                title={room.name}
+                selected={room.id === roomId}
+                onPress={() => setRoomId(room.id)}
+              />
+            ))}
+          </ListSection>
+        ) : null}
       </View>
       <CommunityPicker selectedId={communityId} onSelect={setCommunityId} api={communitiesApi} />
       <View className="gap-2">

@@ -17,6 +17,7 @@ export default function EditUserRoute() {
         router.replace('/gestion/usuarios/creado');
       }}
       onSaved={() => router.back()}
+      onDeleted={() => router.back()}
     />
   );
 }

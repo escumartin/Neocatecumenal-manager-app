@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { FlatList, View } from 'react-native';
+import { FlatList, RefreshControl, View } from 'react-native';
 import { Button } from '@/components/ui/button';
+import { StateView } from '@/components/ui/state-view';
 import { Text } from '@/components/ui/text';
+import { usePullToRefresh } from '@/hooks/navigation/use-pull-to-refresh';
 import { useReloadOnFocus } from '@/hooks/navigation/use-reload-on-focus';
 import { useBookingRequests } from '@/hooks/bookings/use-booking-requests';
 import { useRooms } from '@/hooks/rooms/use-rooms';
@@ -18,6 +20,7 @@ import {
   CancelConfirmation,
   type CancellableOccurrence,
 } from './cancel-confirmation';
+import { BookingStatusBadge } from './booking-status-badge';
 import { ReasonEditor } from './reason-editor';
 
 type Cancelling = {
@@ -60,6 +63,7 @@ export function MyRequestsScreen({ api, roomsApi, onRequest }: Props) {
     reload: reloadRooms,
   } = useRooms(roomsApi, isModerator);
   useReloadOnFocus(reload);
+  const { refreshing, onRefresh } = usePullToRefresh(() => Promise.all([reload(), reloadRooms()]));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState<Cancelling | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -122,22 +126,16 @@ export function MyRequestsScreen({ api, roomsApi, onRequest }: Props) {
 
   if (user === null) {
     return (
-      <View className="flex-1 bg-background p-6">
-        <Text role="status">{bookingsText.list.loading}</Text>
+      <View className="flex-1 bg-background p-4">
+        <StateView kind="loading" message={bookingsText.list.loading} />
       </View>
     );
   }
 
   if (!isModerator) {
     return (
-      <View className="flex-1 bg-background p-6">
-        <Text
-          role="alert"
-          accessibilityLiveRegion="assertive"
-          className="text-destructive"
-        >
-          {`⚠ ${bookingsText.forbidden}`}
-        </Text>
+      <View className="flex-1 bg-background p-4">
+        <StateView kind="error" message={bookingsText.forbidden} />
       </View>
     );
   }
@@ -151,7 +149,6 @@ export function MyRequestsScreen({ api, roomsApi, onRequest }: Props) {
 
   const header = (
     <View className="gap-4">
-      <Text variant="title">{bookingsText.list.title}</Text>
       {notice ? (
         <Text
           role="alert"
@@ -162,51 +159,30 @@ export function MyRequestsScreen({ api, roomsApi, onRequest }: Props) {
         </Text>
       ) : null}
       {roomsStatus === 'error' ? (
-        <View className="gap-3">
-          <Text
-            role="alert"
-            accessibilityLiveRegion="assertive"
-            className="text-destructive"
-          >
-            {`⚠ ${bookingsText.request.roomsError}`}
-          </Text>
-          <Button
-            variant="outline"
-            accessibilityLabel={bookingsText.request.retry}
-            onPress={() => void reloadRooms()}
-          >
-            <Text>{bookingsText.request.retry}</Text>
-          </Button>
-        </View>
+        <StateView
+          kind="error"
+          message={bookingsText.request.roomsError}
+          retryLabel={bookingsText.request.retry}
+          onRetry={() => void reloadRooms()}
+        />
       ) : null}
-      {status === 'loading' ? (
-        <Text role="status">{bookingsText.list.loading}</Text>
+      {status === 'loading' && !refreshing ? (
+        <StateView kind="loading" message={bookingsText.list.loading} />
       ) : null}
       {status === 'error' ? (
-        <View className="gap-3">
-          <Text
-            role="alert"
-            accessibilityLiveRegion="assertive"
-            className="text-destructive"
-          >
-            {`⚠ ${bookingsText.list.loadError}`}
-          </Text>
-          <Button
-            variant="outline"
-            accessibilityLabel={bookingsText.list.retry}
-            onPress={() => void reload()}
-          >
-            <Text>{bookingsText.list.retry}</Text>
-          </Button>
-        </View>
+        <StateView
+          kind="error"
+          message={bookingsText.list.loadError}
+          retryLabel={bookingsText.list.retry}
+          onRetry={() => void reload()}
+        />
       ) : null}
     </View>
   );
 
   const empty =
     status === 'ready' ? (
-      <View className="gap-3">
-        <Text>{bookingsText.list.empty}</Text>
+      <StateView kind="empty" icon="tray" message={bookingsText.list.empty}>
         {onRequest ? (
           <Button
             accessibilityLabel={bookingsText.list.newRequest}
@@ -215,14 +191,21 @@ export function MyRequestsScreen({ api, roomsApi, onRequest }: Props) {
             <Text>{bookingsText.list.newRequest}</Text>
           </Button>
         ) : null}
-      </View>
+      </StateView>
     ) : undefined;
 
   return (
     <>
       <FlatList
+        testID="requests-list"
         className="flex-1 bg-background"
-        contentContainerClassName="gap-4 p-6"
+        contentContainerClassName="gap-4 p-4"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => void onRefresh()}
+          />
+        }
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         data={requests}
@@ -237,12 +220,10 @@ export function MyRequestsScreen({ api, roomsApi, onRequest }: Props) {
             roomLabels,
           );
           return (
-            <View className="gap-2 rounded-md border-2 border-input p-4">
+            <View className="gap-2 rounded-lg border-hairline border-border bg-card p-4">
               <Text variant="heading">{roomName}</Text>
               <Text>{bookingsText.list.when(request)}</Text>
-              <Text variant="strong">
-                {bookingsText.status[request.status]}
-              </Text>
+              <BookingStatusBadge status={request.status} />
               {request.status === 'REJECTED' && request.rejectionReason ? (
                 <Text>
                   {bookingsText.rejectionReasonLine(request.rejectionReason)}

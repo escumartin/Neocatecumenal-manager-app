@@ -10,6 +10,8 @@ export const communities = [
   { id: '6f1c1f1e-0000-4000-8000-000000000012', number: 2 },
 ];
 
+export const ownUserId = '6f1c1f1e-0000-4000-8000-000000000001';
+
 export const ana = {
   id: '6f1c1f1e-0000-4000-8000-000000000021',
   accessId: 482913,
@@ -39,7 +41,7 @@ export const communitiesApi: CommunitiesApi = {
 
 export async function renderAs(role: 'REGISTERED' | 'MODERATOR' | 'ADMINISTRATOR', screen: ReactElement) {
   const me = {
-    userId: '6f1c1f1e-0000-4000-8000-000000000001',
+    userId: ownUserId,
     accessId: 111111,
     name: 'Test User',
     role,

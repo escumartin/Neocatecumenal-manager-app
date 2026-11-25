@@ -24,4 +24,16 @@ describe('management menu', () => {
     await screen.findByRole('button', { name: navigationText.management.users });
     expect(screen.queryByRole('button', { name: navigationText.management.rooms })).not.toBeOnTheScreen();
   });
+
+  it('presents the destinations as one grouped list of rows with a chevron each', async () => {
+    await renderWithSession(<ManagementMenu onOpenUsers={jest.fn()} onOpenRooms={jest.fn()} />, {
+      role: 'ADMINISTRATOR',
+    });
+
+    await screen.findByRole('button', { name: navigationText.management.users });
+
+    expect(screen.getAllByTestId('list-section-card')).toHaveLength(1);
+    expect(screen.getAllByTestId('list-row-chevron')).toHaveLength(2);
+    expect(screen.getAllByTestId('list-row-icon')).toHaveLength(2);
+  });
 });

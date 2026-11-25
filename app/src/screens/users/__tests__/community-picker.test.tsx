@@ -61,7 +61,7 @@ describe('community picker', () => {
     const selected = await screen.findByRole('radio', { name: communitiesText.option(2) });
     expect(selected).toBeChecked();
     expect(screen.getByRole('radio', { name: communitiesText.option(1) })).not.toBeChecked();
-    expect(screen.getByText(`✓ ${communitiesText.option(2)}`)).toBeOnTheScreen();
+    expect(screen.getAllByTestId('list-row-check', { includeHiddenElements: true })).toHaveLength(1);
   });
 
   it('renders nothing and does not load communities for a moderator', async () => {
