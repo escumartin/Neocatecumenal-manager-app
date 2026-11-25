@@ -21,9 +21,9 @@ class MemberContactPropertyTest {
     private static final ConsentContext VERBAL =
             new ConsentContext(MODERATOR, RecorderRole.MODERATOR, ConsentChannel.VERBAL, true);
     private static final Map<ContactField, List<String>> VALUES = Map.of(
-            ContactField.MOBILE, List.of("600000001", "600 000 002", "+351912345678", "512345678", "", "abc"),
-            ContactField.LANDLINE, List.of("912345678", "912-345-679", "+34912345680", "123", ""),
-            ContactField.EMAIL, List.of("ana@example.org", "luis@example.es", "a@b", "", "no-at-sign"));
+            ContactField.MOBILE, List.of("600000001", "600 000 002", "+351600000303", "512345678", "", "abc"),
+            ContactField.LANDLINE, List.of("600000301", "600-000-304", "+34600000305", "123", ""),
+            ContactField.EMAIL, List.of("ana@example.org", "luis@example.com", "a@b", "", "no-at-sign"));
 
     private static FieldChange randomChange(Random random, ContactField field) {
         if (random.nextInt(3) == 0) {

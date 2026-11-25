@@ -3,9 +3,9 @@ import { validateContactValue } from '../contact-validation';
 describe('phone validation', () => {
   it.each([
     ['600 000 001', '600000001'],
-    ['912-345-678', '912345678'],
-    ['+351912345678', '+351912345678'],
-    ['+34 (912) 345.678', '+34912345678'],
+    ['600-000-003', '600000003'],
+    ['+351600000003', '+351600000003'],
+    ['+34 (600) 000.003', '+34600000003'],
     [' 700000002 ', '700000002'],
     ['800000003', '800000003'],
     ['900000004', '900000004'],
@@ -15,7 +15,7 @@ describe('phone validation', () => {
     expect(validateContactValue('landline', typed)).toEqual({ ok: true, value: normalized });
   });
 
-  it.each(['512345678', '60000000', '6000000011', '+1234567890123456', '+0123456789', 'abc', '600 000 00a', '+'])(
+  it.each(['500000005', '60000000', '6000000011', '+1234567890123456', '+0123456789', 'abc', '600 000 00a', '+'])(
     'rejects %s with PHONE_INVALID',
     (typed) => {
       expect(validateContactValue('mobile', typed)).toEqual({ ok: false, code: 'PHONE_INVALID' });

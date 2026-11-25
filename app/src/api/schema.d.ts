@@ -179,7 +179,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Deactivate a community; with moderators or administrators in it the request must carry confirmed true */
+        /** Deactivate a community; with moderators or administrators in it the request must carry confirmed true. Idempotent for an already deactivated community */
         post: operations["deactivateCommunity"];
         delete?: never;
         options?: never;
@@ -198,7 +198,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reactivate a deactivated community (administrators only) */
+        /** Reactivate a deactivated community (administrators only). Idempotent for an already active community */
         post: operations["reactivateCommunity"];
         delete?: never;
         options?: never;
@@ -232,7 +232,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Directory of a community ordered by surnames, then given name; registered users and moderators see their own, administrators pass communityId */
+        /** Directory of a community ordered by surnames, then given name; registered users and moderators see their own, administrators pass communityId. A deactivated community answers 409 COMMUNITY_DEACTIVATED except to administrators */
         get: operations["listMembers"];
         put?: never;
         /** Add a member to an active community (moderator of that community or administrator) */
@@ -252,12 +252,12 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** One member; a member of another community answers 404 as if it did not exist */
+        /** One member; a member of another community answers 404 as if it did not exist. On a deactivated community everyone but administrators gets 409 COMMUNITY_DEACTIVATED */
         get: operations["getMember"];
-        /** Replace given name and surnames of the member; never changes the linked user */
+        /** Replace given name and surnames of the member; never changes the linked user. On a deactivated community moderators get 409 COMMUNITY_DEACTIVATED; administrators are exempt */
         put: operations["renameMember"];
         post?: never;
-        /** Delete the member and its consent record permanently; a linked user is deleted too under identity rules; the client confirms first */
+        /** Delete the member and its consent record permanently; a linked user is deleted too under identity rules; the client confirms first. On a deactivated community moderators get 409 COMMUNITY_DEACTIVATED; administrators are exempt */
         delete: operations["deleteMember"];
         options?: never;
         head?: never;
@@ -274,7 +274,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Replace contact details of a member; consent on behalf of a member without user needs channel and noticeGiven */
+        /** Replace contact details of a member; consent on behalf of a member without user needs channel and noticeGiven. On a deactivated community moderators get 409 COMMUNITY_DEACTIVATED; administrators are exempt */
         put: operations["changeMemberContact"];
         post?: never;
         delete?: never;
@@ -294,7 +294,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Move a member, and its linked user, to another active community (administrators only) */
+        /** Move a member, and its linked user, to another active community (administrators only); moving to the member's own community is a 200 that changes nothing */
         post: operations["transferMember"];
         delete?: never;
         options?: never;
@@ -312,10 +312,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Link the member one to one with a user of the same community; moderators only with registered users */
+        /** Link the member one to one with a user of the same community; moderators only with registered users. On a deactivated community moderators get 409 COMMUNITY_DEACTIVATED; administrators are exempt */
         put: operations["linkMember"];
         post?: never;
-        /** Undo the link; administrators always, moderators only in their community with registered users, never the linked user */
+        /** Undo the link; administrators always, moderators only in their community with registered users, never the linked user. On a deactivated community moderators get 409 COMMUNITY_DEACTIVATED; administrators are exempt */
         delete: operations["unlinkMember"];
         options?: never;
         head?: never;
@@ -331,7 +331,7 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Everything this context stores about the member, consent record included (moderator of that community or administrator) */
+        /** Everything this context stores about the member, consent record included (moderator of that community or administrator). On a deactivated community moderators get 409 COMMUNITY_DEACTIVATED; administrators are exempt so that they can answer data requests */
         get: operations["exportMemberData"];
         put?: never;
         post?: never;
@@ -348,7 +348,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The member linked to the current user with the current consent per field */
+        /** The member linked to the current user with the current consent per field; always available, also when the community is deactivated (data protection rights) */
         get: operations["getMyMember"];
         put?: never;
         post?: never;
@@ -366,7 +366,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Replace own contact details; shared false withdraws consent and erases the value */
+        /** Replace own contact details; shared false withdraws consent and erases the value; always available, also when the community is deactivated (data protection rights) */
         put: operations["changeMyContact"];
         post?: never;
         delete?: never;
@@ -948,7 +948,7 @@ export interface components {
         CommunityStatus: "ACTIVE" | "DEACTIVATED";
         CommunityInput: {
             number: number;
-            /** @description Optional parish reference; blank means none */
+            /** @description Optional parish reference; blank means none. Length counted in code points; control and format characters (Unicode categories Cc and Cf, such as NUL, line breaks and bidirectional controls) and unpaired surrogates are rejected with 422 INVALID_FORMAT */
             name?: string;
         };
         CommunityDetail: {
@@ -993,7 +993,9 @@ export interface components {
             onBehalfConsent?: components["schemas"]["OnBehalfConsent"];
         };
         MemberNameInput: {
+            /** @description Length counted in code points; control and format characters (Unicode categories Cc and Cf, such as NUL, line breaks and bidirectional controls) and unpaired surrogates are rejected with 422 INVALID_FORMAT */
             givenName: string;
+            /** @description Length counted in code points; control and format characters (Unicode categories Cc and Cf, such as NUL, line breaks and bidirectional controls) and unpaired surrogates are rejected with 422 INVALID_FORMAT */
             surnames?: string;
         };
         MemberInput: components["schemas"]["MemberNameInput"] & {
@@ -1150,7 +1152,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description The change would break an invariant or the data changed concurrently; codes COMMUNITY_NOT_EMPTY, COMMUNITY_HAS_RESPONSIBLE, COMMUNITY_HAS_HISTORY, COMMUNITY_HAS_PRIVILEGED_USERS, COMMUNITY_DEACTIVATED, RESPONSIBLE_REQUIRED, MEMBER_ALREADY_LINKED, USER_ALREADY_LINKED, MEMBER_NOT_LINKED, LAST_MODERATOR, LAST_ADMINISTRATOR, SELF_ACTION_FORBIDDEN or CONCURRENT_MODIFICATION */
+        /** @description The change would break an invariant or the data changed concurrently; codes COMMUNITY_NOT_EMPTY, COMMUNITY_HAS_RESPONSIBLE, COMMUNITY_HAS_HISTORY, COMMUNITY_HAS_PRIVILEGED_USERS, COMMUNITY_DEACTIVATED, RESPONSIBLE_REQUIRED, MEMBER_ALREADY_LINKED, USER_ALREADY_LINKED, MEMBER_NOT_LINKED, LAST_MODERATOR, LAST_ADMINISTRATOR, SELF_ACTION_FORBIDDEN or CONCURRENT_MODIFICATION. COMMUNITY_DEACTIVATED is returned to moderators and registered users for any member operation on a deactivated community; administrators are exempt and the own-member endpoints under /api/me/member never return it */
         CommunityStateConflict: {
             headers: {
                 [name: string]: unknown;
@@ -1487,7 +1489,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Community deactivated; its data is kept */
+            /** @description Community deactivated, or already deactivated (nothing changes and no confirmation is needed); its data is kept */
             204: {
                 headers: {
                     [name: string]: unknown;
@@ -1511,7 +1513,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Community active again */
+            /** @description Community active again, or already active (nothing changes) */
             204: {
                 headers: {
                     [name: string]: unknown;
@@ -1828,6 +1830,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["CommunityOrMemberNotFound"];
+            409: components["responses"]["CommunityStateConflict"];
         };
     };
     getMyMember: {
@@ -1850,7 +1853,6 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
-            409: components["responses"]["CommunityStateConflict"];
         };
     };
     changeMyContact: {
@@ -1877,7 +1879,6 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
-            409: components["responses"]["CommunityStateConflict"];
             422: components["responses"]["ValidationFailed"];
         };
     };

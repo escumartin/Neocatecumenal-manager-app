@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { membersApi } from '@/lib/api';
 import type { ListMembersResult, Member, MembersApi } from '@/lib/api/members-api';
 
@@ -17,10 +17,12 @@ function toState(key: string, result: ListMembersResult): State {
 export function useMembers(communityId: string | undefined, api: MembersApi = membersApi, enabled = true) {
   const key = communityId ?? '';
   const [state, setState] = useState<State>({ key: null, status: 'idle', members: [] });
+  const sequence = useRef(0);
   const current: State =
     state.key === key ? state : { key, status: enabled ? 'loading' : 'idle', members: [] };
 
   useEffect(() => {
+    const id = ++sequence.current;
     if (!enabled) {
       return;
     }
@@ -29,7 +31,7 @@ export function useMembers(communityId: string | undefined, api: MembersApi = me
       .list(communityId)
       .then((result) => toState(key, result), () => toState(key, { ok: false, status: 0 }))
       .then((next) => {
-        if (active) {
+        if (active && id === sequence.current) {
           setState(next);
         }
       });
@@ -39,11 +41,16 @@ export function useMembers(communityId: string | undefined, api: MembersApi = me
   }, [api, communityId, enabled, key]);
 
   const reload = useCallback(async () => {
+    const id = ++sequence.current;
     setState({ key, status: 'loading', members: [] });
+    let next = toState(key, { ok: false, status: 0 });
     try {
-      setState(toState(key, await api.list(communityId)));
+      next = toState(key, await api.list(communityId));
     } catch {
-      setState(toState(key, { ok: false, status: 0 }));
+      next = toState(key, { ok: false, status: 0 });
+    }
+    if (id === sequence.current) {
+      setState(next);
     }
   }, [api, communityId, key]);
 
@@ -51,9 +58,10 @@ export function useMembers(communityId: string | undefined, api: MembersApi = me
     if (!enabled) {
       return;
     }
+    const id = ++sequence.current;
     try {
       const result = await api.list(communityId);
-      if (result.ok) {
+      if (result.ok && id === sequence.current) {
         setState(toState(key, result));
       }
     } catch {

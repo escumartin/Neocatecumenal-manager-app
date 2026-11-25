@@ -7,6 +7,12 @@ const communities = [
   { id: '6f1c1f1e-0000-4000-8000-000000000012', number: 2 },
 ];
 
+function deferred() {
+  let resolve: (value: unknown) => void = () => undefined;
+  const promise = new Promise((r) => (resolve = r));
+  return { promise, resolve };
+}
+
 describe('useCommunities', () => {
   it('loads the communities in the order the server returns them', async () => {
     const api: CommunitiesApi = { list: jest.fn().mockResolvedValue({ ok: true, communities }) };
@@ -140,5 +146,29 @@ describe('useCommunities refresh', () => {
     });
 
     expect(list).not.toHaveBeenCalled();
+  });
+
+  it('ignores a stale refresh that resolves after a newer reload', async () => {
+    const stale = deferred();
+    const list = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, communities: [communities[0]] })
+      .mockReturnValueOnce(stale.promise)
+      .mockResolvedValueOnce({ ok: true, communities: [communities[1]] });
+    const api: CommunitiesApi = { list };
+    const { result } = await renderHook(() => useCommunities(api));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    let refreshing: Promise<unknown> = Promise.resolve();
+    await act(async () => {
+      refreshing = result.current.refresh();
+    });
+    await act(() => result.current.reload());
+    await act(async () => {
+      stale.resolve({ ok: true, communities });
+      await refreshing;
+    });
+
+    expect(result.current.communities).toEqual([communities[1]]);
   });
 });

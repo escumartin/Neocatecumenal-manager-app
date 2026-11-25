@@ -53,8 +53,8 @@ function contactEdit(api = fakeMembersApi()) {
   return { api, onSaved, element: <MemberContactEdit memberId={ana.id} api={api} onSaved={onSaved} /> };
 }
 
-async function share(label: string, value = true) {
-  await fireEvent(await screen.findByRole('switch', { name: label }), 'valueChange', value);
+async function share(label: string) {
+  await fireEvent.press(await screen.findByRole('switch', { name: label }));
 }
 
 describe('members list', () => {
@@ -210,7 +210,7 @@ describe('new member form', () => {
 
     expect(await screen.findByText(membersText.contact.notice)).toBeOnTheScreen();
     for (const label of [membersText.contact.share.mobile, membersText.contact.share.landline, membersText.contact.share.email]) {
-      expect(screen.getByRole('switch', { name: label }).props.value).toBe(false);
+      expect(screen.getByRole('switch', { name: label })).not.toBeChecked();
     }
     expect(screen.queryByLabelText(membersText.contact.fields.mobile.label)).not.toBeOnTheScreen();
     expect(screen.queryByText(membersText.consent.title)).not.toBeOnTheScreen();
@@ -296,13 +296,13 @@ describe('new member form', () => {
     await renderAs('MODERATOR', element);
     await fireEvent.changeText(await screen.findByLabelText(membersText.form.givenName), 'Ana');
     await share(membersText.contact.share.mobile);
-    await fireEvent.changeText(screen.getByLabelText(membersText.contact.fields.mobile.label), '512345678');
+    await fireEvent.changeText(screen.getByLabelText(membersText.contact.fields.mobile.label), '500000005');
     await fireEvent.press(screen.getByRole('radio', { name: membersText.consent.channel.WRITTEN }));
     await share(membersText.consent.noticeGiven);
     await fireEvent.press(screen.getByRole('button', { name: membersText.form.create }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(`⚠ ${membersText.fieldErrors.mobile.PHONE_INVALID}`);
-    expect(screen.getByLabelText(membersText.contact.fields.mobile.label).props.value).toBe('512345678');
+    expect(screen.getByLabelText(membersText.contact.fields.mobile.label).props.value).toBe('500000005');
     expect(screen.getByLabelText(membersText.contact.fields.mobile.label).props.accessibilityHint).toBe(
       membersText.fieldErrors.mobile.PHONE_INVALID,
     );
@@ -336,7 +336,7 @@ describe('new member form', () => {
     await share(membersText.contact.share.mobile);
     await fireEvent.changeText(screen.getByLabelText(membersText.contact.fields.mobile.label), '600000001');
 
-    await share(membersText.contact.share.mobile, false);
+    await share(membersText.contact.share.mobile);
     await share(membersText.contact.share.mobile);
 
     expect(screen.getByLabelText(membersText.contact.fields.mobile.label).props.value).toBe('');
@@ -401,6 +401,7 @@ describe('new member form', () => {
     }
     for (const control of screen.getAllByRole('switch')) {
       expect(control.props.accessibilityLabel).toBeTruthy();
+      expect(minHeightOf(control)).toBeGreaterThanOrEqual(48);
     }
     for (const text of screen.getAllByText(/./)) {
       expect(fontSizeOf(text)).toBeGreaterThanOrEqual(18);
@@ -463,8 +464,8 @@ describe('member contact', () => {
     await renderAs('MODERATOR', element);
 
     expect((await screen.findByLabelText(membersText.contact.fields.mobile.label)).props.value).toBe('600000001');
-    expect(screen.getByRole('switch', { name: membersText.contact.share.mobile }).props.value).toBe(true);
-    expect(screen.getByRole('switch', { name: membersText.contact.share.email }).props.value).toBe(false);
+    expect(screen.getByRole('switch', { name: membersText.contact.share.mobile })).toBeChecked();
+    expect(screen.getByRole('switch', { name: membersText.contact.share.email })).not.toBeChecked();
   });
 
   it('rectifies a shared value without asking for consent', async () => {
@@ -487,7 +488,7 @@ describe('member contact', () => {
     const { element, api, onSaved } = contactEdit();
     await renderAs('MODERATOR', element);
 
-    await share(membersText.contact.share.mobile, false);
+    await share(membersText.contact.share.mobile);
     expect(await screen.findByText(membersText.consent.title)).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('button', { name: membersText.contact.save }));
     expect(await screen.findByRole('alert')).toHaveTextContent(`⚠ ${membersText.errors.CONSENT_REQUIRED}`);
@@ -534,7 +535,7 @@ describe('member contact', () => {
 
     expect(await screen.findByText(membersText.contact.linkedNotice)).toBeOnTheScreen();
     for (const label of [membersText.contact.share.mobile, membersText.contact.share.landline, membersText.contact.share.email]) {
-      expect(screen.getByRole('switch', { name: label }).props.disabled).toBe(true);
+      expect(screen.getByRole('switch', { name: label })).toBeDisabled();
     }
     expect(screen.getByLabelText(membersText.contact.fields.mobile.label).props.editable).not.toBe(false);
     expect(screen.queryByText(membersText.consent.title)).not.toBeOnTheScreen();
@@ -558,7 +559,7 @@ describe('member contact', () => {
     const { element } = contactEdit(fakeMembersApi({ get: jest.fn().mockResolvedValue({ ok: true, member: marta }) }));
     await renderAs('MODERATOR', element);
 
-    expect((await screen.findByRole('switch', { name: membersText.contact.share.mobile })).props.value).toBe(false);
-    expect(screen.getByRole('switch', { name: membersText.contact.share.email }).props.value).toBe(true);
+    expect(await screen.findByRole('switch', { name: membersText.contact.share.mobile })).not.toBeChecked();
+    expect(screen.getByRole('switch', { name: membersText.contact.share.email })).toBeChecked();
   });
 });

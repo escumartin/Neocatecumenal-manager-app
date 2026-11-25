@@ -402,3 +402,22 @@ Fuentes: `spec.md` (30 FR), `.specify/memory/constitution.md` 1.0.0, `.agents/co
 - **Alternativa descartada**: copiar el nombre del autor en el registro al anotarlo. Guardaría un dato personal del
   moderador más allá de su vida como usuario.
 - **Constitution Check**: VIII PASS.
+
+## R18. Comunidad desactivada y operaciones sobre hermanos (FR-005, FR-019, FR-020)
+
+- **Decisión**:
+  - Moderador: toda operación sobre hermanos de una comunidad desactivada (consulta, listado, renombrado, contacto,
+    vínculo, desvínculo, borrado y copia de datos) responde `409 COMMUNITY_DEACTIVATED`. Se aplica en
+    `MemberLocks.lockedForManagement` y en los servicios de consulta y copia con `requireDirectoryAvailable`.
+  - Administrador: exento. Puede renombrar y renumerar la comunidad, designar responsable, editar, borrar y exportar
+    hermanos para gestionar la comunidad y atender solicitudes RGPD.
+  - Usuario vinculado: `GET /api/me/member` y `PUT /api/me/member/contact` funcionan siempre (derechos RGPD, FR-019 y
+    FR-020); no devuelven `COMMUNITY_DEACTIVATED`.
+  - Trasladar un hermano a su propia comunidad es un `200` sin cambios.
+  - Desactivar una comunidad ya desactivada y reactivar una activa son `204` idempotentes, sin efectos ni
+    confirmación.
+- **Texto libre**: los nombres (`PersonName`, `CommunityName`) rechazan con `422 INVALID_FORMAT` los caracteres de
+  control y de formato (`\p{Cc}`, `\p{Cf}`: NUL, saltos de línea, controles bidi) y los sustitutos sueltos; la
+  longitud se cuenta en puntos de código.
+- **Migración V6**: copia el estado con `active` y añade el `check` de sintaxis de `email`.
+- **Constitution Check**: VIII PASS.

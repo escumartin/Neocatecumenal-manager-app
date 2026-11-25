@@ -164,7 +164,7 @@ class CommunitySchemaMigrationIT {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"600000001", "+351912345678", "912345678"})
+    @ValueSource(strings = {"600000001", "+34600000002", "600000003"})
     void validPhoneNumbersAreAccepted(String phone) {
         UUID community = insertCommunity(1);
 
@@ -292,5 +292,44 @@ class CommunitySchemaMigrationIT {
                 .containsEntry("status", "ACTIVE").containsEntry("responsible_member_id", null)
                 .containsEntry("name", null);
         assertThat(rows.get(1)).containsEntry("id", second).containsEntry("number", 12);
+    }
+
+    @Test
+    void migratingFromVersionFiveCopiesTheActiveFlagAsTheStatus() {
+        Flyway.configure().dataSource(dataSource).cleanDisabled(false).load().clean();
+        migrateTo("5");
+        UUID active = UUID.randomUUID();
+        UUID deactivated = UUID.randomUUID();
+        jdbc.update("insert into identity_community (id, number, active) values (?, 21, true), (?, 22, false)",
+                active, deactivated);
+
+        migrateTo("6");
+
+        assertThat(jdbc.queryForObject("select status from community where id = ?", String.class, active))
+                .isEqualTo("ACTIVE");
+        assertThat(jdbc.queryForObject("select status from community where id = ?", String.class, deactivated))
+                .isEqualTo("DEACTIVATED");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ana.test@example.com", "a@b.co"})
+    void wellFormedEmailsAreAccepted(String email) {
+        UUID community = insertCommunity(1);
+
+        jdbc.update("insert into community_member (id, community_id, given_name, email, version) "
+                + "values (?, ?, 'Test', ?, 0)", UUID.randomUUID(), community, email);
+
+        assertThat(jdbc.queryForObject("select count(*) from community_member where email = ?", Integer.class,
+                email)).isOne();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "no-at-sign", "@example.com", "ana@", "ana@example", "an a@example.com",
+            "ana@exam ple.com", "a@@b.co"})
+    void malformedEmailsAreRejected(String email) {
+        UUID community = insertCommunity(1);
+
+        assertSqlState(() -> jdbc.update("insert into community_member (id, community_id, given_name, email, "
+                + "version) values (?, ?, 'Test', ?, 0)", UUID.randomUUID(), community, email), CHECK_VIOLATION);
     }
 }

@@ -7,5 +7,9 @@ export function smsLink(number: string): string {
 }
 
 export function mailLink(address: string): string {
-  return `mailto:${address}`;
+  const at = address.lastIndexOf('@');
+  if (at < 0) {
+    return `mailto:${encodeURIComponent(address)}`;
+  }
+  return `mailto:${encodeURIComponent(address.slice(0, at))}@${encodeURIComponent(address.slice(at + 1))}`;
 }

@@ -34,11 +34,13 @@ public class ChangeMemberContactService implements ChangeMemberContact {
     @Transactional
     public MemberView change(Actor actor, MemberId id, ContactChange change, Optional<OnBehalfConsent> consent) {
         Member member = MemberLocks.lockedForManagement(actor, communities, members, id);
+        int consentsBefore = member.consents().size();
         member.changeContact(change, consent.map(onBehalf -> ConsentContext.onBehalf(actor, onBehalf)),
                 clock.instant());
         members.save(member);
         log.atInfo().addKeyValue("actorId", actor.id().value()).addKeyValue("memberId", id.value())
-                .log("Contacto de hermano actualizado");
+                .addKeyValue("consentRecorded", member.consents().size() > consentsBefore)
+                .addKeyValue("fields", change.fieldNames()).log("Contacto de hermano actualizado");
         return new MemberView(member, MemberLocks.isResponsible(communities, member));
     }
 }

@@ -18,8 +18,10 @@ public record PersonName(String givenName, Optional<String> surnames) {
         if (given.isEmpty()) {
             throw new CommunityFieldInvalid("givenName", "REQUIRED");
         }
+        FreeText.requireClean(given, "givenName");
         requireWithinLimit(given, "givenName");
         String family = normalize(surnames);
+        FreeText.requireClean(family, "surnames");
         requireWithinLimit(family, "surnames");
         return new PersonName(given, family.isEmpty() ? Optional.empty() : Optional.of(family));
     }

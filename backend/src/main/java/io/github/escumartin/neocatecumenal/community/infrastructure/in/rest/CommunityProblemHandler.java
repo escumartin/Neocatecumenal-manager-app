@@ -49,21 +49,21 @@ public class CommunityProblemHandler {
         error.put("field", exception.field());
         error.put("code", exception.code());
         body.put("errors", List.of(error));
-        return send(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_FAILED", body);
+        return send(exception, HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_FAILED", body);
     }
 
     @ExceptionHandler(CommunityDomainException.class)
     public ResponseEntity<Map<String, Object>> domainRule(CommunityDomainException exception) {
         String code = exception.code();
         return switch (code) {
-            case "FORBIDDEN" -> respond(HttpStatus.FORBIDDEN, "Acceso denegado", code);
-            case "CONSENT_MANAGED_BY_MEMBER" ->
-                    respond(HttpStatus.FORBIDDEN, "El consentimiento lo gestiona el propio hermano", code);
-            case "NOT_FOUND" -> respond(HttpStatus.NOT_FOUND, "Recurso no encontrado", code);
-            case "UNAUTHENTICATED" -> respond(HttpStatus.UNAUTHORIZED, "Autenticación requerida", code);
+            case "FORBIDDEN" -> respond(exception, HttpStatus.FORBIDDEN, "Acceso denegado", code);
+            case "CONSENT_MANAGED_BY_MEMBER" -> respond(exception, HttpStatus.FORBIDDEN,
+                    "El consentimiento lo gestiona el propio hermano", code);
+            case "NOT_FOUND" -> respond(exception, HttpStatus.NOT_FOUND, "Recurso no encontrado", code);
+            case "UNAUTHENTICATED" -> respond(exception, HttpStatus.UNAUTHORIZED, "Autenticación requerida", code);
             default -> CONFLICT_TITLES.containsKey(code)
-                    ? respond(HttpStatus.CONFLICT, CONFLICT_TITLES.get(code), code)
-                    : respond(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno", "INTERNAL_ERROR");
+                    ? respond(exception, HttpStatus.CONFLICT, CONFLICT_TITLES.get(code), code)
+                    : internalError(exception);
         };
     }
 
@@ -71,29 +71,43 @@ public class CommunityProblemHandler {
     public ResponseEntity<Map<String, Object>> identityRule(IdentityRuleViolation exception) {
         String code = exception.code();
         if ("FORBIDDEN".equals(code)) {
-            return respond(HttpStatus.FORBIDDEN, "Acceso denegado", code);
+            return respond(exception, HttpStatus.FORBIDDEN, "Acceso denegado", code);
         }
         String problemCode = "COMMUNITY_HAS_USERS".equals(code) ? "COMMUNITY_NOT_EMPTY" : code;
         String title = CONFLICT_TITLES.get(problemCode);
         if (title == null) {
-            return respond(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno", "INTERNAL_ERROR");
+            return internalError(exception);
         }
-        return respond(HttpStatus.CONFLICT, title, problemCode);
+        return respond(exception, HttpStatus.CONFLICT, title, problemCode);
     }
 
     @ExceptionHandler({StaleLockOrderException.class, OptimisticLockingFailureException.class})
-    public ResponseEntity<Map<String, Object>> concurrentModification() {
-        return respond(HttpStatus.CONFLICT, CONFLICT_TITLES.get("CONCURRENT_MODIFICATION"),
+    public ResponseEntity<Map<String, Object>> concurrentModification(RuntimeException exception) {
+        return respond(exception, HttpStatus.CONFLICT, CONFLICT_TITLES.get("CONCURRENT_MODIFICATION"),
                 "CONCURRENT_MODIFICATION");
     }
 
-    private ResponseEntity<Map<String, Object>> respond(HttpStatus status, String title, String code) {
-        return send(status, code, body(status, title, code));
+    private ResponseEntity<Map<String, Object>> respond(Exception exception, HttpStatus status, String title,
+            String code) {
+        return send(exception, status, code, body(status, title, code));
     }
 
-    private ResponseEntity<Map<String, Object>> send(HttpStatus status, String code, Map<String, Object> body) {
+    private ResponseEntity<Map<String, Object>> internalError(Exception exception) {
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+        log.atError().setCause(exception).addKeyValue("code", "INTERNAL_ERROR").addKeyValue("status", status.value())
+                .addKeyValue("exception", exception.getClass().getSimpleName()).log("Error no controlado");
+        return response(status, body(status, "Error interno", "INTERNAL_ERROR"));
+    }
+
+    private ResponseEntity<Map<String, Object>> send(Exception exception, HttpStatus status, String code,
+            Map<String, Object> body) {
         log.atWarn().addKeyValue("code", code).addKeyValue("status", status.value())
+                .addKeyValue("exception", exception.getClass().getSimpleName())
                 .log("Respuesta de error enviada");
+        return response(status, body);
+    }
+
+    private static ResponseEntity<Map<String, Object>> response(HttpStatus status, Map<String, Object> body) {
         return ResponseEntity.status(status).contentType(MediaType.APPLICATION_PROBLEM_JSON).body(body);
     }
 

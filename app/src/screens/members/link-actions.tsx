@@ -73,7 +73,7 @@ export function MemberLinkActions({ member, api, onOpenLink, onOpenTransfer, onU
       ) : null}
       <ListSection>
         {linked ? (
-          <ListRow title={texts.row} disabled={working} accessory="none" onPress={request} />
+          <ListRow title={texts.row} destructive disabled={working} onPress={request} />
         ) : (
           <ListRow title={membersText.link.row} onPress={() => onOpenLink?.(member.id)} />
         )}

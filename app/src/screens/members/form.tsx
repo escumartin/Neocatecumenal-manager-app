@@ -10,6 +10,7 @@ import { StateView } from '@/components/ui/state-view';
 import { Text } from '@/components/ui/text';
 import { useMember } from '@/hooks/members/use-member';
 import { useMemberSave } from '@/hooks/members/use-member-save';
+import { useReloadOnFocus } from '@/hooks/navigation/use-reload-on-focus';
 import { useCurrentUser } from '@/hooks/session/use-current-user';
 import { membersText, problemForMembersFailure, type MemberProblem } from '@/i18n/es/members';
 import type { CommunitiesApi } from '@/lib/api/communities-api';
@@ -90,7 +91,8 @@ function ExistingMember({
   onOpenExport?: (memberId: string) => void;
   onDeleted?: () => void;
 }) {
-  const { status, member, reload } = useMember(memberId, api);
+  const { status, member, reload, refresh } = useMember(memberId, api);
+  useReloadOnFocus(refresh);
 
   if (status === 'loading') {
     return (
@@ -123,7 +125,7 @@ function ExistingMember({
       onOpenTransfer={onOpenTransfer}
       onOpenExport={onOpenExport}
       onDeleted={onDeleted}
-      onUnlinked={() => void reload()}
+      onUnlinked={() => void refresh()}
     />
   );
 }

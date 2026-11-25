@@ -34,6 +34,7 @@ export const membersText = {
     clearSearch: 'Borrar búsqueda',
     cardLoading: 'Cargando al hermano…',
     cardLoadError: 'No hemos podido cargar al hermano.',
+    cardUnavailable: 'Este hermano ya no está disponible.',
     noContact: 'Este hermano no comparte datos de contacto.',
     contactTitle: 'Contacto',
     mobile: 'Móvil',
@@ -70,8 +71,8 @@ export const membersText = {
     save: 'Guardar contacto',
     fields: {
       mobile: { label: 'Móvil', hint: '9 cifras, o + y prefijo. Por ejemplo, 600 000 001.' },
-      landline: { label: 'Fijo', hint: '9 cifras, o + y prefijo. Por ejemplo, 912 345 678.' },
-      email: { label: 'Correo', hint: 'Con @ y un punto después. Por ejemplo, ana@correo.es.' },
+      landline: { label: 'Fijo', hint: '9 cifras, o + y prefijo. Por ejemplo, 600 000 003.' },
+      email: { label: 'Correo', hint: 'Con @ y un punto después. Por ejemplo, ana@example.com.' },
     },
     share: {
       mobile: 'Compartir el móvil',
@@ -170,23 +171,28 @@ export const membersText = {
     givenName: {
       REQUIRED: 'Escribe el nombre del hermano.',
       TOO_LONG: 'El nombre es demasiado largo (máximo 100 caracteres).',
+      INVALID_FORMAT: 'No puede contener caracteres de control ni saltos de línea.',
     },
     surnames: {
       TOO_LONG: 'Los apellidos son demasiado largos (máximo 100 caracteres).',
+      INVALID_FORMAT: 'No puede contener caracteres de control ni saltos de línea.',
     },
     mobile: {
       REQUIRED: 'Escribe el móvil o desactiva «Compartir el móvil».',
+      TOO_LONG: 'El móvil es demasiado largo (máximo 24 caracteres).',
       PHONE_INVALID:
-        'El móvil no es válido. Escribe 9 cifras que empiecen por 6, 7, 8 o 9, por ejemplo 600 000 001, o un número con + y prefijo, por ejemplo +351 912 345 678.',
+        'El móvil no es válido. Escribe 9 cifras que empiecen por 6, 7, 8 o 9, por ejemplo 600 000 001, o un número con + y prefijo, por ejemplo +351 600 000 003.',
     },
     landline: {
       REQUIRED: 'Escribe el fijo o desactiva «Compartir el fijo».',
+      TOO_LONG: 'El fijo es demasiado largo (máximo 24 caracteres).',
       PHONE_INVALID:
-        'El fijo no es válido. Escribe 9 cifras que empiecen por 6, 7, 8 o 9, por ejemplo 912 345 678, o un número con + y prefijo, por ejemplo +351 912 345 678.',
+        'El fijo no es válido. Escribe 9 cifras que empiecen por 6, 7, 8 o 9, por ejemplo 600 000 003, o un número con + y prefijo, por ejemplo +351 600 000 003.',
     },
     email: {
       REQUIRED: 'Escribe el correo o desactiva «Compartir el correo».',
-      EMAIL_INVALID: 'El correo no es válido. Escríbelo con @ y un punto después, por ejemplo ana@correo.es.',
+      TOO_LONG: 'El correo es demasiado largo (máximo 254 caracteres).',
+      EMAIL_INVALID: 'El correo no es válido. Escríbelo con @ y un punto después, por ejemplo ana@example.com.',
     },
   } as Record<string, Record<string, string>>,
   errors: {

@@ -18,7 +18,7 @@ describe('useMember', () => {
     const api = fakeMembersApi({
       get: jest
         .fn()
-        .mockResolvedValueOnce({ ok: false, status: 404 })
+        .mockResolvedValueOnce({ ok: false, status: 500 })
         .mockResolvedValueOnce({ ok: true, member: ana }),
     });
     const { result } = await renderHook(() => useMember(ana.id, api));
@@ -37,6 +37,38 @@ describe('useMember', () => {
     const { result } = await renderHook(() => useMember(ana.id, api));
 
     await waitFor(() => expect(result.current.status).toBe('error'));
+    expect(result.current.member).toBeNull();
+  });
+
+  it('refreshes silently keeping the member while the request is in flight and when it fails', async () => {
+    const api = fakeMembersApi({
+      get: jest
+        .fn()
+        .mockResolvedValueOnce({ ok: true, member: ana })
+        .mockResolvedValueOnce({ ok: true, member: { ...ana, givenName: 'Anita' } })
+        .mockResolvedValueOnce({ ok: false, status: 500 }),
+    });
+    const { result } = await renderHook(() => useMember(ana.id, api));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+    expect(result.current.member?.givenName).toBe('Anita');
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+    expect(result.current.status).toBe('ready');
+    expect(result.current.member?.givenName).toBe('Anita');
+  });
+
+  it.each([403, 404])('reports the member as unavailable when the server answers %s', async (status) => {
+    const api = fakeMembersApi({ get: jest.fn().mockResolvedValue({ ok: false, status }) });
+
+    const { result } = await renderHook(() => useMember(ana.id, api));
+
+    await waitFor(() => expect(result.current.status).toBe('unavailable'));
     expect(result.current.member).toBeNull();
   });
 });

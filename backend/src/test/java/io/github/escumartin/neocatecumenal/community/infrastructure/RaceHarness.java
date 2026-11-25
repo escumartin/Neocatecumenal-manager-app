@@ -55,7 +55,8 @@ final class RaceHarness {
     }
 
     void assertNoDeadlocksSinceStart() throws InterruptedException {
-        Thread.sleep(1500);
+        awaitOtherBackendsIdle();
+        jdbc.execute("select pg_stat_force_next_flush()");
         assertThat(deadlocks()).as("deadlocks detected by PostgreSQL (40P01)").isEqualTo(deadlocksBefore);
     }
 
@@ -120,6 +121,19 @@ final class RaceHarness {
                 .as("race threads finished").isTrue();
     }
 
+    private void awaitOtherBackendsIdle() throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(TIMEOUT_SECONDS);
+        while (System.nanoTime() < deadline) {
+            Integer busy = jdbc.queryForObject("select count(*) from pg_stat_activity where state <> 'idle' "
+                    + "and datname = current_database() and pid <> pg_backend_pid()", Integer.class);
+            if (busy != null && busy == 0) {
+                return;
+            }
+            Thread.sleep(20);
+        }
+        throw new AssertionError("backends still busy after the race");
+    }
+
     private void awaitWaiters(int expected) {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(TIMEOUT_SECONDS);
         while (System.nanoTime() < deadline) {
@@ -153,6 +167,7 @@ final class RaceHarness {
     }
 
     private long deadlocks() {
+        jdbc.execute("select pg_stat_clear_snapshot()");
         Long count = jdbc.queryForObject("select deadlocks from pg_stat_database where datname = "
                 + "current_database()", Long.class);
         return count == null ? 0 : count;

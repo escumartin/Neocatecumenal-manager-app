@@ -47,9 +47,12 @@ public class ChangeOwnContactService implements ChangeOwnContact {
         if (stale) {
             throw new StaleLockOrderException();
         }
+        int consentsBefore = member.consents().size();
         member.changeContact(change, Optional.of(ConsentContext.byMember(actor.id())), clock.instant());
         members.save(member);
-        log.atInfo().addKeyValue("memberId", member.id().value()).log("Datos de contacto propios actualizados");
+        log.atInfo().addKeyValue("memberId", member.id().value())
+                .addKeyValue("consentRecorded", member.consents().size() > consentsBefore)
+                .addKeyValue("fields", change.fieldNames()).log("Datos de contacto propios actualizados");
         return OwnMemberViews.of(member, communities, users);
     }
 }

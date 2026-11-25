@@ -182,7 +182,7 @@ community_member
   surnames      varchar(100)  check (surnames is null or length(btrim(surnames)) > 0)
   mobile        varchar(16)   check (mobile is null or mobile ~ '^([6-9][0-9]{8}|\+[1-9][0-9]{1,14})$')
   landline      varchar(16)   check (landline is null or landline ~ '^([6-9][0-9]{8}|\+[1-9][0-9]{1,14})$')
-  email         varchar(254)
+  email         varchar(254)  check (email is null or email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$')
   user_id       uuid          constraint uk_community_member_user unique
   version       bigint        not null
   constraint uk_community_member_id_community unique (id, community_id)
@@ -206,7 +206,7 @@ community_contact_consent
   índices: (member_id, field, recorded_at)
 
 insert into community (id, number, status, version)
-  select id, number, 'ACTIVE', 0 from identity_community
+  select id, number, case when active then 'ACTIVE' else 'DEACTIVATED' end, 0 from identity_community
 ```
 
 Restricciones por campo:

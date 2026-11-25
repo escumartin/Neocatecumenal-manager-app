@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { communitiesApi } from '@/lib/api';
 import type { CommunityDetail, CommunityManagementApi, CommunityOutcome } from '@/lib/api/communities-api';
 
@@ -9,23 +9,33 @@ type State = { status: CommunityStatus; community: CommunityDetail | null };
 export function useCommunity(communityId: string, api: CommunityManagementApi = communitiesApi) {
   const [state, setState] = useState<State>({ status: 'loading', community: null });
 
+  const sequence = useRef(0);
+
   const load = useCallback(async () => {
+    const id = ++sequence.current;
+    let next: State = { status: 'error', community: null };
     try {
       const result = await api.get(communityId);
-      setState(result.ok ? { status: 'ready', community: result.community } : { status: 'error', community: null });
+      if (result.ok) {
+        next = { status: 'ready', community: result.community };
+      }
     } catch {
-      setState({ status: 'error', community: null });
+      next = { status: 'error', community: null };
+    }
+    if (id === sequence.current) {
+      setState(next);
     }
   }, [api, communityId]);
 
   useEffect(() => {
+    const id = ++sequence.current;
     let active = true;
     api
       .get(communityId)
       .then((result) => (result.ok ? ({ status: 'ready', community: result.community } as const) : null))
       .catch(() => null)
       .then((next) => {
-        if (active) {
+        if (active && id === sequence.current) {
           setState(next ?? { status: 'error', community: null });
         }
       });
@@ -40,9 +50,10 @@ export function useCommunity(communityId: string, api: CommunityManagementApi = 
   }, [load]);
 
   const refresh = useCallback(async () => {
+    const id = ++sequence.current;
     try {
       const result = await api.get(communityId);
-      if (result.ok) {
+      if (result.ok && id === sequence.current) {
         setState({ status: 'ready', community: result.community });
       }
     } catch {

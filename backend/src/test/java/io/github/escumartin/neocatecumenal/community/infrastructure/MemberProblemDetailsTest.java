@@ -36,7 +36,7 @@ class MemberProblemDetailsTest {
     @ServiceConnection
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18");
 
-    private static final List<String> PERSONAL_DATA = List.of("Zenobia", "Quirógrafo", "677123456", "+34988765432",
+    private static final List<String> PERSONAL_DATA = List.of("Zenobia", "Quirógrafo", "600000101", "+34600000201",
             "zenobia.q@example.test", "512345678", "a@b");
     private static final String VERBAL = "\"onBehalfConsent\":{\"channel\":\"VERBAL\",\"noticeGiven\":true}";
 
@@ -76,9 +76,9 @@ class MemberProblemDetailsTest {
         return switch (scenario) {
             case "invalidPhone" -> head + ",\"contact\":" + contact("512345678", null, null) + "," + VERBAL + "}";
             case "invalidEmail" -> head + ",\"contact\":" + contact(null, null, "a@b") + "," + VERBAL + "}";
-            case "noConsent" -> head + ",\"contact\":" + contact("677123456", "+34988765432",
+            case "noConsent" -> head + ",\"contact\":" + contact("600000101", "+34600000201",
                     "zenobia.q@example.test") + "}";
-            case "noNotice" -> head + ",\"contact\":" + contact("677123456", null, null)
+            case "noNotice" -> head + ",\"contact\":" + contact("600000101", null, null)
                     + ",\"onBehalfConsent\":{\"channel\":\"WRITTEN\",\"noticeGiven\":false}}";
             case "tooLongSurnames" -> "{\"communityId\":\"" + home + "\",\"givenName\":\"Zenobia\",\"surnames\":\""
                     + "Quirógrafo".repeat(11) + "\"}";
@@ -124,11 +124,11 @@ class MemberProblemDetailsTest {
         return switch (scenario) {
             case "invalidPhone" -> contact("512345678", null, null);
             case "invalidEmail" -> contact(null, null, "a@b");
-            case "noConsent" -> contact("677123456", "+34988765432", "zenobia.q@example.test");
-            case "noNotice" -> withConsent(contact("677123456", null, null),
+            case "noConsent" -> contact("600000101", "+34600000201", "zenobia.q@example.test");
+            case "noNotice" -> withConsent(contact("600000101", null, null),
                     "{\"channel\":\"WRITTEN\",\"noticeGiven\":false}");
             case "tooLongSurnames" -> "{\"mobile\":{\"shared\":true,\"value\":\"" + "6".repeat(300) + "\"}}";
-            default -> "{\"mobile\":{\"shared\":true,\"value\":\"677123456\"},";
+            default -> "{\"mobile\":{\"shared\":true,\"value\":\"600000101\"},";
         };
     }
 

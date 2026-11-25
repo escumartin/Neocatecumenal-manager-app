@@ -233,4 +233,13 @@ class MyMemberControllerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("CONSENT_MANAGED_BY_MEMBER"));
     }
+
+    @Test
+    void ownMemberAndOwnContactStayAvailableWhenTheCommunityIsDeactivated() throws Exception {
+        jdbc.update("update community set status = 'DEACTIVATED' where id = ?", home);
+
+        mockMvc.perform(as(get("/api/me/member"), own)).andExpect(status().isOk());
+        mockMvc.perform(asJson(put("/api/me/member/contact"), own, mobileOnly("600000001")))
+                .andExpect(status().isOk());
+    }
 }

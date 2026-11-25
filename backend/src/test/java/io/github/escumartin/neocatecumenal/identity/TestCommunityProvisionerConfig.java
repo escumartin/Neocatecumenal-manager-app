@@ -19,4 +19,18 @@ public class TestCommunityProvisionerConfig {
                     return id;
                 });
     }
+
+    @Bean
+    UserLinkGuard testUserLinkGuard() {
+        return new UserLinkGuard() {
+            @Override
+            public boolean allowsCommunityChange(UUID userId, UUID currentCommunityId, UUID targetCommunityId) {
+                return true;
+            }
+
+            @Override
+            public void releaseBeforeDeletion(UUID userId, UUID currentCommunityId) {
+            }
+        };
+    }
 }

@@ -54,9 +54,11 @@ final class Fakes {
 
         final List<String> calls = new ArrayList<>();
         Integer administratorsSeenAfterLock;
+        int saves;
 
         @Override
         public User save(User user) {
+            saves++;
             boolean taken = users.values().stream()
                     .anyMatch(existing -> existing.accessId().equals(user.accessId())
                             && !existing.id().equals(user.id()));

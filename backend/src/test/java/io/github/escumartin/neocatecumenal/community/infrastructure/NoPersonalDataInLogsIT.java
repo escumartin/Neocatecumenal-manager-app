@@ -46,7 +46,7 @@ class NoPersonalDataInLogsIT {
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18");
 
     private static final List<String> PERSONAL_DATA = List.of("Zenobia", "Quirógrafo", "Hermenegilda", "Valdemoro",
-            "677123456", "677123457", "677123458", "+34988765432", "+34988765433", "zenobia.q@example.test",
+            "600000101", "600000102", "600000103", "+34600000201", "+34600000202", "zenobia.q@example.test",
             "hermenegilda.v@example.test");
     private static final String VERBAL = "\"onBehalfConsent\":{\"channel\":\"VERBAL\",\"noticeGiven\":true}";
 
@@ -122,14 +122,14 @@ class NoPersonalDataInLogsIT {
     void theWholeMemberLifecycleLogsNoPersonalData() throws Exception {
         String created = mockMvc.perform(as(post("/api/members"), moderator, "{\"communityId\":\"" + home
                 + "\",\"givenName\":\"Zenobia\",\"surnames\":\"Quirógrafo\",\"contact\":"
-                + contact("677123456", "+34988765432", "zenobia.q@example.test") + "," + VERBAL + "}"))
+                + contact("600000101", "+34600000201", "zenobia.q@example.test") + "," + VERBAL + "}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         String id = JsonPath.read(created, "$.id");
 
         mockMvc.perform(as(put("/api/members/" + id + "/contact"), moderator,
                 contactWithConsent(null, null, "zenobia.q@example.test"))).andExpect(status().isOk());
         mockMvc.perform(as(put("/api/members/" + id + "/contact"), moderator,
-                contactWithConsent("677123457", "+34988765433", "zenobia.q@example.test")))
+                contactWithConsent("600000102", "+34600000202", "zenobia.q@example.test")))
                 .andExpect(status().isOk());
         mockMvc.perform(as(put("/api/members/" + id),
                 moderator, "{\"givenName\":\"Hermenegilda\",\"surnames\":\"Valdemoro\"}")).andExpect(status().isOk());
@@ -138,7 +138,7 @@ class NoPersonalDataInLogsIT {
         mockMvc.perform(as(put("/api/members/" + id + "/link"), moderator, "{\"userId\":\"" + userId + "\"}"))
                 .andExpect(status().isOk());
         mockMvc.perform(as(put("/api/me/member/contact"), fixture.bearerOf(userId),
-                contact("677123458", null, "hermenegilda.v@example.test"))).andExpect(status().isOk());
+                contact("600000103", null, "hermenegilda.v@example.test"))).andExpect(status().isOk());
         mockMvc.perform(as(get("/api/me/member"), fixture.bearerOf(userId), null)).andExpect(status().isOk());
         mockMvc.perform(as(get("/api/members/" + id + "/data-export"), moderator, null)).andExpect(status().isOk());
         mockMvc.perform(as(get("/api/members"), moderator, null)).andExpect(status().isOk());
@@ -165,7 +165,7 @@ class NoPersonalDataInLogsIT {
     @Test
     void failedOperationsLogNoPersonalData() throws Exception {
         UUID foreignMember = fixture.member(away, "Zenobia");
-        jdbc.update("update community_member set surnames = 'Quirógrafo', mobile = '677123456' where id = ?",
+        jdbc.update("update community_member set surnames = 'Quirógrafo', mobile = '600000101' where id = ?",
                 foreignMember);
 
         mockMvc.perform(as(get("/api/members/" + foreignMember + "/data-export"), moderator, null))
@@ -178,7 +178,7 @@ class NoPersonalDataInLogsIT {
         mockMvc.perform(as(post("/api/members/" + foreignMember + "/transfer"), moderator,
                 "{\"communityId\":\"" + home + "\"}")).andExpect(status().isForbidden());
         mockMvc.perform(as(put("/api/members/" + foreignMember + "/contact"), moderator,
-                contactWithConsent("677123456", null, "zenobia.q@example.test"))).andExpect(status().isNotFound());
+                contactWithConsent("600000101", null, "zenobia.q@example.test"))).andExpect(status().isNotFound());
         mockMvc.perform(as(put("/api/members/" + UUID.randomUUID() + "/contact"), moderator,
                 contactWithConsent("zenobia.q@example.test", null, null))).andExpect(status().isNotFound());
 

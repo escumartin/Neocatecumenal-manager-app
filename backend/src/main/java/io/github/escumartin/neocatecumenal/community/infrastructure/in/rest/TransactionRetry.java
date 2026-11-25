@@ -22,6 +22,7 @@ public class TransactionRetry {
                 log.atWarn().addKeyValue("call", call).log("Orden de bloqueos obsoleto, se reintenta la transacción");
             }
         }
+        log.atWarn().addKeyValue("calls", MAX_CALLS).log("Reintentos de transacción agotados");
         throw last;
     }
 

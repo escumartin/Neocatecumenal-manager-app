@@ -1,7 +1,13 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { useCommunity } from '../use-community';
 import { useCommunitySave } from '../use-community-save';
-import { detailOf, fakeCommunitiesApi, twelve } from '@/screens/communities/support/test-support';
+import { closed, detailOf, fakeCommunitiesApi, five, twelve } from '@/screens/communities/support/test-support';
+
+function deferred() {
+  let resolve: (value: unknown) => void = () => undefined;
+  const promise = new Promise((r) => (resolve = r));
+  return { promise, resolve };
+}
 
 describe('useCommunity', () => {
   it('loads the community file', async () => {
@@ -87,6 +93,31 @@ describe('useCommunity', () => {
 
     expect(outcome).toEqual({ ok: true });
     expect(api.remove).toHaveBeenCalledWith(twelve.id);
+  });
+
+  it('ignores a stale refresh that resolves after a newer reload', async () => {
+    const stale = deferred();
+    const api = fakeCommunitiesApi({
+      get: jest
+        .fn()
+        .mockResolvedValueOnce({ ok: true, community: detailOf(twelve) })
+        .mockReturnValueOnce(stale.promise)
+        .mockResolvedValueOnce({ ok: true, community: detailOf(closed) }),
+    });
+    const { result } = await renderHook(() => useCommunity(twelve.id, api));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    let refreshing: Promise<unknown> = Promise.resolve();
+    await act(async () => {
+      refreshing = result.current.refresh();
+    });
+    await act(() => result.current.reload());
+    await act(async () => {
+      stale.resolve({ ok: true, community: detailOf(five) });
+      await refreshing;
+    });
+
+    expect(result.current.community).toEqual(detailOf(closed));
   });
 });
 

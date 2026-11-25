@@ -3,6 +3,7 @@ package io.github.escumartin.neocatecumenal.community.application.service;
 import io.github.escumartin.neocatecumenal.community.application.port.out.CommunityRepository;
 import io.github.escumartin.neocatecumenal.community.application.port.out.MemberRepository;
 import io.github.escumartin.neocatecumenal.community.domain.Actor;
+import io.github.escumartin.neocatecumenal.community.domain.Community;
 import io.github.escumartin.neocatecumenal.community.domain.Member;
 import io.github.escumartin.neocatecumenal.community.domain.MemberAccessPolicy;
 import io.github.escumartin.neocatecumenal.community.domain.MemberId;
@@ -26,7 +27,8 @@ final class MemberLocks {
     static Member lockedForManagement(Actor actor, CommunityRepository communities, MemberRepository members,
             MemberId id) {
         Member read = visibleToManager(actor, members, id);
-        CommunityLocks.lock(communities, read.communityId());
+        Community community = CommunityLocks.lock(communities, read.communityId());
+        MemberAccessPolicy.requireDirectoryAvailable(actor, community.status());
         Member locked = members.lock(id).orElseThrow(MemberNotFound::new);
         if (!locked.communityId().equals(read.communityId())) {
             throw new StaleLockOrderException();

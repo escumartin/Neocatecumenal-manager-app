@@ -11,7 +11,7 @@ jest.mock('@/hooks/navigation/use-reload-on-focus', () => ({ useReloadOnFocus: j
 
 const everything: Member = {
   ...ana,
-  landline: '912345678',
+  landline: '600000003',
   email: 'ana@example.org',
 };
 
@@ -45,7 +45,7 @@ describe('member card screen', () => {
     await renderAs('REGISTERED', element);
 
     expect(await screen.findByText('600000001')).toBeOnTheScreen();
-    expect(screen.getByText('912345678')).toBeOnTheScreen();
+    expect(screen.getByText('600000003')).toBeOnTheScreen();
     expect(screen.getByText('ana@example.org')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: membersText.directory.callMobile('Ana Pérez') })).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: membersText.directory.textMobile('Ana Pérez') })).toBeOnTheScreen();
@@ -64,7 +64,7 @@ describe('member card screen', () => {
 
     expect(Linking.openURL).toHaveBeenNthCalledWith(1, 'tel:600000001');
     expect(Linking.openURL).toHaveBeenNthCalledWith(2, 'sms:600000001');
-    expect(Linking.openURL).toHaveBeenNthCalledWith(3, 'tel:912345678');
+    expect(Linking.openURL).toHaveBeenNthCalledWith(3, 'tel:600000003');
     expect(Linking.openURL).toHaveBeenNthCalledWith(4, 'mailto:ana@example.org');
   });
 
@@ -96,7 +96,7 @@ describe('member card screen', () => {
   it('shows an error with a retry that loads again', async () => {
     const get = jest
       .fn()
-      .mockResolvedValueOnce({ ok: false, status: 404 })
+      .mockResolvedValueOnce({ ok: false, status: 500 })
       .mockResolvedValueOnce({ ok: true, member: ana });
     const { element } = card(ana, fakeMembersApi({ get }));
     await renderAs('REGISTERED', element);
@@ -105,6 +105,15 @@ describe('member card screen', () => {
     await fireEvent.press(screen.getByRole('button', { name: membersText.retry }));
 
     expect(await screen.findByRole('heading', { name: 'Ana Pérez' })).toBeOnTheScreen();
+  });
+
+  it.each([403, 404])('shows an empty state without retry when the server answers %s', async (status) => {
+    const { element } = card(ana, fakeMembersApi({ get: jest.fn().mockResolvedValue({ ok: false, status }) }));
+    await renderAs('REGISTERED', element);
+
+    expect(await screen.findByText(membersText.directory.cardUnavailable)).toBeOnTheScreen();
+    expect(screen.queryByRole('alert')).not.toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: membersText.retry })).not.toBeOnTheScreen();
   });
 
   it('gives every control a role and a label, targets of 48 px and text of 18 px', async () => {

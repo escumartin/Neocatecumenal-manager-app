@@ -11,7 +11,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class EmailAddressTest {
 
     @ParameterizedTest
-    @ValueSource(strings = {"ana@example.org", "ana.perez+parish@mail.example.org", "a_b-c@x-y.es", "o'neil@example.com"})
+    @ValueSource(strings = {"ana@example.org", "ana.perez+parish@mail.example.org", "a_b-c@x-y.example.com", "o'neil@example.com"})
     void acceptsValidAddresses(String raw) {
         assertThat(EmailAddress.of(raw).value()).isEqualTo(raw);
     }
@@ -33,7 +33,7 @@ class EmailAddressTest {
     @Test
     void acceptsAnAddressOfExactly254Characters() {
         String local = "a".repeat(64);
-        String address = local + "@" + "b".repeat(63) + "." + "c".repeat(63) + "." + "d".repeat(58) + ".es";
+        String address = local + "@" + "b".repeat(63) + "." + "c".repeat(63) + "." + "d".repeat(56) + ".test";
 
         assertThat(address).hasSize(254);
         assertThat(EmailAddress.of(address).value()).isEqualTo(address);
@@ -41,7 +41,7 @@ class EmailAddressTest {
 
     @Test
     void rejectsAnAddressOf255Characters() {
-        String address = "a".repeat(64) + "@" + "b".repeat(63) + "." + "c".repeat(63) + "." + "d".repeat(59) + ".es";
+        String address = "a".repeat(64) + "@" + "b".repeat(63) + "." + "c".repeat(63) + "." + "d".repeat(57) + ".test";
 
         assertThat(address).hasSize(255);
         assertThatThrownBy(() -> EmailAddress.of(address)).isInstanceOfSatisfying(CommunityFieldInvalid.class,

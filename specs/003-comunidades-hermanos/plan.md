@@ -305,8 +305,6 @@ Detalle, alternativas y consecuencias en [research.md](./research.md).
 
 ## Pendientes fuera del ámbito de este plan
 
-- `dominio.md`: añadir «Hermano → `Member`», el estado «sin responsable», los campos de contacto con consentimiento y
-  quitar dirección y sexo del glosario del hermano.
 - Texto del aviso de datos de contacto (contenido legal) para los recursos del cliente: lo redacta el usuario.
 - Reservas y agenda de comunidades desactivadas: 001 no lo contempla; se revisará si hace falta bloquearlas.
 

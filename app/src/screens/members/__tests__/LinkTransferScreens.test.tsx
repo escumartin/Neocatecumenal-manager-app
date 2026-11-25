@@ -6,6 +6,7 @@ import { MemberTransfer } from '../transfer';
 import { ana, fakeMembersApi, linked } from '../support/test-support';
 import { fakeCommunitiesApi, five, renderAs, twelve } from '@/screens/communities/support/test-support';
 import { fontSizeOf, minHeightOf } from '@/screens/bookings/support/layout-checks';
+import { useReloadOnFocus } from '@/hooks/navigation/use-reload-on-focus';
 import { fakeUsersApi } from '@/screens/users/support/test-support';
 import { communitiesText } from '@/i18n/es/communities';
 import { membersText } from '@/i18n/es/members';
@@ -19,6 +20,10 @@ afterEach(() => {
   jest.clearAllMocks();
   jest.restoreAllMocks();
 });
+
+function classesOf(element: { props: { className?: unknown } }): string[] {
+  return String(element.props.className ?? '').split(/\s+/);
+}
 
 function userOf(id: string, name: string, role: User['role']): User {
   return { id, accessId: 480000 + Number(id.slice(-2)), name, role, communityId: twelve.id, passwordChangePending: false };
@@ -356,6 +361,7 @@ describe('member file actions', () => {
 
     expect(await screen.findByRole('button', { name: membersText.link.unlink.row })).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: membersText.link.row })).not.toBeOnTheScreen();
+    expect(classesOf(screen.getByText(membersText.link.unlink.row))).toContain('text-destructive');
   });
 
   it('unlinks after the confirmation and reloads the member', async () => {
@@ -389,5 +395,44 @@ describe('member file actions', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(`⚠ ${membersText.errors.FORBIDDEN}`);
     expect(screen.getByRole('button', { name: membersText.link.unlink.row })).toBeOnTheScreen();
+  });
+
+  it('keeps the name being edited while the member is refreshed after an unlink', async () => {
+    jest.replaceProperty(Platform, 'OS', 'web');
+    let finish: (value: unknown) => void = () => undefined;
+    const get = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, member: linked })
+      .mockReturnValueOnce(new Promise((resolve) => (finish = resolve)));
+    const { element, api } = memberForm(fakeMembersApi({ get }), linked.id);
+    await renderAs('MODERATOR', element);
+    await fireEvent.changeText(await screen.findByLabelText(membersText.form.givenName), 'Anita');
+
+    await fireEvent.press(screen.getByRole('button', { name: membersText.link.unlink.row }));
+    await fireEvent.press(screen.getByRole('button', { name: membersText.link.unlink.confirm }));
+    await waitFor(() => expect(api.unlink).toHaveBeenCalled());
+
+    expect(screen.getByLabelText(membersText.form.givenName).props.value).toBe('Anita');
+    await act(async () => {
+      finish({ ok: true, member: { ...linked, linkedUserId: undefined } });
+    });
+    expect(await screen.findByRole('button', { name: membersText.link.row })).toBeOnTheScreen();
+    expect(screen.getByLabelText(membersText.form.givenName).props.value).toBe('Anita');
+  });
+
+  it('refreshes the card when the screen regains focus after a link was made elsewhere', async () => {
+    const get = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, member: { ...linked, linkedUserId: undefined } })
+      .mockResolvedValueOnce({ ok: true, member: linked });
+    const { element } = memberForm(fakeMembersApi({ get }), linked.id);
+    await renderAs('MODERATOR', element);
+    await screen.findByRole('button', { name: membersText.link.row });
+
+    await act(async () => {
+      await jest.mocked(useReloadOnFocus).mock.calls.at(-1)?.[0]();
+    });
+
+    expect(await screen.findByRole('button', { name: membersText.link.unlink.row })).toBeOnTheScreen();
   });
 });

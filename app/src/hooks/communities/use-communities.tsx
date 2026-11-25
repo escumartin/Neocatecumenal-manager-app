@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { communitiesApi } from '@/lib/api';
 import type {
   CommunitiesApi,
@@ -25,7 +25,10 @@ export function useCommunities(
   const query = useMemo(() => (includeDeactivated ? { includeDeactivated: true } : undefined), [includeDeactivated]);
   const [state, setState] = useState<State>({ status: enabled ? 'loading' : 'idle', communities: [] });
 
+  const sequence = useRef(0);
+
   useEffect(() => {
+    const id = ++sequence.current;
     if (!enabled) {
       return;
     }
@@ -34,7 +37,7 @@ export function useCommunities(
       .list(query)
       .then(toState, () => FAILED)
       .then((next) => {
-        if (active) {
+        if (active && id === sequence.current) {
           setState(next);
         }
       });
@@ -44,11 +47,16 @@ export function useCommunities(
   }, [api, enabled, query]);
 
   const reload = useCallback(async () => {
+    const id = ++sequence.current;
     setState((current) => ({ ...current, status: 'loading' }));
+    let next = FAILED;
     try {
-      setState(toState(await api.list(query)));
+      next = toState(await api.list(query));
     } catch {
-      setState(FAILED);
+      next = FAILED;
+    }
+    if (id === sequence.current) {
+      setState(next);
     }
   }, [api, query]);
 
@@ -56,9 +64,10 @@ export function useCommunities(
     if (!enabled) {
       return;
     }
+    const id = ++sequence.current;
     try {
       const result = await api.list(query);
-      if (result.ok) {
+      if (result.ok && id === sequence.current) {
         setState(toState(result));
       }
     } catch {

@@ -75,8 +75,8 @@ async function show(api: MyMemberApi) {
   return renderAs('REGISTERED', <ContactScreen api={api} />);
 }
 
-async function share(label: string, value = true) {
-  await fireEvent(await screen.findByRole('switch', { name: label }), 'valueChange', value);
+async function share(label: string) {
+  await fireEvent.press(await screen.findByRole('switch', { name: label }));
 }
 
 describe('own contact screen', () => {
@@ -125,9 +125,9 @@ describe('own contact screen', () => {
   it('shows one share switch per field, on for what is already shared', async () => {
     await show(fakeApi({ member: ana, currentConsents: [] }));
 
-    expect((await screen.findByRole('switch', { name: membersText.contact.share.mobile })).props.value).toBe(true);
-    expect(screen.getByRole('switch', { name: membersText.contact.share.landline }).props.value).toBe(false);
-    expect(screen.getByRole('switch', { name: membersText.contact.share.email }).props.value).toBe(false);
+    expect(await screen.findByRole('switch', { name: membersText.contact.share.mobile })).toBeChecked();
+    expect(screen.getByRole('switch', { name: membersText.contact.share.landline })).not.toBeChecked();
+    expect(screen.getByRole('switch', { name: membersText.contact.share.email })).not.toBeChecked();
     expect(screen.getByLabelText(membersText.contact.fields.mobile.label).props.value).toBe('600000001');
   });
 
@@ -161,13 +161,14 @@ describe('own contact screen', () => {
       }),
     );
     expect(await screen.findByText(membersText.own.saved)).toBeOnTheScreen();
+    expect(screen.getByText(membersText.own.saved).props.accessibilityLiveRegion).toBe('polite');
     expect(hapticSuccess).toHaveBeenCalled();
   });
 
   it('sends shared false for a field the user stops sharing', async () => {
     const api = fakeApi({ member: ana, currentConsents: [] });
     await show(api);
-    await share(membersText.contact.share.mobile, false);
+    await share(membersText.contact.share.mobile);
     await fireEvent.press(screen.getByRole('button', { name: membersText.contact.save }));
 
     await waitFor(() =>
@@ -183,11 +184,11 @@ describe('own contact screen', () => {
     const api = fakeApi();
     await show(api);
     await share(membersText.contact.share.mobile);
-    await fireEvent.changeText(screen.getByLabelText(membersText.contact.fields.mobile.label), '512345678');
+    await fireEvent.changeText(screen.getByLabelText(membersText.contact.fields.mobile.label), '500000005');
     await fireEvent.press(screen.getByRole('button', { name: membersText.contact.save }));
 
     expect(await screen.findByText(`⚠ ${membersText.fieldErrors.mobile.PHONE_INVALID}`)).toBeOnTheScreen();
-    expect(screen.getByLabelText(membersText.contact.fields.mobile.label).props.value).toBe('512345678');
+    expect(screen.getByLabelText(membersText.contact.fields.mobile.label).props.value).toBe('500000005');
     expect(api.changeContact).not.toHaveBeenCalled();
     expect(hapticFailure).toHaveBeenCalled();
   });

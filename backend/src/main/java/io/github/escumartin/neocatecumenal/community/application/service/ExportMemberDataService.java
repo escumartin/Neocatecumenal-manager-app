@@ -11,6 +11,7 @@ import io.github.escumartin.neocatecumenal.community.domain.Actor;
 import io.github.escumartin.neocatecumenal.community.domain.Community;
 import io.github.escumartin.neocatecumenal.community.domain.CommunityNotFound;
 import io.github.escumartin.neocatecumenal.community.domain.Member;
+import io.github.escumartin.neocatecumenal.community.domain.MemberAccessPolicy;
 import io.github.escumartin.neocatecumenal.community.domain.MemberId;
 import java.time.Clock;
 import java.util.List;
@@ -40,6 +41,7 @@ public class ExportMemberDataService implements ExportMemberData {
     public MemberDataExport export(Actor actor, MemberId id) {
         Member member = MemberLocks.visibleToManager(actor, members, id);
         Community community = communities.findById(member.communityId()).orElseThrow(CommunityNotFound::new);
+        MemberAccessPolicy.requireDirectoryAvailable(actor, community.status());
         List<OwnConsent> consents = member.consents().stream()
                 .map(record -> new OwnConsent(record, OwnMemberViews.recorderOf(record, users))).toList();
         log.atInfo().addKeyValue("actorId", actor.id().value()).addKeyValue("memberId", id.value())

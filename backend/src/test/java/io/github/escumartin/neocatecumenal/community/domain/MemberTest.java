@@ -320,7 +320,7 @@ class MemberTest {
     void contactIsNotModifiableFromOutside() {
         Member member = memberSharing(ContactField.MOBILE, "600000001");
 
-        assertThatThrownBy(() -> member.contact().put(ContactField.EMAIL, "x@y.es"))
+        assertThatThrownBy(() -> member.contact().put(ContactField.EMAIL, "x@example.com"))
                 .isInstanceOf(UnsupportedOperationException.class);
         assertThat(new EnumMap<>(member.contact())).hasSize(1);
     }

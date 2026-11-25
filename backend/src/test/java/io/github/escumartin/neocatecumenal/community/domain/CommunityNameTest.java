@@ -53,4 +53,21 @@ class CommunityNameTest {
     void lengthIsMeasuredAfterTrimmingAndNormalizing() {
         assertThat(CommunityName.of(" " + "é".repeat(100) + " ")).isPresent();
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"San\u0000Pedro", "San\nPedro", "San\rPedro", "San\u202ePedro", "San\u200bPedro",
+            "San\ud800Pedro", "San\udc00Pedro", "San Pedro\ud83d"})
+    void rejectsControlFormatAndLoneSurrogateCharacters(String raw) {
+        assertThatThrownBy(() -> CommunityName.of(raw)).isInstanceOfSatisfying(CommunityFieldInvalid.class, e -> {
+            assertThat(e.field()).isEqualTo("name");
+            assertThat(e.code()).isEqualTo("INVALID_FORMAT");
+        });
+    }
+
+    @Test
+    void lengthIsCountedInCodePoints() {
+        assertThat(CommunityName.of("\ud83d\ude00".repeat(100))).isPresent();
+        assertThatThrownBy(() -> CommunityName.of("\ud83d\ude00".repeat(101))).isInstanceOfSatisfying(
+                CommunityFieldInvalid.class, e -> assertThat(e.code()).isEqualTo("TOO_LONG"));
+    }
 }

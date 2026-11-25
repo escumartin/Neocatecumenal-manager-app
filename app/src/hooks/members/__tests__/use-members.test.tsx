@@ -2,6 +2,12 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { useMembers } from '../use-members';
 import { ana, fakeMembersApi, luis } from '@/screens/members/support/test-support';
 
+function deferred() {
+  let resolve: (value: unknown) => void = () => undefined;
+  const promise = new Promise((r) => (resolve = r));
+  return { promise, resolve };
+}
+
 describe('useMembers', () => {
   it('loads the members of the community', async () => {
     const api = fakeMembersApi();
@@ -81,5 +87,51 @@ describe('useMembers', () => {
     });
     expect(result.current.members).toEqual([luis]);
     expect(result.current.status).toBe('ready');
+  });
+
+  it('ignores a stale refresh that resolves after a newer reload', async () => {
+    const stale = deferred();
+    const api = fakeMembersApi({
+      list: jest
+        .fn()
+        .mockResolvedValueOnce({ ok: true, members: [ana] })
+        .mockReturnValueOnce(stale.promise)
+        .mockResolvedValueOnce({ ok: true, members: [luis] }),
+    });
+    const { result } = await renderHook(() => useMembers(undefined, api));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    let refreshing: Promise<unknown> = Promise.resolve();
+    await act(async () => {
+      refreshing = result.current.refresh();
+    });
+    await act(() => result.current.reload());
+    await act(async () => {
+      stale.resolve({ ok: true, members: [ana, luis] });
+      await refreshing;
+    });
+
+    expect(result.current.members).toEqual([luis]);
+  });
+
+  it('ignores the response of the previous community after the community changes', async () => {
+    const slow = deferred();
+    const api = fakeMembersApi({
+      list: jest
+        .fn()
+        .mockReturnValueOnce(slow.promise)
+        .mockResolvedValueOnce({ ok: true, members: [luis] }),
+    });
+    const { result, rerender } = await renderHook(({ id }: { id: string }) => useMembers(id, api), {
+      initialProps: { id: 'a' },
+    });
+
+    await rerender({ id: 'b' });
+    await waitFor(() => expect(result.current.members).toEqual([luis]));
+    await act(async () => {
+      slow.resolve({ ok: true, members: [ana] });
+    });
+
+    expect(result.current.members).toEqual([luis]);
   });
 });

@@ -6,6 +6,7 @@ import io.github.escumartin.neocatecumenal.community.application.port.out.Identi
 import io.github.escumartin.neocatecumenal.community.domain.Actor;
 import io.github.escumartin.neocatecumenal.community.domain.Community;
 import io.github.escumartin.neocatecumenal.community.domain.CommunityId;
+import io.github.escumartin.neocatecumenal.community.domain.CommunityStatus;
 import io.github.escumartin.neocatecumenal.community.domain.MemberAccessPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,9 @@ public class ReactivateCommunityService implements ReactivateCommunity {
     public void reactivate(Actor actor, CommunityId id) {
         MemberAccessPolicy.requireCanManageCommunities(actor);
         Community community = CommunityLocks.lock(communities, id);
+        if (community.status() == CommunityStatus.ACTIVE) {
+            return;
+        }
         community.reactivate();
         communities.save(community);
         catalog.setActive(id, true);

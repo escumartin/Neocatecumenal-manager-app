@@ -71,6 +71,7 @@ export const communitiesText = {
     notModerator:
       'Aviso: el responsable no tiene usuario de moderador. Puedes mantenerlo, pero conviene que tenga ese rol.',
   },
+  nameInvalid: 'No puede contener caracteres de control ni saltos de línea.',
   fieldErrors: {
     MEMBER_NOT_IN_COMMUNITY: 'Ese hermano no pertenece a esta comunidad.',
     REQUIRED: 'Escribe el número de la comunidad.',
@@ -93,10 +94,16 @@ export const communitiesText = {
   } as Record<string, string>,
 };
 
-export function messageForCommunitiesFailure(failure: { code?: string; fieldErrors?: { code: string }[] }): string {
-  const fieldCode = failure.fieldErrors?.[0]?.code;
-  if (fieldCode && communitiesText.fieldErrors[fieldCode]) {
-    return communitiesText.fieldErrors[fieldCode];
+export function messageForCommunitiesFailure(failure: {
+  code?: string;
+  fieldErrors?: { field?: string; code: string }[];
+}): string {
+  const first = failure.fieldErrors?.[0];
+  if (first?.field === 'name' && first.code === 'INVALID_FORMAT') {
+    return communitiesText.nameInvalid;
+  }
+  if (first && communitiesText.fieldErrors[first.code]) {
+    return communitiesText.fieldErrors[first.code];
   }
   return communitiesText.errors[failure.code ?? 'UNKNOWN'] ?? communitiesText.errors.UNKNOWN;
 }

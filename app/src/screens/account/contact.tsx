@@ -154,7 +154,11 @@ function ContactForm({ myMember, save }: FormProps) {
           {`⚠ ${problem.message}`}
         </Text>
       ) : null}
-      {saved ? <Text role="status">{membersText.own.saved}</Text> : null}
+      {saved ? (
+        <Text role="status" accessibilityLiveRegion="polite">
+          {membersText.own.saved}
+        </Text>
+      ) : null}
       <Button accessibilityLabel={membersText.contact.save} disabled={submitting} onPress={submit}>
         <Text>{submitting ? membersText.form.saving : membersText.contact.save}</Text>
       </Button>

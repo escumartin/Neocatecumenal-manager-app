@@ -29,6 +29,14 @@ export function MemberCardScreen({ memberId, api }: Props) {
     );
   }
 
+  if (status === 'unavailable') {
+    return (
+      <View className="flex-1 bg-background p-4">
+        <StateView kind="empty" icon="person.2" message={membersText.directory.cardUnavailable} />
+      </View>
+    );
+  }
+
   if (status === 'error' || member === null) {
     return (
       <View className="flex-1 bg-background p-4">

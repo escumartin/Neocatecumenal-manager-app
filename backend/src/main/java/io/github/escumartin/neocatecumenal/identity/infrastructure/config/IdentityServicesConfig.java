@@ -37,7 +37,6 @@ import io.github.escumartin.neocatecumenal.identity.application.service.ListUser
 import io.github.escumartin.neocatecumenal.identity.application.service.UpdateUserService;
 import io.github.escumartin.neocatecumenal.identity.application.service.CommunityCatalogService;
 import io.github.escumartin.neocatecumenal.identity.application.service.IdentityApiService;
-import io.github.escumartin.neocatecumenal.identity.application.service.PermissiveUserLinkGuard;
 import io.github.escumartin.neocatecumenal.identity.application.service.LogInService;
 import io.github.escumartin.neocatecumenal.identity.application.service.LogOutService;
 import io.github.escumartin.neocatecumenal.identity.application.service.PurgeExpiredAccessDataService;
@@ -93,11 +92,6 @@ class IdentityServicesConfig {
     @Bean
     CommunityCatalog communityCatalog(CommunityRepository communities) {
         return new CommunityCatalogService(communities);
-    }
-
-    @Bean
-    UserLinkGuard permissiveUserLinkGuard() {
-        return new PermissiveUserLinkGuard();
     }
 
     @Bean

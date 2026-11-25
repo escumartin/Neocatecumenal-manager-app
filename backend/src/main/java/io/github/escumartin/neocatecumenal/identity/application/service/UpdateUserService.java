@@ -17,6 +17,8 @@ import io.github.escumartin.neocatecumenal.identity.domain.DomainException;
 import io.github.escumartin.neocatecumenal.identity.domain.User;
 import io.github.escumartin.neocatecumenal.identity.domain.UserChanges;
 import io.github.escumartin.neocatecumenal.identity.domain.UserRole;
+import io.github.escumartin.neocatecumenal.identity.domain.UserId;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,18 +43,34 @@ public class UpdateUserService implements UpdateUser {
     @Override
     @Transactional
     public User update(UpdateUserCommand command) {
+        return apply(command.userId(), command.communityId(),
+                target -> new UserChanges(command.name(), command.role(), command.communityId()));
+    }
+
+    @Override
+    @Transactional
+    public User moveToCommunity(UserId userId, CommunityId communityId) {
+        User current = users.findById(userId).orElseThrow(UserNotFoundException::new);
+        if (current.communityId().equals(communityId)) {
+            return current;
+        }
+        return apply(userId, communityId,
+                target -> new UserChanges(target.name(), target.role(), communityId));
+    }
+
+    private User apply(UserId userId, CommunityId destination, Function<User, UserChanges> changesFor) {
         Actor actor = actors.resolve();
         if (actor.role() == UserRole.REGISTERED) {
             throw new DomainException("FORBIDDEN");
         }
-        User target = users.findById(command.userId()).orElseThrow(UserNotFoundException::new);
-        boolean communityChanges = !command.communityId().equals(target.communityId());
+        User target = users.findById(userId).orElseThrow(UserNotFoundException::new);
+        boolean communityChanges = !destination.equals(target.communityId());
         if (communityChanges) {
-            target = lockedAfterGuard(target, command.communityId());
+            target = lockedAfterGuard(target, destination);
         }
-        UserChanges changes = new UserChanges(command.name(), command.role(), command.communityId());
+        UserChanges changes = changesFor.apply(target);
         target.checkUpdate(actor, changes, new LockingMembershipCounts(users));
-        requireExisting(command.communityId(), communityChanges);
+        requireExisting(destination, communityChanges);
         target.apply(changes);
         User saved = users.save(target);
         log.atInfo()

@@ -8,6 +8,7 @@ import io.github.escumartin.neocatecumenal.community.domain.Actor;
 import io.github.escumartin.neocatecumenal.community.domain.ActorRole;
 import io.github.escumartin.neocatecumenal.community.domain.Community;
 import io.github.escumartin.neocatecumenal.community.domain.CommunityId;
+import io.github.escumartin.neocatecumenal.community.domain.CommunityStatus;
 import io.github.escumartin.neocatecumenal.community.domain.MemberAccessPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,9 @@ public class DeactivateCommunityService implements DeactivateCommunity {
     public void deactivate(Actor actor, CommunityId id, boolean confirmed) {
         MemberAccessPolicy.requireCanManageCommunities(actor);
         Community community = CommunityLocks.lock(communities, id);
+        if (community.status() == CommunityStatus.DEACTIVATED) {
+            return;
+        }
         boolean privilegedUsersPresent = users.usersOf(id).stream()
                 .anyMatch(user -> user.role() != ActorRole.REGISTERED);
         community.deactivate(privilegedUsersPresent, confirmed);

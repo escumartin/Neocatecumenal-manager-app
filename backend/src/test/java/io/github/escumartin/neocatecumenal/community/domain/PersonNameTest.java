@@ -61,4 +61,23 @@ class PersonNameTest {
     void rejectsSurnamesOfOneHundredAndOneCharacters() {
         assertInvalid(() -> PersonName.of("Ana", "b".repeat(101)), "surnames", "TOO_LONG");
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"An\u0000a", "An\na", "An\ra", "An\ta", "An\u202ea", "An\u2066a", "An\u200ba",
+            "An\ud800a", "An\udc00a", "Ana\ud83d"})
+    void rejectsControlFormatAndLoneSurrogateCharactersInTheGivenName(String given) {
+        assertInvalid(() -> PersonName.of(given, null), "givenName", "INVALID_FORMAT");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Pe\u0000rez", "Pe\nrez", "Pe\u202erez", "Pe\udc00rez"})
+    void rejectsControlFormatAndLoneSurrogateCharactersInTheSurnames(String surnames) {
+        assertInvalid(() -> PersonName.of("Ana", surnames), "surnames", "INVALID_FORMAT");
+    }
+
+    @Test
+    void acceptsAnAstralCharacterAsOneCodePoint() {
+        assertThat(PersonName.of("\ud83d\ude00".repeat(100), null).givenName()).isNotEmpty();
+        assertInvalid(() -> PersonName.of("\ud83d\ude00".repeat(101), null), "givenName", "TOO_LONG");
+    }
 }

@@ -44,8 +44,8 @@ class MemberLogsTest {
     @ServiceConnection
     static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18");
 
-    private static final List<String> PERSONAL_DATA = List.of("Zenobia", "Quirógrafo", "677123456", "677123457",
-            "+34988765432", "zenobia.q@example.test");
+    private static final List<String> PERSONAL_DATA = List.of("Zenobia", "Quirógrafo", "600000101", "600000102",
+            "+34600000201", "zenobia.q@example.test");
     private static final String VERBAL = "\"onBehalfConsent\":{\"channel\":\"VERBAL\",\"noticeGiven\":true}";
 
     @Autowired
@@ -112,11 +112,11 @@ class MemberLogsTest {
     void creatingAndChangingContactLogsNoPersonalDataButStillLogsTheEvents() throws Exception {
         String created = mockMvc.perform(asJson(post("/api/members"), "{\"communityId\":\"" + home
                 + "\",\"givenName\":\"Zenobia\",\"surnames\":\"Quirógrafo\",\"contact\":"
-                + contact("677123456", "+34988765432", "zenobia.q@example.test") + "," + VERBAL + "}"))
+                + contact("600000101", "+34600000201", "zenobia.q@example.test") + "," + VERBAL + "}"))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         String id = JsonPath.read(created, "$.id");
         mockMvc.perform(asJson(put("/api/members/" + id + "/contact"),
-                contact("677123457", "+34988765432", "zenobia.q@example.test")))
+                contact("600000102", "+34600000201", "zenobia.q@example.test")))
                 .andExpect(status().isOk());
         mockMvc.perform(asJson(put("/api/members/" + id), "{\"givenName\":\"Zenobia\",\"surnames\":\"Quirógrafo\"}"))
                 .andExpect(status().isOk());
@@ -138,7 +138,7 @@ class MemberLogsTest {
                 + "\",\"givenName\":\"Zenobia\",\"contact\":" + contact(null, null, "a@b") + "," + VERBAL + "}"))
                 .andExpect(status().isUnprocessableEntity());
         mockMvc.perform(asJson(post("/api/members"), "{\"communityId\":\"" + home
-                + "\",\"givenName\":\"Zenobia\",\"contact\":" + contact("677123456", null, null) + "}"))
+                + "\",\"givenName\":\"Zenobia\",\"contact\":" + contact("600000101", null, null) + "}"))
                 .andExpect(status().isUnprocessableEntity());
         mockMvc.perform(asJson(post("/api/members"), "{\"communityId\":\"" + UUID.randomUUID()
                 + "\",\"givenName\":\"Zenobia\",\"surnames\":\"Quirógrafo\"}")).andExpect(status().isForbidden());

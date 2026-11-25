@@ -1,12 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
 import { membersApi } from '@/lib/api';
-import type { Member, MemberManagementApi } from '@/lib/api/members-api';
+import type { Member, MemberManagementApi, MemberResult } from '@/lib/api/members-api';
 
-export type MemberStatus = 'loading' | 'ready' | 'error';
+export type MemberStatus = 'loading' | 'ready' | 'unavailable' | 'error';
 
 type State = { status: MemberStatus; member: Member | null };
 
 const FAILED: State = { status: 'error', member: null };
+const UNAVAILABLE: State = { status: 'unavailable', member: null };
+
+function toState(result: MemberResult): State {
+  if (result.ok) {
+    return { status: 'ready', member: result.member };
+  }
+  return result.status === 403 || result.status === 404 ? UNAVAILABLE : FAILED;
+}
 
 export function useMember(memberId: string, api: Pick<MemberManagementApi, 'get'> = membersApi) {
   const [state, setState] = useState<State>({ status: 'loading', member: null });
@@ -15,7 +23,7 @@ export function useMember(memberId: string, api: Pick<MemberManagementApi, 'get'
     let active = true;
     api
       .get(memberId)
-      .then((result) => (result.ok ? ({ status: 'ready', member: result.member } as State) : FAILED), () => FAILED)
+      .then(toState, () => FAILED)
       .then((next) => {
         if (active) {
           setState(next);
@@ -30,11 +38,22 @@ export function useMember(memberId: string, api: Pick<MemberManagementApi, 'get'
     setState({ status: 'loading', member: null });
     try {
       const result = await api.get(memberId);
-      setState(result.ok ? { status: 'ready', member: result.member } : FAILED);
+      setState(toState(result));
     } catch {
       setState(FAILED);
     }
   }, [api, memberId]);
 
-  return { status: state.status, member: state.member, reload };
+  const refresh = useCallback(async () => {
+    try {
+      const result = await api.get(memberId);
+      if (result.ok) {
+        setState({ status: 'ready', member: result.member });
+      }
+    } catch {
+      return;
+    }
+  }, [api, memberId]);
+
+  return { status: state.status, member: state.member, reload, refresh };
 }

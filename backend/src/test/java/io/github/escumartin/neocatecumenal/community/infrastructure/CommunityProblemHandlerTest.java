@@ -208,8 +208,45 @@ class CommunityProblemHandlerTest {
         assertThat(appender.list).isNotEmpty().allSatisfy(event -> {
             assertThat(event.getFormattedMessage()).doesNotContain("Ana", "600000001", "example.test");
             assertThat(event.getKeyValuePairs()).extracting(pair -> pair.key).containsExactlyInAnyOrder("code",
-                    "status");
+                    "status", "exception");
             assertThat(event.getThrowableProxy()).isNull();
+        });
+    }
+
+    @Test
+    void logsCarryTheSimpleNameOfTheException() throws Exception {
+        mockMvc.perform(get("/test/forbidden"));
+
+        assertThat(appender.list).singleElement().satisfies(event -> assertThat(event.getKeyValuePairs())
+                .anySatisfy(pair -> {
+                    assertThat(pair.key).isEqualTo("exception");
+                    assertThat(pair.value).isEqualTo("CommunityForbidden");
+                }));
+    }
+
+    @Test
+    void anUnknownDomainCodeIsA500LoggedAtErrorWithItsCauseCodeAndStatus() throws Exception {
+        mockMvc.perform(get("/test/domain/SOMETHING_NEW"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"));
+
+        assertThat(appender.list).singleElement().satisfies(event -> {
+            assertThat(event.getLevel()).isEqualTo(ch.qos.logback.classic.Level.ERROR);
+            assertThat(event.getThrowableProxy()).isNotNull();
+            assertThat(event.getKeyValuePairs()).extracting(pair -> pair.key, pair -> pair.value)
+                    .contains(org.assertj.core.groups.Tuple.tuple("code", "INTERNAL_ERROR"),
+                            org.assertj.core.groups.Tuple.tuple("status", 500));
+        });
+    }
+
+    @Test
+    void anUnknownIdentityCodeIsA500LoggedAtErrorWithItsCause() throws Exception {
+        mockMvc.perform(get("/test/identity/SOMETHING_NEW"))
+                .andExpect(status().isInternalServerError());
+
+        assertThat(appender.list).singleElement().satisfies(event -> {
+            assertThat(event.getLevel()).isEqualTo(ch.qos.logback.classic.Level.ERROR);
+            assertThat(event.getThrowableProxy()).isNotNull();
         });
     }
 }

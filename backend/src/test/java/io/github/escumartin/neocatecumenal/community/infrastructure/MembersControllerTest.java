@@ -2,6 +2,7 @@ package io.github.escumartin.neocatecumenal.community.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -279,14 +280,14 @@ class MembersControllerTest {
     @Test
     void changeContactReplacesTheValuesAndRecordsOnlyTheChangedConsents() throws Exception {
         String id = createMember(moderator, memberBody(home, "Ana", "Pérez", mobileOnly("600000001"), VERBAL));
-        String body = "{\"mobile\":" + field(true, "600 000 002") + ",\"landline\":" + field(true, "912-345-678")
+        String body = "{\"mobile\":" + field(true, "600 000 002") + ",\"landline\":" + field(true, "600-000-301")
                 + ",\"email\":" + field(false, null) + ",\"onBehalfConsent\":{\"channel\":\"WRITTEN\","
                 + "\"noticeGiven\":true}}";
 
         mockMvc.perform(asJson(put("/api/members/" + id + "/contact"), moderator, body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.mobile").value("600000002"))
-                .andExpect(jsonPath("$.landline").value("912345678"))
+                .andExpect(jsonPath("$.landline").value("600000301"))
                 .andExpect(jsonPath("$.email").doesNotExist());
 
         assertThat(jdbc.queryForList("select field from community_contact_consent where member_id = ?::uuid "
@@ -480,5 +481,48 @@ class MembersControllerTest {
         mockMvc.perform(as(get("/api/members/" + member), moderator))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isResponsible").value(true));
+    }
+
+    @Test
+    void createWithANulInTheGivenNameFailsWithInvalidFormatInsteadOfServerError() throws Exception {
+        mockMvc.perform(asJson(post("/api/members"), moderator, memberBody(home, "An\\u0000a", null, null, null)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errors[0].field").value("givenName"))
+                .andExpect(jsonPath("$.errors[0].code").value("INVALID_FORMAT"));
+
+        assertThat(count("community_member")).isZero();
+    }
+
+    @Test
+    void renameWithALineBreakInTheSurnamesFailsWithInvalidFormat() throws Exception {
+        String id = createMember(moderator, memberBody(home, "Ana", "Pérez", null, null));
+
+        mockMvc.perform(asJson(put("/api/members/" + id), moderator,
+                "{\"givenName\":\"Ana\",\"surnames\":\"Pé\\nrez\"}"))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.errors[0].field").value("surnames"))
+                .andExpect(jsonPath("$.errors[0].code").value("INVALID_FORMAT"));
+    }
+
+    @Test
+    void aModeratorGetsConflictOnEveryMemberOperationOfADeactivatedCommunityButAnAdministratorDoesNot()
+            throws Exception {
+        UUID member = fixture.member(home, "Ana");
+        jdbc.update("update community set status = 'DEACTIVATED' where id = ?", home);
+
+        mockMvc.perform(as(get("/api/members/" + member), moderator)).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("COMMUNITY_DEACTIVATED"));
+        mockMvc.perform(asJson(put("/api/members/" + member), moderator, "{\"givenName\":\"X\"}"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("COMMUNITY_DEACTIVATED"));
+        mockMvc.perform(as(get("/api/members/" + member + "/data-export"), moderator))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("COMMUNITY_DEACTIVATED"));
+        mockMvc.perform(as(delete("/api/members/" + member), moderator)).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("COMMUNITY_DEACTIVATED"));
+
+        mockMvc.perform(asJson(put("/api/members/" + member), administrator, "{\"givenName\":\"X\"}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(as(get("/api/members/" + member + "/data-export"), administrator))
+                .andExpect(status().isOk());
+        mockMvc.perform(as(delete("/api/members/" + member), administrator)).andExpect(status().isNoContent());
     }
 }

@@ -35,7 +35,7 @@ describe('contact draft', () => {
     const input = toContactInput(
       draft({
         mobile: { shared: true, value: ' 600 000 001 ' },
-        landline: { shared: false, value: '912345678' },
+        landline: { shared: false, value: '600000003' },
         email: { shared: true, value: ' ana@example.org ' },
       }),
     );

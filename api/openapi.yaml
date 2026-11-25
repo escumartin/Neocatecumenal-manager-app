@@ -272,7 +272,7 @@ paths:
     post:
       tags: [communities]
       operationId: deactivateCommunity
-      summary: Deactivate a community; with moderators or administrators in it the request must carry confirmed true
+      summary: Deactivate a community; with moderators or administrators in it the request must carry confirmed true. Idempotent for an already deactivated community
       requestBody:
         required: true
         content:
@@ -281,7 +281,7 @@ paths:
               $ref: "#/components/schemas/CommunityDeactivation"
       responses:
         "204":
-          description: Community deactivated; its data is kept
+          description: Community deactivated, or already deactivated (nothing changes and no confirmation is needed); its data is kept
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -296,10 +296,10 @@ paths:
     post:
       tags: [communities]
       operationId: reactivateCommunity
-      summary: Reactivate a deactivated community (administrators only)
+      summary: Reactivate a deactivated community (administrators only). Idempotent for an already active community
       responses:
         "204":
-          description: Community active again
+          description: Community active again, or already active (nothing changes)
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -338,7 +338,7 @@ paths:
     get:
       tags: [members]
       operationId: listMembers
-      summary: Directory of a community ordered by surnames, then given name; registered users and moderators see their own, administrators pass communityId
+      summary: Directory of a community ordered by surnames, then given name; registered users and moderators see their own, administrators pass communityId. A deactivated community answers 409 COMMUNITY_DEACTIVATED except to administrators
       parameters:
         - name: communityId
           in: query
@@ -398,7 +398,7 @@ paths:
     get:
       tags: [members]
       operationId: getMember
-      summary: One member; a member of another community answers 404 as if it did not exist
+      summary: One member; a member of another community answers 404 as if it did not exist. On a deactivated community everyone but administrators gets 409 COMMUNITY_DEACTIVATED
       responses:
         "200":
           description: Member
@@ -415,7 +415,7 @@ paths:
     put:
       tags: [members]
       operationId: renameMember
-      summary: Replace given name and surnames of the member; never changes the linked user
+      summary: Replace given name and surnames of the member; never changes the linked user. On a deactivated community moderators get 409 COMMUNITY_DEACTIVATED; administrators are exempt
       requestBody:
         required: true
         content:
@@ -442,7 +442,7 @@ paths:
     delete:
       tags: [members]
       operationId: deleteMember
-      summary: Delete the member and its consent record permanently; a linked user is deleted too under identity rules; the client confirms first
+      summary: Delete the member and its consent record permanently; a linked user is deleted too under identity rules; the client confirms first. On a deactivated community moderators get 409 COMMUNITY_DEACTIVATED; administrators are exempt
       responses:
         "204":
           description: Member, consent record and, if linked, the user deleted
@@ -460,7 +460,7 @@ paths:
     put:
       tags: [members]
       operationId: changeMemberContact
-      summary: Replace contact details of a member; consent on behalf of a member without user needs channel and noticeGiven
+      summary: Replace contact details of a member; consent on behalf of a member without user needs channel and noticeGiven. On a deactivated community moderators get 409 COMMUNITY_DEACTIVATED; administrators are exempt
       requestBody:
         required: true
         content:
@@ -490,7 +490,7 @@ paths:
     post:
       tags: [members]
       operationId: transferMember
-      summary: Move a member, and its linked user, to another active community (administrators only)
+      summary: Move a member, and its linked user, to another active community (administrators only); moving to the member's own community is a 200 that changes nothing
       requestBody:
         required: true
         content:
@@ -520,7 +520,7 @@ paths:
     put:
       tags: [members]
       operationId: linkMember
-      summary: Link the member one to one with a user of the same community; moderators only with registered users
+      summary: Link the member one to one with a user of the same community; moderators only with registered users. On a deactivated community moderators get 409 COMMUNITY_DEACTIVATED; administrators are exempt
       requestBody:
         required: true
         content:
@@ -547,7 +547,7 @@ paths:
     delete:
       tags: [members]
       operationId: unlinkMember
-      summary: Undo the link; administrators always, moderators only in their community with registered users, never the linked user
+      summary: Undo the link; administrators always, moderators only in their community with registered users, never the linked user. On a deactivated community moderators get 409 COMMUNITY_DEACTIVATED; administrators are exempt
       responses:
         "204":
           description: Unlinked; the member keeps its own name
@@ -565,7 +565,7 @@ paths:
     get:
       tags: [members]
       operationId: exportMemberData
-      summary: Everything this context stores about the member, consent record included (moderator of that community or administrator)
+      summary: Everything this context stores about the member, consent record included (moderator of that community or administrator). On a deactivated community moderators get 409 COMMUNITY_DEACTIVATED; administrators are exempt so that they can answer data requests
       responses:
         "200":
           description: Data copy
@@ -579,11 +579,13 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/CommunityOrMemberNotFound"
+        "409":
+          $ref: "#/components/responses/CommunityStateConflict"
   /api/me/member:
     get:
       tags: [my-member]
       operationId: getMyMember
-      summary: The member linked to the current user with the current consent per field
+      summary: The member linked to the current user with the current consent per field; always available, also when the community is deactivated (data protection rights)
       responses:
         "200":
           description: Own member
@@ -595,13 +597,11 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
-        "409":
-          $ref: "#/components/responses/CommunityStateConflict"
   /api/me/member/contact:
     put:
       tags: [my-member]
       operationId: changeMyContact
-      summary: Replace own contact details; shared false withdraws consent and erases the value
+      summary: Replace own contact details; shared false withdraws consent and erases the value; always available, also when the community is deactivated (data protection rights)
       requestBody:
         required: true
         content:
@@ -619,8 +619,6 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
-        "409":
-          $ref: "#/components/responses/CommunityStateConflict"
         "422":
           $ref: "#/components/responses/ValidationFailed"
   /api/users:
@@ -1318,7 +1316,9 @@ components:
         The change would break an invariant or the data changed concurrently; codes COMMUNITY_NOT_EMPTY,
         COMMUNITY_HAS_RESPONSIBLE, COMMUNITY_HAS_HISTORY, COMMUNITY_HAS_PRIVILEGED_USERS, COMMUNITY_DEACTIVATED, RESPONSIBLE_REQUIRED,
         MEMBER_ALREADY_LINKED, USER_ALREADY_LINKED, MEMBER_NOT_LINKED, LAST_MODERATOR, LAST_ADMINISTRATOR,
-        SELF_ACTION_FORBIDDEN or CONCURRENT_MODIFICATION
+        SELF_ACTION_FORBIDDEN or CONCURRENT_MODIFICATION. COMMUNITY_DEACTIVATED is returned to moderators and registered
+        users for any member operation on a deactivated community; administrators are exempt and the own-member
+        endpoints under /api/me/member never return it
       content:
         application/problem+json:
           schema:
@@ -1915,7 +1915,7 @@ components:
         name:
           type: string
           maxLength: 100
-          description: Optional parish reference; blank means none
+          description: Optional parish reference; blank means none. Length counted in code points; control and format characters (Unicode categories Cc and Cf, such as NUL, line breaks and bidirectional controls) and unpaired surrogates are rejected with 422 INVALID_FORMAT
     CommunityDetail:
       type: object
       required: [id, number, status, hasResponsible, responsibleIsModerator]
@@ -2009,9 +2009,11 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+          description: Length counted in code points; control and format characters (Unicode categories Cc and Cf, such as NUL, line breaks and bidirectional controls) and unpaired surrogates are rejected with 422 INVALID_FORMAT
         surnames:
           type: string
           maxLength: 100
+          description: Length counted in code points; control and format characters (Unicode categories Cc and Cf, such as NUL, line breaks and bidirectional controls) and unpaired surrogates are rejected with 422 INVALID_FORMAT
     MemberInput:
       allOf:
         - $ref: "#/components/schemas/MemberNameInput"

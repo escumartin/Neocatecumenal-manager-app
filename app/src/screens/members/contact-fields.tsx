@@ -1,8 +1,7 @@
-import { Switch, View } from 'react-native';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
-import { ListRow } from '@/components/ui/list-row';
 import { ListSection } from '@/components/ui/list-section';
+import { SwitchRow } from '@/components/ui/switch-row';
 import { Text } from '@/components/ui/text';
 import { membersText } from '@/i18n/es/members';
 import {
@@ -32,17 +31,12 @@ export function ContactFields({ draft, messages, shareLocked = false, onChange }
         const problem = messages[name];
         return (
           <ListSection key={name} title={text.label}>
-            <ListRow title={membersText.contact.share[name]}>
-              <View className="min-h-12 min-w-12 items-start justify-center">
-                <Switch
-                  role="switch"
-                  accessibilityLabel={membersText.contact.share[name]}
-                  value={field.shared}
-                  disabled={shareLocked}
-                  onValueChange={(shared) => onChange(name, { shared, value: shared ? field.value : '' })}
-                />
-              </View>
-            </ListRow>
+            <SwitchRow
+              label={membersText.contact.share[name]}
+              value={field.shared}
+              disabled={shareLocked}
+              onValueChange={(shared) => onChange(name, { shared, value: shared ? field.value : '' })}
+            />
             {field.shared ? (
               <FormField description={text.hint}>
                 <Input

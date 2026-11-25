@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { communitiesApi, membersApi as defaultMembersApi } from '@/lib/api';
 import type { CommunityDetail, CommunityManagementApi, CommunityResult } from '@/lib/api/communities-api';
 import type { Member, MembersApi } from '@/lib/api/members-api';
@@ -36,11 +36,13 @@ export function useCommunityResponsible(
   membersApi: MembersApi = defaultMembersApi,
 ) {
   const [state, setState] = useState<State>(LOADING);
+  const sequence = useRef(0);
 
   useEffect(() => {
+    const id = ++sequence.current;
     let active = true;
     fetchState(communityId, api, membersApi).then((next) => {
-      if (active) {
+      if (active && id === sequence.current) {
         setState(next);
       }
     });
@@ -50,14 +52,19 @@ export function useCommunityResponsible(
   }, [api, communityId, membersApi]);
 
   const reload = useCallback(async () => {
+    const id = ++sequence.current;
     setState(LOADING);
-    setState(await fetchState(communityId, api, membersApi));
+    const next = await fetchState(communityId, api, membersApi);
+    if (id === sequence.current) {
+      setState(next);
+    }
   }, [api, communityId, membersApi]);
 
   const designate = useCallback(
     async (memberId: string): Promise<CommunityResult> => {
       const result = await api.designateResponsible(communityId, memberId);
       if (result.ok) {
+        sequence.current++;
         setState((current) => ({ ...current, community: result.community }));
       }
       return result;

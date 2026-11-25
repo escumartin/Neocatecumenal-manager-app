@@ -11,6 +11,7 @@ public record CommunityName(String value) {
         if (value == null || value.isBlank()) {
             throw new CommunityFieldInvalid("name", "REQUIRED");
         }
+        FreeText.requireClean(value, "name");
         if (value.codePointCount(0, value.length()) > MAX_LENGTH) {
             throw new CommunityFieldInvalid("name", "TOO_LONG");
         }

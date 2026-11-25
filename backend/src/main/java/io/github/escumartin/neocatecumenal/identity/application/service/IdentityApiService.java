@@ -9,8 +9,6 @@ import io.github.escumartin.neocatecumenal.identity.UserRef;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.DeleteUser;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.FieldValidationException;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.UpdateUser;
-import io.github.escumartin.neocatecumenal.identity.application.port.in.UpdateUserCommand;
-import io.github.escumartin.neocatecumenal.identity.application.port.in.UserNotFoundException;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.CommunityRepository;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.CurrentSessionContext;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.PrivacyNoticeSettings;
@@ -91,9 +89,7 @@ public class IdentityApiService implements IdentityApi {
     @Override
     @Transactional
     public void moveUser(UUID userId, UUID communityId) {
-        User target = users.findById(new UserId(userId)).orElseThrow(UserNotFoundException::new);
-        translatingViolations(() -> updateUser.update(new UpdateUserCommand(target.id(), target.name(),
-                target.role(), new CommunityId(communityId))));
+        translatingViolations(() -> updateUser.moveToCommunity(new UserId(userId), new CommunityId(communityId)));
     }
 
     @Override

@@ -156,4 +156,46 @@ class UserLinkGuardIntegrationTest {
                         e -> assertThat(e.code()).isEqualTo("LAST_MODERATOR"));
         assertThat(fixture.users.findById(target.id())).isPresent();
     }
+
+    @Test
+    void moveKeepsTheNameChangedWhileTheGuardWasLocking() {
+        fixture.actAs(fixture.add(UserRole.ADMINISTRATOR, fixture.communityA));
+        User target = fixture.add(UserRole.REGISTERED, fixture.communityA);
+        fixture.guard.afterGuard = () -> fixture.users.users.put(target.id(), User.restore(target.id(),
+                target.accessId(), new DisplayName("Renamed Person"), target.role(), target.communityId(),
+                target.passwordHash(), target.passwordChangeRequired(), target.privacyConsent().orElseThrow(),
+                target.version() + 1));
+
+        updateService().moveToCommunity(target.id(), fixture.communityB.id());
+
+        User moved = fixture.users.findById(target.id()).orElseThrow();
+        assertThat(moved.communityId()).isEqualTo(fixture.communityB.id());
+        assertThat(moved.name()).isEqualTo(new DisplayName("Renamed Person"));
+    }
+
+    @Test
+    void moveKeepsTheRoleChangedWhileTheGuardWasLocking() {
+        fixture.actAs(fixture.add(UserRole.ADMINISTRATOR, fixture.communityA));
+        fixture.add(UserRole.MODERATOR, fixture.communityA);
+        User target = fixture.add(UserRole.REGISTERED, fixture.communityA);
+        fixture.guard.afterGuard = () -> replaceStored(target, UserRole.MODERATOR, fixture.communityA);
+
+        updateService().moveToCommunity(target.id(), fixture.communityB.id());
+
+        User moved = fixture.users.findById(target.id()).orElseThrow();
+        assertThat(moved.communityId()).isEqualTo(fixture.communityB.id());
+        assertThat(moved.role()).isEqualTo(UserRole.MODERATOR);
+    }
+
+    @Test
+    void moveToTheCurrentCommunityWritesNothing() {
+        fixture.actAs(fixture.add(UserRole.ADMINISTRATOR, fixture.communityA));
+        User target = fixture.add(UserRole.REGISTERED, fixture.communityA);
+        int savesBefore = fixture.users.saves;
+
+        updateService().moveToCommunity(target.id(), fixture.communityA.id());
+
+        assertThat(fixture.users.saves).isEqualTo(savesBefore);
+        assertThat(fixture.users.calls).doesNotContain("guard.allowsCommunityChange");
+    }
 }
