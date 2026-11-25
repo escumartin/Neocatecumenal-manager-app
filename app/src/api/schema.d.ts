@@ -1152,7 +1152,7 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description The change would break an invariant or the data changed concurrently; codes COMMUNITY_NOT_EMPTY, COMMUNITY_HAS_RESPONSIBLE, COMMUNITY_HAS_HISTORY, COMMUNITY_HAS_PRIVILEGED_USERS, COMMUNITY_DEACTIVATED, RESPONSIBLE_REQUIRED, MEMBER_ALREADY_LINKED, USER_ALREADY_LINKED, MEMBER_NOT_LINKED, LAST_MODERATOR, LAST_ADMINISTRATOR, SELF_ACTION_FORBIDDEN or CONCURRENT_MODIFICATION. COMMUNITY_DEACTIVATED is returned to moderators and registered users for any member operation on a deactivated community; administrators are exempt and the own-member endpoints under /api/me/member never return it */
+        /** @description The change would break an invariant or the data changed concurrently; codes COMMUNITY_NOT_EMPTY, COMMUNITY_HAS_RESPONSIBLE, COMMUNITY_HAS_HISTORY, COMMUNITY_HAS_PRIVILEGED_USERS, COMMUNITY_DEACTIVATED, RESPONSIBLE_REQUIRED, MEMBER_ALREADY_LINKED, USER_ALREADY_LINKED, MEMBER_NOT_LINKED, LAST_MODERATOR, LAST_ADMINISTRATOR, SELF_ACTION_FORBIDDEN or CONCURRENT_MODIFICATION. COMMUNITY_DEACTIVATED is returned to moderators and registered users for any operation on the existing members of a deactivated community; administrators are exempt and the own-member endpoints under /api/me/member never return it. Adding a member to, or transferring a member into, a deactivated community is rejected for every role as 422 COMMUNITY_DEACTIVATED on communityId */
         CommunityStateConflict: {
             headers: {
                 [name: string]: unknown;
