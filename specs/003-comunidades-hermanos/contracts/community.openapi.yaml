@@ -1,0 +1,816 @@
+openapi: 3.1.0
+info:
+  title: Neocatecumenal Manager API - Communities and members (draft)
+  version: 0.3.0-draft
+servers:
+  - url: /
+security:
+  - bearerAuth: []
+  - cookieAuth: []
+x-merge:
+  replaces:
+    - "paths./api/communities.get"
+    - "components.schemas.Community"
+  problemCodes:
+    - COMMUNITY_NOT_EMPTY
+    - COMMUNITY_HAS_HISTORY
+    - COMMUNITY_HAS_RESPONSIBLE
+    - COMMUNITY_HAS_PRIVILEGED_USERS
+    - COMMUNITY_DEACTIVATED
+    - RESPONSIBLE_REQUIRED
+    - MEMBER_ALREADY_LINKED
+    - USER_ALREADY_LINKED
+    - MEMBER_NOT_LINKED
+    - CONSENT_MANAGED_BY_MEMBER
+    - USER_LINKED_TO_MEMBER
+  validationCodes:
+    - COMMUNITY_NUMBER_TAKEN
+    - COMMUNITY_DEACTIVATED
+    - PHONE_INVALID
+    - EMAIL_INVALID
+    - CONSENT_REQUIRED
+    - NOTICE_NOT_GIVEN
+    - MEMBER_NOT_IN_COMMUNITY
+    - USER_NOT_IN_COMMUNITY
+    - USER_NOT_FOUND
+  identityOperationChanges:
+    - operation: updateUser
+      adds: ["409 USER_LINKED_TO_MEMBER", "422 COMMUNITY_DEACTIVATED on communityId"]
+    - operation: createUser
+      adds: ["422 COMMUNITY_DEACTIVATED on communityId"]
+tags:
+  - name: communities
+    description: Communities, their state and their responsible member
+  - name: members
+    description: Members of a community, their consented contact details and the link to an app user
+  - name: my-member
+    description: The member linked to the current user and its own contact details
+paths:
+  /api/communities:
+    get:
+      tags: [communities]
+      operationId: listCommunities
+      summary: Communities ordered by number; active ones only unless an administrator asks for all
+      parameters:
+        - name: includeDeactivated
+          in: query
+          required: false
+          description: >-
+            Only administrators may set it to true, others get 403; also used as the id to number lookup of screens
+            with history, such as pending booking requests, so deactivated communities keep showing their number
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Communities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Community"
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+    post:
+      tags: [communities]
+      operationId: createCommunity
+      summary: Create an active community without responsible (administrators only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommunityInput"
+      responses:
+        "201":
+          description: Community created, active and without responsible
+          headers:
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityDetail"
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "422":
+          $ref: "../../../api/openapi.yaml#/components/responses/ValidationFailed"
+  /api/communities/{communityId}:
+    parameters:
+      - $ref: "#/components/parameters/CommunityId"
+    get:
+      tags: [communities]
+      operationId: getCommunity
+      summary: Community file for an administrator or a moderator of that community
+      responses:
+        "200":
+          description: Community with its responsible and the non-blocking moderator warning
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityDetail"
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/CommunityOrMemberNotFound"
+    put:
+      tags: [communities]
+      operationId: updateCommunity
+      summary: Change number and name (administrators only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommunityInput"
+      responses:
+        "200":
+          description: Community updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityDetail"
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/CommunityOrMemberNotFound"
+        "409":
+          $ref: "#/components/responses/CommunityStateConflict"
+        "422":
+          $ref: "../../../api/openapi.yaml#/components/responses/ValidationFailed"
+    delete:
+      tags: [communities]
+      operationId: deleteCommunity
+      summary: Delete permanently a community without responsible, members, users, booking requests or events (administrators only); the client confirms first
+      responses:
+        "204":
+          description: Community deleted
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/CommunityOrMemberNotFound"
+        "409":
+          $ref: "#/components/responses/CommunityStateConflict"
+  /api/communities/{communityId}/deactivation:
+    parameters:
+      - $ref: "#/components/parameters/CommunityId"
+    post:
+      tags: [communities]
+      operationId: deactivateCommunity
+      summary: Deactivate a community; with moderators or administrators in it the request must carry confirmed true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommunityDeactivation"
+      responses:
+        "204":
+          description: Community deactivated; its data is kept
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/CommunityOrMemberNotFound"
+        "409":
+          $ref: "#/components/responses/CommunityStateConflict"
+  /api/communities/{communityId}/reactivation:
+    parameters:
+      - $ref: "#/components/parameters/CommunityId"
+    post:
+      tags: [communities]
+      operationId: reactivateCommunity
+      summary: Reactivate a deactivated community (administrators only)
+      responses:
+        "204":
+          description: Community active again
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/CommunityOrMemberNotFound"
+  /api/communities/{communityId}/responsible:
+    parameters:
+      - $ref: "#/components/parameters/CommunityId"
+    put:
+      tags: [communities]
+      operationId: designateResponsible
+      summary: Designate or replace the responsible with a member of the same community (administrators only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResponsibleDesignation"
+      responses:
+        "200":
+          description: Responsible designated; the community is never left without one
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityDetail"
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/CommunityOrMemberNotFound"
+        "422":
+          $ref: "../../../api/openapi.yaml#/components/responses/ValidationFailed"
+  /api/members:
+    get:
+      tags: [members]
+      operationId: listMembers
+      summary: Directory of a community ordered by surnames, then given name; registered users and moderators see their own, administrators pass communityId
+      parameters:
+        - name: communityId
+          in: query
+          required: false
+          description: Required for administrators; for anyone else it must be absent or match their own community, otherwise 403
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Every member of the community; contact fields appear only when consented
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 500
+                items:
+                  $ref: "#/components/schemas/Member"
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/CommunityStateConflict"
+        "422":
+          $ref: "../../../api/openapi.yaml#/components/responses/ValidationFailed"
+    post:
+      tags: [members]
+      operationId: createMember
+      summary: Add a member to an active community (moderator of that community or administrator)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberInput"
+      responses:
+        "201":
+          description: Member created
+          headers:
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "422":
+          $ref: "../../../api/openapi.yaml#/components/responses/ValidationFailed"
+  /api/members/{memberId}:
+    parameters:
+      - $ref: "#/components/parameters/MemberId"
+    get:
+      tags: [members]
+      operationId: getMember
+      summary: One member; a member of another community answers 404 as if it did not exist
+      responses:
+        "200":
+          description: Member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/CommunityOrMemberNotFound"
+        "409":
+          $ref: "#/components/responses/CommunityStateConflict"
+    put:
+      tags: [members]
+      operationId: renameMember
+      summary: Replace given name and surnames of the member; never changes the linked user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberNameInput"
+      responses:
+        "200":
+          description: Member renamed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/CommunityOrMemberNotFound"
+        "409":
+          $ref: "#/components/responses/CommunityStateConflict"
+        "422":
+          $ref: "../../../api/openapi.yaml#/components/responses/ValidationFailed"
+    delete:
+      tags: [members]
+      operationId: deleteMember
+      summary: Delete the member and its consent record permanently; a linked user is deleted too under identity rules; the client confirms first
+      responses:
+        "204":
+          description: Member, consent record and, if linked, the user deleted
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/CommunityOrMemberNotFound"
+        "409":
+          $ref: "#/components/responses/CommunityStateConflict"
+  /api/members/{memberId}/contact:
+    parameters:
+      - $ref: "#/components/parameters/MemberId"
+    put:
+      tags: [members]
+      operationId: changeMemberContact
+      summary: Replace contact details of a member; consent on behalf of a member without user needs channel and noticeGiven
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberContactInput"
+      responses:
+        "200":
+          description: Contact updated; consent changes recorded per field
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/CommunityOrMemberNotFound"
+        "409":
+          $ref: "#/components/responses/CommunityStateConflict"
+        "422":
+          $ref: "../../../api/openapi.yaml#/components/responses/ValidationFailed"
+  /api/members/{memberId}/transfer:
+    parameters:
+      - $ref: "#/components/parameters/MemberId"
+    post:
+      tags: [members]
+      operationId: transferMember
+      summary: Move a member, and its linked user, to another active community (administrators only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberTransfer"
+      responses:
+        "200":
+          description: Member moved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/CommunityOrMemberNotFound"
+        "409":
+          $ref: "#/components/responses/CommunityStateConflict"
+        "422":
+          $ref: "../../../api/openapi.yaml#/components/responses/ValidationFailed"
+  /api/members/{memberId}/link:
+    parameters:
+      - $ref: "#/components/parameters/MemberId"
+    put:
+      tags: [members]
+      operationId: linkMember
+      summary: Link the member one to one with a user of the same community; moderators only with registered users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberLink"
+      responses:
+        "200":
+          description: Linked; nothing is copied between member and user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/CommunityOrMemberNotFound"
+        "409":
+          $ref: "#/components/responses/CommunityStateConflict"
+        "422":
+          $ref: "../../../api/openapi.yaml#/components/responses/ValidationFailed"
+    delete:
+      tags: [members]
+      operationId: unlinkMember
+      summary: Undo the link; administrators always, moderators only in their community with registered users, never the linked user
+      responses:
+        "204":
+          description: Unlinked; the member keeps its own name
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/CommunityOrMemberNotFound"
+        "409":
+          $ref: "#/components/responses/CommunityStateConflict"
+  /api/members/{memberId}/data-export:
+    parameters:
+      - $ref: "#/components/parameters/MemberId"
+    get:
+      tags: [members]
+      operationId: exportMemberData
+      summary: Everything this context stores about the member, consent record included (moderator of that community or administrator)
+      responses:
+        "200":
+          description: Data copy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberDataExport"
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/CommunityOrMemberNotFound"
+  /api/me/member:
+    get:
+      tags: [my-member]
+      operationId: getMyMember
+      summary: The member linked to the current user with the current consent per field
+      responses:
+        "200":
+          description: Own member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyMember"
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/CommunityStateConflict"
+  /api/me/member/contact:
+    put:
+      tags: [my-member]
+      operationId: changeMyContact
+      summary: Replace own contact details; shared false withdraws consent and erases the value
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactInput"
+      responses:
+        "200":
+          description: Contact and consent updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyMember"
+        "401":
+          $ref: "../../../api/openapi.yaml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../../api/openapi.yaml#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/CommunityStateConflict"
+        "422":
+          $ref: "../../../api/openapi.yaml#/components/responses/ValidationFailed"
+components:
+  securitySchemes:
+    bearerAuth:
+      $ref: "../../../api/openapi.yaml#/components/securitySchemes/bearerAuth"
+    cookieAuth:
+      $ref: "../../../api/openapi.yaml#/components/securitySchemes/cookieAuth"
+  parameters:
+    CommunityId:
+      name: communityId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    MemberId:
+      name: memberId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    CommunityOrMemberNotFound:
+      description: Community or member does not exist, or the member belongs to a community the caller cannot see
+      content:
+        application/problem+json:
+          schema:
+            $ref: "../../../api/openapi.yaml#/components/schemas/Problem"
+    CommunityStateConflict:
+      description: >-
+        The change would break an invariant or the data changed concurrently; codes COMMUNITY_NOT_EMPTY,
+        COMMUNITY_HAS_RESPONSIBLE, COMMUNITY_HAS_HISTORY, COMMUNITY_HAS_PRIVILEGED_USERS, COMMUNITY_DEACTIVATED, RESPONSIBLE_REQUIRED,
+        MEMBER_ALREADY_LINKED, USER_ALREADY_LINKED, MEMBER_NOT_LINKED, LAST_MODERATOR, LAST_ADMINISTRATOR,
+        SELF_ACTION_FORBIDDEN or CONCURRENT_MODIFICATION
+      content:
+        application/problem+json:
+          schema:
+            $ref: "../../../api/openapi.yaml#/components/schemas/Problem"
+  schemas:
+    CommunityStatus:
+      type: string
+      enum: [ACTIVE, DEACTIVATED]
+    Community:
+      type: object
+      required: [id, number]
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          maxLength: 100
+        status:
+          $ref: "#/components/schemas/CommunityStatus"
+        hasResponsible:
+          type: boolean
+          description: False means the explicit, visible state «sin responsable»
+    CommunityInput:
+      type: object
+      required: [number]
+      properties:
+        number:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          maxLength: 100
+          description: Optional parish reference; blank means none
+    CommunityDetail:
+      type: object
+      required: [id, number, status, hasResponsible, responsibleIsModerator]
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+          maxLength: 100
+        status:
+          $ref: "#/components/schemas/CommunityStatus"
+        hasResponsible:
+          type: boolean
+        responsible:
+          $ref: "#/components/schemas/MemberSummary"
+        responsibleIsModerator:
+          type: boolean
+          description: False when there is a responsible whose linked user is missing or not a MODERATOR; a warning, never a block
+    CommunityDeactivation:
+      type: object
+      required: [confirmed]
+      properties:
+        confirmed:
+          type: boolean
+          description: Must be true when the community has users with role MODERATOR or ADMINISTRATOR; otherwise 409 COMMUNITY_HAS_PRIVILEGED_USERS
+    ResponsibleDesignation:
+      type: object
+      required: [memberId]
+      properties:
+        memberId:
+          type: string
+          format: uuid
+    ContactFieldInput:
+      type: object
+      required: [shared]
+      properties:
+        shared:
+          type: boolean
+          description: True grants consent to store and show the value to the community; false withdraws it and erases the value
+        value:
+          type: string
+          maxLength: 254
+          description: >-
+            Required when shared is true (REQUIRED); ignored when false. Phones: national 9 digits starting with 6, 7, 8
+            or 9, or international with leading + and up to 15 digits; spaces, dots, hyphens and parentheses are
+            ignored and the value is stored normalised, otherwise PHONE_INVALID. Email: address syntax as in the HTML
+            specification with a dot in the domain, otherwise EMAIL_INVALID
+    ContactInput:
+      type: object
+      required: [mobile, landline, email]
+      properties:
+        mobile:
+          $ref: "#/components/schemas/ContactFieldInput"
+        landline:
+          $ref: "#/components/schemas/ContactFieldInput"
+        email:
+          $ref: "#/components/schemas/ContactFieldInput"
+    ConsentChannel:
+      type: string
+      enum: [APP, VERBAL, WRITTEN]
+    OnBehalfConsent:
+      type: object
+      required: [channel, noticeGiven]
+      properties:
+        channel:
+          type: string
+          enum: [VERBAL, WRITTEN]
+        noticeGiven:
+          type: boolean
+          description: The moderator confirms the data notice was given verbally or on paper; false gives NOTICE_NOT_GIVEN
+    MemberContactInput:
+      allOf:
+        - $ref: "#/components/schemas/ContactInput"
+        - type: object
+          properties:
+            onBehalfConsent:
+              $ref: "#/components/schemas/OnBehalfConsent"
+          description: >-
+            onBehalfConsent is required (CONSENT_REQUIRED) when a member without user changes which fields are shared;
+            for a linked member any change of shared answers 403 CONSENT_MANAGED_BY_MEMBER and only values of shared
+            fields may be rectified
+    MemberNameInput:
+      type: object
+      required: [givenName]
+      properties:
+        givenName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        surnames:
+          type: string
+          maxLength: 100
+    MemberInput:
+      allOf:
+        - $ref: "#/components/schemas/MemberNameInput"
+        - type: object
+          required: [communityId]
+          properties:
+            communityId:
+              type: string
+              format: uuid
+            contact:
+              $ref: "#/components/schemas/ContactInput"
+            onBehalfConsent:
+              $ref: "#/components/schemas/OnBehalfConsent"
+    MemberTransfer:
+      type: object
+      required: [communityId]
+      properties:
+        communityId:
+          type: string
+          format: uuid
+    MemberLink:
+      type: object
+      required: [userId]
+      properties:
+        userId:
+          type: string
+          format: uuid
+    MemberSummary:
+      type: object
+      required: [id, givenName]
+      properties:
+        id:
+          type: string
+          format: uuid
+        givenName:
+          type: string
+        surnames:
+          type: string
+    Member:
+      type: object
+      required: [id, communityId, givenName, isResponsible]
+      properties:
+        id:
+          type: string
+          format: uuid
+        communityId:
+          type: string
+          format: uuid
+        givenName:
+          type: string
+        surnames:
+          type: string
+        mobile:
+          type: string
+          description: Present only when consented
+        landline:
+          type: string
+          description: Present only when consented
+        email:
+          type: string
+          description: Present only when consented
+        isResponsible:
+          type: boolean
+        linkedUserId:
+          type: string
+          format: uuid
+          description: Present only for moderators of the community and administrators
+    ConsentRecorder:
+      type: object
+      required: [role, deleted]
+      description: >-
+        Who recorded the decision. MEMBER is the member themself and carries no name; for MODERATOR or ADMINISTRATOR,
+        name is that user's display name and nothing else; once that user is deleted, deleted is true, name is absent
+        and the client shows «usuario eliminado»
+      properties:
+        role:
+          type: string
+          enum: [MEMBER, MODERATOR, ADMINISTRATOR]
+        name:
+          type: string
+        deleted:
+          type: boolean
+    ConsentRecord:
+      type: object
+      required: [field, decision, channel, recordedBy, noticeGiven, recordedAt]
+      properties:
+        field:
+          type: string
+          enum: [MOBILE, LANDLINE, EMAIL]
+        decision:
+          type: string
+          enum: [GRANTED, WITHDRAWN]
+        channel:
+          $ref: "#/components/schemas/ConsentChannel"
+        recordedBy:
+          $ref: "#/components/schemas/ConsentRecorder"
+        noticeGiven:
+          type: boolean
+        recordedAt:
+          type: string
+          format: date-time
+    MyMember:
+      type: object
+      required: [member, currentConsents]
+      properties:
+        member:
+          $ref: "#/components/schemas/Member"
+        currentConsents:
+          type: array
+          description: Latest record per field; a field without record was never consented
+          items:
+            $ref: "#/components/schemas/ConsentRecord"
+    MemberDataExport:
+      type: object
+      required: [member, communityNumber, consentRecords, exportedAt]
+      properties:
+        member:
+          $ref: "#/components/schemas/Member"
+        communityNumber:
+          type: integer
+        consentRecords:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConsentRecord"
+        exportedAt:
+          type: string
+          format: date-time
