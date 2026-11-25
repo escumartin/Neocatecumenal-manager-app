@@ -13,6 +13,7 @@ MODULES = {
         "cwd": "backend",
         "env": "RUN_GATES_BACKEND_CMD",
         "command": "./mvnw -B -q verify",
+        "busy_marker": "-Dmaven.multiModuleProjectDirectory=",
     },
     "app": {
         "paths": ["app", "api"],
@@ -93,6 +94,28 @@ def sdkman_java_home(root):
     return None
 
 
+def process_commands():
+    command = os.environ.get("RUN_GATES_PS_CMD") or "ps -axo command="
+    try:
+        result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=10)
+    except (subprocess.TimeoutExpired, OSError):
+        return []
+    return result.stdout.splitlines()
+
+
+def busy(root, module):
+    marker = module.get("busy_marker")
+    if not marker:
+        return False
+    target = os.path.realpath(os.path.join(root, module["cwd"]))
+    return any(
+        os.path.realpath(word[len(marker):]) == target
+        for line in process_commands()
+        for word in line.split()
+        if word.startswith(marker)
+    )
+
+
 def run_gate(root, module):
     command = os.environ.get(module["env"]) or module["command"]
     env = dict(os.environ, TESTCONTAINERS_RYUK_DISABLED="true")
@@ -148,6 +171,8 @@ def main():
     failures = []
     for name, digest in pending.items():
         if cache.get(name) == digest:
+            continue
+        if busy(root, MODULES[name]):
             continue
         command, error = run_gate(root, MODULES[name])
         if error is None:

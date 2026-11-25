@@ -79,4 +79,17 @@ check "failure is not cached" '[ "$(jq -r .decision <<<"$out")" = block ]'
 out=$(run '{"stop_hook_active":true}')
 check "failure with stop_hook_active: no block" '[ -z "$out" ]'
 
+export RUN_GATES_BACKEND_CMD="echo b >>'$counter'"
+echo busy >>"$repo/backend/a.txt"
+before=$(runs)
+export RUN_GATES_PS_CMD="echo 'java -Dmaven.multiModuleProjectDirectory=$repo/backend org.codehaus.plexus.classworlds.launcher.Launcher verify'"
+out=$(run)
+check "maven busy in backend: silent" '[ -z "$out" ]'
+check "maven busy in backend: gate skipped" '[ "$(runs)" = "$before" ]'
+
+export RUN_GATES_PS_CMD="echo 'java -Dmaven.multiModuleProjectDirectory=$repo/backend-other verify'"
+out=$(run)
+check "maven busy elsewhere: gate runs" '[ "$(runs)" = "$((before + 1))" ]'
+unset RUN_GATES_PS_CMD
+
 exit $fail
