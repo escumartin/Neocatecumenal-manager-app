@@ -15,4 +15,6 @@ public interface UserDirectory {
     Optional<LinkedUser> lockUser(UserId id);
 
     void moveUser(UserId id, CommunityId communityId);
+
+    void deleteUser(UserId id);
 }

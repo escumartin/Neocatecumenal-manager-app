@@ -40,6 +40,11 @@ public class UserDirectoryAdapter implements UserDirectory {
         identity.moveUser(id.value(), communityId.value());
     }
 
+    @Override
+    public void deleteUser(UserId id) {
+        identity.deleteUser(id.value());
+    }
+
     private static LinkedUser toLinkedUser(UserRef user) {
         return new LinkedUser(new UserId(user.id()), ActorRole.valueOf(user.role().name()),
                 new CommunityId(user.communityId()), user.name());

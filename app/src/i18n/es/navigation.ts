@@ -23,6 +23,7 @@ export const navigationText = {
   memberContact: 'Datos de contacto',
   memberLink: 'Vincular con un usuario',
   memberTransfer: 'Trasladar hermano',
+  memberDataExport: 'Copia de los datos',
   directoryMember: 'Hermano',
   management: {
     users: 'Usuarios',

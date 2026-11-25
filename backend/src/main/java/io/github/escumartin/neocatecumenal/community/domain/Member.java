@@ -79,6 +79,12 @@ public final class Member {
         this.communityId = target.id();
     }
 
+    public void checkDeletable(Community community) {
+        if (community.isResponsible(id)) {
+            throw new CommunityDomainException("RESPONSIBLE_REQUIRED");
+        }
+    }
+
     public void changeContact(ContactChange change, Optional<ConsentContext> consent, Instant now) {
         Map<ContactField, String> normalized = new EnumMap<>(ContactField.class);
         List<ContactField> granted = new ArrayList<>();

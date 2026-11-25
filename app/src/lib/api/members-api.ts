@@ -6,6 +6,7 @@ export type MemberInput = components['schemas']['MemberInput'];
 export type MemberNameInput = components['schemas']['MemberNameInput'];
 export type MemberContactInput = components['schemas']['MemberContactInput'];
 export type ContactInput = components['schemas']['ContactInput'];
+export type MemberDataExport = components['schemas']['MemberDataExport'];
 export type MyMember = components['schemas']['MyMember'];
 export type FieldError = components['schemas']['ValidationProblem']['errors'][number];
 
@@ -14,6 +15,7 @@ export type MembersFailure = { ok: false; status: number; code?: string; fieldEr
 export type ListMembersResult = { ok: true; members: Member[] } | MembersFailure;
 export type MemberResult = { ok: true; member: Member } | MembersFailure;
 export type MemberOutcome = { ok: true } | MembersFailure;
+export type MemberDataResult = { ok: true; data: MemberDataExport } | MembersFailure;
 export type MyMemberResult = { ok: true; myMember: MyMember } | MembersFailure;
 
 export type MembersApi = {
@@ -28,6 +30,8 @@ export type MemberManagementApi = {
   link: (memberId: string, userId: string) => Promise<MemberResult>;
   unlink: (memberId: string) => Promise<MemberOutcome>;
   transfer: (memberId: string, communityId: string) => Promise<MemberResult>;
+  remove: (memberId: string) => Promise<MemberOutcome>;
+  exportData: (memberId: string) => Promise<MemberDataResult>;
 };
 
 export type MyMemberApi = {
@@ -96,6 +100,18 @@ export function createMembersApi(client: ApiClient): MembersApi & MemberManageme
         body: { communityId },
       });
       return data ? { ok: true, member: data } : failure(error, response);
+    },
+    async remove(memberId) {
+      const { error, response } = await client.DELETE('/api/members/{memberId}', {
+        params: { path: { memberId } },
+      });
+      return response.ok ? { ok: true } : failure(error, response);
+    },
+    async exportData(memberId) {
+      const { data, error, response } = await client.GET('/api/members/{memberId}/data-export', {
+        params: { path: { memberId } },
+      });
+      return data ? { ok: true, data } : failure(error, response);
     },
   };
 }

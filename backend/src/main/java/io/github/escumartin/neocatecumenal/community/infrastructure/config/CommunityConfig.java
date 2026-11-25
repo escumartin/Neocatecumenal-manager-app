@@ -8,6 +8,8 @@ import io.github.escumartin.neocatecumenal.community.application.port.in.Deactiv
 import io.github.escumartin.neocatecumenal.community.application.port.in.DeleteCommunity;
 import io.github.escumartin.neocatecumenal.community.application.port.in.DesignateResponsible;
 import io.github.escumartin.neocatecumenal.community.application.port.in.GetCommunity;
+import io.github.escumartin.neocatecumenal.community.application.port.in.DeleteMember;
+import io.github.escumartin.neocatecumenal.community.application.port.in.ExportMemberData;
 import io.github.escumartin.neocatecumenal.community.application.port.in.GetMember;
 import io.github.escumartin.neocatecumenal.community.application.port.in.GetOwnMember;
 import io.github.escumartin.neocatecumenal.community.application.port.in.GuardUserLink;
@@ -33,6 +35,8 @@ import io.github.escumartin.neocatecumenal.community.application.service.Deactiv
 import io.github.escumartin.neocatecumenal.community.application.service.DeleteCommunityService;
 import io.github.escumartin.neocatecumenal.community.application.service.DesignateResponsibleService;
 import io.github.escumartin.neocatecumenal.community.application.service.GetCommunityService;
+import io.github.escumartin.neocatecumenal.community.application.service.DeleteMemberService;
+import io.github.escumartin.neocatecumenal.community.application.service.ExportMemberDataService;
 import io.github.escumartin.neocatecumenal.community.application.service.GetMemberService;
 import io.github.escumartin.neocatecumenal.community.application.service.GetOwnMemberService;
 import io.github.escumartin.neocatecumenal.community.application.service.GuardUserLinkService;
@@ -155,5 +159,16 @@ class CommunityConfig {
     @Bean
     GuardUserLink guardUserLink(CommunityRepository communities, MemberRepository members) {
         return new GuardUserLinkService(communities, members);
+    }
+
+    @Bean
+    DeleteMember deleteMember(CommunityRepository communities, MemberRepository members, UserDirectory users) {
+        return new DeleteMemberService(communities, members, users);
+    }
+
+    @Bean
+    ExportMemberData exportMemberData(CommunityRepository communities, MemberRepository members,
+            UserDirectory users, Clock clock) {
+        return new ExportMemberDataService(communities, members, users, clock);
     }
 }

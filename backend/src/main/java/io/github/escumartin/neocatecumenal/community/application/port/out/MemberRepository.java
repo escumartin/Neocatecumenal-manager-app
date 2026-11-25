@@ -15,6 +15,8 @@ public interface MemberRepository {
 
     Optional<Member> lock(MemberId id);
 
+    void delete(MemberId id);
+
     List<Member> findByCommunity(CommunityId communityId);
 
     long countIn(CommunityId communityId);

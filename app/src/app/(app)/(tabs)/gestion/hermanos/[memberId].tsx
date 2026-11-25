@@ -10,6 +10,8 @@ export default function EditMemberRoute() {
       onSaved={() => router.back()}
       onOpenContact={(id) => router.push({ pathname: '/gestion/hermanos/contacto', params: { memberId: id } })}
       onOpenLink={(id) => router.push({ pathname: '/gestion/hermanos/vincular', params: { memberId: id } })}
+      onOpenExport={(id) => router.push({ pathname: '/gestion/hermanos/copia', params: { memberId: id } })}
+      onDeleted={() => router.back()}
       onOpenTransfer={(id) => router.push({ pathname: '/gestion/hermanos/trasladar', params: { memberId: id } })}
     />
   );

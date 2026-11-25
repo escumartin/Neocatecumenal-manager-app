@@ -1,5 +1,6 @@
 package io.github.escumartin.neocatecumenal.community.infrastructure.in.rest;
 
+import io.github.escumartin.neocatecumenal.community.application.port.in.MemberDataExport;
 import io.github.escumartin.neocatecumenal.community.application.port.in.MemberView;
 import io.github.escumartin.neocatecumenal.community.domain.Actor;
 import io.github.escumartin.neocatecumenal.community.domain.ActorRole;
@@ -12,6 +13,7 @@ import io.github.escumartin.neocatecumenal.community.domain.PersonName;
 import io.github.escumartin.neocatecumenal.community.domain.UserId;
 import io.github.escumartin.neocatecumenal.generated.model.ContactFieldInput;
 import io.github.escumartin.neocatecumenal.generated.model.Member;
+import java.time.ZoneOffset;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
@@ -52,6 +54,14 @@ final class MembersMapper {
             api.linkedUserId(member.linkedUserId().map(UserId::value).orElse(null));
         }
         return api;
+    }
+
+    static io.github.escumartin.neocatecumenal.generated.model.MemberDataExport toApi(MemberDataExport export,
+            Actor actor) {
+        return new io.github.escumartin.neocatecumenal.generated.model.MemberDataExport(
+                toApi(export.member(), actor), export.communityNumber(),
+                export.consentRecords().stream().map(MyMemberMapper::toApi).toList(),
+                export.exportedAt().atOffset(ZoneOffset.UTC));
     }
 
     private static FieldChange toFieldChange(ContactFieldInput input) {

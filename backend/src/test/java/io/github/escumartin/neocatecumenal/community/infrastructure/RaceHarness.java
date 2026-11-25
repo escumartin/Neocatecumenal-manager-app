@@ -77,7 +77,7 @@ final class RaceHarness {
             }
             return collect(futures);
         } finally {
-            executor.shutdownNow();
+            stop(executor);
         }
     }
 
@@ -110,15 +110,23 @@ final class RaceHarness {
             });
             return collect(futures);
         } finally {
-            executor.shutdownNow();
+            stop(executor);
         }
+    }
+
+    private static void stop(ExecutorService executor) throws InterruptedException {
+        executor.shutdownNow();
+        assertThat(executor.awaitTermination(TIMEOUT_SECONDS, TimeUnit.SECONDS))
+                .as("race threads finished").isTrue();
     }
 
     private void awaitWaiters(int expected) {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(TIMEOUT_SECONDS);
         while (System.nanoTime() < deadline) {
+            jdbc.execute("select pg_stat_clear_snapshot()");
             Integer waiting = jdbc.queryForObject("select count(*) from pg_stat_activity where "
-                    + "wait_event_type = 'Lock' and datname = current_database()", Integer.class);
+                    + "state = 'active' and wait_event_type = 'Lock' and datname = current_database() "
+                    + "and pid <> pg_backend_pid()", Integer.class);
             if (waiting != null && waiting >= expected) {
                 return;
             }

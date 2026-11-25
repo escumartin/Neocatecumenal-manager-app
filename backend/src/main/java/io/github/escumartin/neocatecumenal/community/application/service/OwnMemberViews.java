@@ -33,7 +33,7 @@ final class OwnMemberViews {
         return new OwnMemberView(new MemberView(member, MemberLocks.isResponsible(communities, member)), consents);
     }
 
-    private static ConsentRecorder recorderOf(ConsentRecord record, UserDirectory users) {
+    static ConsentRecorder recorderOf(ConsentRecord record, UserDirectory users) {
         if (record.recorderRole() == RecorderRole.MEMBER) {
             return new ConsentRecorder(RecorderRole.MEMBER, Optional.empty(), false);
         }

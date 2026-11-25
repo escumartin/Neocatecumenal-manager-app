@@ -1,4 +1,4 @@
-import type { Member, MemberManagementApi, MembersApi } from '@/lib/api/members-api';
+import type { Member, MemberDataExport, MemberManagementApi, MembersApi } from '@/lib/api/members-api';
 import { twelve } from '@/screens/communities/support/test-support';
 
 export const ana: Member = {
@@ -32,6 +32,40 @@ export const linked: Member = {
   linkedUserId: '6f1c1f1e-0000-4000-8000-000000000099',
 };
 
+export function exportOf(member: Member): MemberDataExport {
+  return {
+    member,
+    communityNumber: twelve.number,
+    exportedAt: '2026-11-25T10:00:00Z',
+    consentRecords: [
+      {
+        field: 'MOBILE',
+        decision: 'GRANTED',
+        channel: 'VERBAL',
+        recordedBy: { role: 'MODERATOR', name: 'Marcos', deleted: false },
+        noticeGiven: true,
+        recordedAt: '2026-11-20T10:00:00Z',
+      },
+      {
+        field: 'EMAIL',
+        decision: 'GRANTED',
+        channel: 'WRITTEN',
+        recordedBy: { role: 'ADMINISTRATOR', deleted: true },
+        noticeGiven: true,
+        recordedAt: '2026-11-21T10:00:00Z',
+      },
+      {
+        field: 'EMAIL',
+        decision: 'WITHDRAWN',
+        channel: 'APP',
+        recordedBy: { role: 'MEMBER', deleted: false },
+        noticeGiven: false,
+        recordedAt: '2026-11-22T10:00:00Z',
+      },
+    ],
+  };
+}
+
 export function fakeMembersApi(
   overrides: Partial<MembersApi & MemberManagementApi> = {},
 ): MembersApi & MemberManagementApi {
@@ -44,6 +78,8 @@ export function fakeMembersApi(
     link: jest.fn().mockResolvedValue({ ok: true, member: linked }),
     unlink: jest.fn().mockResolvedValue({ ok: true }),
     transfer: jest.fn().mockResolvedValue({ ok: true, member: ana }),
+    remove: jest.fn().mockResolvedValue({ ok: true }),
+    exportData: jest.fn().mockResolvedValue({ ok: true, data: exportOf(ana) }),
     ...overrides,
   };
 }

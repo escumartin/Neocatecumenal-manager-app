@@ -79,6 +79,19 @@ public final class MemberAccessPolicy {
         }
     }
 
+    public static void requireCanDelete(Actor actor, CommunityId memberCommunity, Optional<LinkedUser> linked) {
+        if (actor.role() == ActorRole.ADMINISTRATOR) {
+            return;
+        }
+        boolean allowed = actor.role() == ActorRole.MODERATOR
+                && actor.communityId().equals(memberCommunity)
+                && linked.map(user -> user.role() == ActorRole.REGISTERED && !user.id().equals(actor.id()))
+                        .orElse(true);
+        if (!allowed) {
+            throw new CommunityForbidden();
+        }
+    }
+
     public static void requireCanTransfer(Actor actor) {
         requireAdministrator(actor);
     }

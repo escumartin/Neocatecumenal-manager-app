@@ -19,7 +19,7 @@ final class MyMemberMapper {
                 view.currentConsents().stream().map(MyMemberMapper::toApi).toList());
     }
 
-    private static io.github.escumartin.neocatecumenal.generated.model.ConsentRecord toApi(OwnConsent consent) {
+    static io.github.escumartin.neocatecumenal.generated.model.ConsentRecord toApi(OwnConsent consent) {
         ConsentRecord record = consent.record();
         return new io.github.escumartin.neocatecumenal.generated.model.ConsentRecord(
                 io.github.escumartin.neocatecumenal.generated.model.ConsentRecord.FieldEnum

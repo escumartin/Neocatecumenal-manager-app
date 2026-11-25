@@ -72,6 +72,15 @@ public class MemberRepositoryAdapter implements MemberRepository {
     }
 
     @Override
+    @Transactional
+    public void delete(MemberId id) {
+        repository.findById(id.value()).ifPresent(entity -> {
+            repository.delete(entity);
+            repository.flush();
+        });
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<Member> findByCommunity(CommunityId communityId) {
         return repository.findAllByCommunityId(communityId.value()).stream()

@@ -16,7 +16,9 @@ final class FakeUserDirectory implements UserDirectory {
     final List<UserId> locked = new ArrayList<>();
     final List<Move> moves = new ArrayList<>();
     List<String> log = new ArrayList<>();
+    final List<UserId> deleted = new ArrayList<>();
     RuntimeException failOnMove;
+    RuntimeException failOnDelete;
 
     record Move(UserId user, CommunityId community) {
     }
@@ -47,5 +49,14 @@ final class FakeUserDirectory implements UserDirectory {
             throw failOnMove;
         }
         moves.add(new Move(id, communityId));
+    }
+
+    @Override
+    public void deleteUser(UserId id) {
+        log.add("user-delete");
+        if (failOnDelete != null) {
+            throw failOnDelete;
+        }
+        deleted.add(id);
     }
 }

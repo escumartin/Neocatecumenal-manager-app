@@ -2,6 +2,8 @@ package io.github.escumartin.neocatecumenal.community.infrastructure.in.rest;
 
 import io.github.escumartin.neocatecumenal.community.application.port.in.ChangeMemberContact;
 import io.github.escumartin.neocatecumenal.community.application.port.in.CreateMember;
+import io.github.escumartin.neocatecumenal.community.application.port.in.DeleteMember;
+import io.github.escumartin.neocatecumenal.community.application.port.in.ExportMemberData;
 import io.github.escumartin.neocatecumenal.community.application.port.in.GetMember;
 import io.github.escumartin.neocatecumenal.community.application.port.in.LinkMember;
 import io.github.escumartin.neocatecumenal.community.application.port.in.ListMembers;
@@ -30,7 +32,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -48,11 +49,13 @@ public class MembersController implements MembersApi {
     private final LinkMember linkMember;
     private final UnlinkMember unlinkMember;
     private final TransferMember transferMember;
+    private final DeleteMember deleteMember;
+    private final ExportMemberData exportMemberData;
 
     MembersController(ActorResolver actors, TransactionRetry retry, ListMembers listMembers,
             CreateMember createMember, GetMember getMember, RenameMember renameMember,
             ChangeMemberContact changeMemberContact, LinkMember linkMember, UnlinkMember unlinkMember,
-            TransferMember transferMember) {
+            TransferMember transferMember, DeleteMember deleteMember, ExportMemberData exportMemberData) {
         this.actors = actors;
         this.retry = retry;
         this.listMembers = listMembers;
@@ -63,6 +66,8 @@ public class MembersController implements MembersApi {
         this.linkMember = linkMember;
         this.unlinkMember = unlinkMember;
         this.transferMember = transferMember;
+        this.deleteMember = deleteMember;
+        this.exportMemberData = exportMemberData;
     }
 
     @Override
@@ -121,12 +126,15 @@ public class MembersController implements MembersApi {
 
     @Override
     public ResponseEntity<Void> deleteMember(UUID memberId) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        Actor actor = actors.currentActor();
+        retry.run(() -> deleteMember.delete(actor, new MemberId(memberId)));
+        return ResponseEntity.noContent().build();
     }
 
     @Override
     public ResponseEntity<MemberDataExport> exportMemberData(UUID memberId) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        Actor actor = actors.currentActor();
+        return ResponseEntity.ok(MembersMapper.toApi(exportMemberData.export(actor, new MemberId(memberId)), actor));
     }
 
     @Override

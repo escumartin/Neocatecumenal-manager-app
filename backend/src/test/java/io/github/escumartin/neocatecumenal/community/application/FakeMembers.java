@@ -50,6 +50,12 @@ final class FakeMembers implements MemberRepository {
     }
 
     @Override
+    public void delete(MemberId id) {
+        log.add("member-delete");
+        stored.remove(id);
+    }
+
+    @Override
     public List<Member> findByCommunity(CommunityId communityId) {
         return stored.values().stream().filter(member -> member.communityId().equals(communityId)).toList();
     }

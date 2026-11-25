@@ -26,6 +26,7 @@ import {
 import { CommunityPicker } from '@/screens/users/community-picker';
 import { ConsentSection, type ConsentChannelChoice } from './consent-section';
 import { ContactFields, contactMessages } from './contact-fields';
+import { MemberDeleteAction } from './delete-member';
 import { MemberLinkActions } from './link-actions';
 
 type Props = {
@@ -37,6 +38,8 @@ type Props = {
   onOpenContact?: (memberId: string) => void;
   onOpenLink?: (memberId: string) => void;
   onOpenTransfer?: (memberId: string) => void;
+  onOpenExport?: (memberId: string) => void;
+  onDeleted?: () => void;
 };
 
 export function MemberForm({
@@ -48,6 +51,8 @@ export function MemberForm({
   onOpenContact,
   onOpenLink,
   onOpenTransfer,
+  onOpenExport,
+  onDeleted,
 }: Props) {
   if (memberId) {
     return (
@@ -58,6 +63,8 @@ export function MemberForm({
         onOpenContact={onOpenContact}
         onOpenLink={onOpenLink}
         onOpenTransfer={onOpenTransfer}
+        onOpenExport={onOpenExport}
+        onDeleted={onDeleted}
       />
     );
   }
@@ -71,6 +78,8 @@ function ExistingMember({
   onOpenContact,
   onOpenLink,
   onOpenTransfer,
+  onOpenExport,
+  onDeleted,
 }: {
   memberId: string;
   api?: MemberManagementApi;
@@ -78,6 +87,8 @@ function ExistingMember({
   onOpenContact?: (memberId: string) => void;
   onOpenLink?: (memberId: string) => void;
   onOpenTransfer?: (memberId: string) => void;
+  onOpenExport?: (memberId: string) => void;
+  onDeleted?: () => void;
 }) {
   const { status, member, reload } = useMember(memberId, api);
 
@@ -110,6 +121,8 @@ function ExistingMember({
       onOpenContact={onOpenContact}
       onOpenLink={onOpenLink}
       onOpenTransfer={onOpenTransfer}
+      onOpenExport={onOpenExport}
+      onDeleted={onDeleted}
       onUnlinked={() => void reload()}
     />
   );
@@ -124,6 +137,8 @@ type FieldsProps = {
   onOpenContact?: (memberId: string) => void;
   onOpenLink?: (memberId: string) => void;
   onOpenTransfer?: (memberId: string) => void;
+  onOpenExport?: (memberId: string) => void;
+  onDeleted?: () => void;
   onUnlinked?: () => void;
 };
 
@@ -136,6 +151,8 @@ function MemberFields({
   onOpenContact,
   onOpenLink,
   onOpenTransfer,
+  onOpenExport,
+  onDeleted,
   onUnlinked,
 }: FieldsProps) {
   const { save } = useMemberSave(initial?.id, api);
@@ -266,6 +283,7 @@ function MemberFields({
               icon="person.crop.rectangle"
               onPress={() => onOpenContact?.(initial.id)}
             />
+            <ListRow title={membersText.dataExport.row} onPress={() => onOpenExport?.(initial.id)} />
           </ListSection>
           <MemberLinkActions
             member={initial}
@@ -274,6 +292,7 @@ function MemberFields({
             onOpenTransfer={onOpenTransfer}
             onUnlinked={() => onUnlinked?.()}
           />
+          <MemberDeleteAction member={initial} api={api} onDeleted={() => onDeleted?.()} />
         </>
       ) : (
         <>
