@@ -24,6 +24,18 @@ check_fails() {
   fi
 }
 
+create_database_secrets() {
+  local home="$1" password="$2"
+  NEOCAT_SECRETS_GID="$(id -g)"
+  export NEOCAT_SECRETS_GID
+  mkdir -p "$home/secrets"
+  chmod 700 "$home"
+  chmod 750 "$home/secrets"
+  printf '%s' "neocatecumenal" >"$home/secrets/spring.datasource.username"
+  printf '%s' "$password" >"$home/secrets/spring.datasource.password"
+  chmod 440 "$home"/secrets/*
+}
+
 unit_is_sandboxed() {
   local unit="$1" writable="$2"
   grep -q '^ProtectSystem=strict$' "$unit" \

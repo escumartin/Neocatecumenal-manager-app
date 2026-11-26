@@ -49,6 +49,19 @@ case command
 when "parses"
   load(files[0]).fetch("jobs").fetch("publish")
   exit 0
+when "pull-request-smoke"
+  job = load(files[0]).dig("jobs", "compose-smoke")
+  fail_with("falta el job compose-smoke") if job.nil?
+  steps = steps_of(job)
+  builds = steps.select { |step| step["uses"].to_s.include?("docker/build-push-action") }
+  ok = job["if"].to_s.include?("github.event_name == 'pull_request'") &&
+       Array(job["needs"]).empty? &&
+       steps.any? { |step| step["run"].to_s.include?("deploy/tests/smoke.sh") } &&
+       builds.size == 2 &&
+       builds.all? { |step| step["with"].to_h["load"].to_s == "true" && step["with"].to_h["push"].to_s != "true" } &&
+       steps.none? { |step| step["uses"].to_s.include?("docker/login-action") } &&
+       job["permissions"].nil?
+  exit(ok ? 0 : 1)
 when "publish-needs"
   needs = Array(load(files[0]).dig("jobs", "publish", "needs")).sort
   exit(needs == %w[app backend contract] ? 0 : 1)
@@ -173,6 +186,7 @@ for file in "$ci" "$mobile_build" "$mobile_update"; do
 done
 
 check "ci.yml es YAML válido y define el job publish" inspect_workflows parses "$ci"
+check "las pull requests ejecutan el humo de compose sin publicar ni iniciar sesión" inspect_workflows pull-request-smoke "$ci"
 check "publish necesita backend, contract y app" inspect_workflows publish-needs "$ci"
 check "publish solo corre en push a master" inspect_workflows publish-condition "$ci"
 check "publish serializa sus ejecuciones sin cancelar las en curso" inspect_workflows publish-concurrency "$ci"

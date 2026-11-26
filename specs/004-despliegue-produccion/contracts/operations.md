@@ -96,8 +96,8 @@ Rutas base: `NEOCAT_HOME` (por defecto `/srv/neocatecumenal`), `NEOCAT_CONFIG_DI
 
 | Ruta en el servidor | Permisos | Contenido | Ejemplo versionado |
 |---|---|---|---|
-| `$NEOCAT_HOME/secrets/` | `700`, ficheros `600` | `spring.datasource.username` y `spring.datasource.password` (un solo rol de base de datos, que usan PostgreSQL y la app), `tailscale.authkey` (clave de alta de Tailscale) | — |
-| `$NEOCAT_HOME/.env` | `600` | `ALLOWED_ORIGINS`, `PRIVACY_NOTICE_VERSION`, `MINIMUM_APP_VERSION` | `deploy/env/neocatecumenal.env.example` |
+| `$NEOCAT_HOME/secrets/` | `750`, ficheros `440`, `root:neocat-secrets` (gid en `NEOCAT_SECRETS_GID`; los servicios que leen secretos entran en ese grupo con `group_add`, sin `uid`, `gid` ni `mode` en `secrets`, que compose ignora en secretos de fichero) | `spring.datasource.username` y `spring.datasource.password` (un solo rol de base de datos, que usan PostgreSQL y la app), `tailscale.authkey` (clave de alta de Tailscale) | — |
+| `$NEOCAT_HOME/.env` | `600` | `ALLOWED_ORIGINS`, `PRIVACY_NOTICE_VERSION`, `MINIMUM_APP_VERSION`, `NEOCAT_SECRETS_GID` | `deploy/env/neocatecumenal.env.example` |
 | `$NEOCAT_CONFIG_DIR/backup.env` | `600`, root | `RESTIC_REPOSITORY` (`$NEOCAT_BACKUP_DIR/restic`), `RESTIC_PASSWORD_FILE` (opcional), `NEOCAT_BACKUP_MAX_USE`, URLs de ping | `deploy/env/backup.env.example` |
 | `$NEOCAT_CONFIG_DIR/restic.password` | `400`, root | contraseña del repositorio restic; se monta de solo lectura en el contenedor de restic, nunca como variable de entorno | — |
 | `$NEOCAT_CONFIG_DIR/deploy.env` | `600`, root | URL de ping `deploy` | `deploy/env/deploy.env.example` |

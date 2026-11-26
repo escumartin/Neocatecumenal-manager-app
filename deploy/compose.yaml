@@ -19,17 +19,14 @@ x-app-environment: &app-environment
   MINIMUM_APP_VERSION: ${MINIMUM_APP_VERSION:?MINIMUM_APP_VERSION es obligatorio}
   JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
 
+x-secrets-group: &secrets-group
+  - ${NEOCAT_SECRETS_GID:?NEOCAT_SECRETS_GID es obligatorio}
+
 x-app-secrets: &app-secrets
   - source: database_username
     target: spring.datasource.username
-    uid: "10001"
-    gid: "10001"
-    mode: 0400
   - source: database_password
     target: spring.datasource.password
-    uid: "10001"
-    gid: "10001"
-    mode: 0400
 
 services:
   postgres:
@@ -42,15 +39,10 @@ services:
       POSTGRES_DB: neocatecumenal
       POSTGRES_USER_FILE: /run/secrets/database_username
       POSTGRES_PASSWORD_FILE: /run/secrets/database_password
+    group_add: *secrets-group
     secrets:
       - source: database_username
-        uid: "999"
-        gid: "999"
-        mode: 0400
       - source: database_password
-        uid: "999"
-        gid: "999"
-        mode: 0400
     tmpfs:
       - /tmp
       - /run/postgresql
@@ -74,6 +66,7 @@ services:
     environment:
       <<: *app-environment
       SPRING_PROFILES_ACTIVE: prod
+    group_add: *secrets-group
     secrets: *app-secrets
     tmpfs:
       - /tmp
@@ -114,9 +107,9 @@ services:
       TS_SERVE_CONFIG: /config/serve.json
       TS_AUTHKEY: file:/run/secrets/tailscale_authkey
       TS_EXTRA_ARGS: --advertise-tags=tag:neocatecumenal
+    group_add: *secrets-group
     secrets:
       - source: tailscale_authkey
-        mode: 0400
     tmpfs:
       - /tmp
     volumes:
@@ -139,6 +132,7 @@ services:
     environment:
       <<: *app-environment
       SPRING_PROFILES_ACTIVE: prod,migrate
+    group_add: *secrets-group
     secrets: *app-secrets
     tmpfs:
       - /tmp
@@ -164,6 +158,7 @@ services:
       SPRING_PROFILES_ACTIVE: prod,bootstrap
       IDENTITY_BOOTSTRAP_ADMINISTRATORNAME: ${IDENTITY_BOOTSTRAP_ADMINISTRATORNAME:-}
       IDENTITY_BOOTSTRAP_ADMINISTRATORCOMMUNITY: ${IDENTITY_BOOTSTRAP_ADMINISTRATORCOMMUNITY:-}
+    group_add: *secrets-group
     secrets: *app-secrets
     tmpfs:
       - /tmp

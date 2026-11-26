@@ -33,11 +33,8 @@ output="$work/update.out"
 pings="$work/pings.log"
 database_password="$(openssl rand -hex 16)"
 
-mkdir -p "$NEOCAT_HOME/secrets" "$NEOCAT_CONFIG_DIR"
-chmod 700 "$NEOCAT_HOME" "$NEOCAT_HOME/secrets"
-printf '%s' "neocatecumenal" >"$NEOCAT_HOME/secrets/spring.datasource.username"
-printf '%s' "$database_password" >"$NEOCAT_HOME/secrets/spring.datasource.password"
-chmod 600 "$NEOCAT_HOME"/secrets/*
+mkdir -p "$NEOCAT_HOME" "$NEOCAT_CONFIG_DIR"
+create_database_secrets "$NEOCAT_HOME" "$database_password"
 : >"$pings"
 : >"$output"
 
