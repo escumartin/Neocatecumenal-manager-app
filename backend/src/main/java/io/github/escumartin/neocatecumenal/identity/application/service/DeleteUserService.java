@@ -6,6 +6,7 @@ import io.github.escumartin.neocatecumenal.identity.UserLinkGuard;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.DeleteUser;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.UserNotFoundException;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.CurrentSessionContext;
+import io.github.escumartin.neocatecumenal.identity.application.port.out.ErasureRecords;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.IdentityEventPublisher;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.PrivacyNoticeSettings;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.SessionRepository;
@@ -16,6 +17,7 @@ import io.github.escumartin.neocatecumenal.identity.domain.User;
 import io.github.escumartin.neocatecumenal.identity.domain.UserId;
 import io.github.escumartin.neocatecumenal.identity.domain.UserManagementPolicy;
 import io.github.escumartin.neocatecumenal.identity.domain.UserRole;
+import java.time.Clock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,15 +31,19 @@ public class DeleteUserService implements DeleteUser {
     private final SessionRepository sessions;
     private final IdentityEventPublisher events;
     private final UserLinkGuard guard;
+    private final ErasureRecords erasures;
+    private final Clock clock;
 
     public DeleteUserService(CurrentSessionContext currentSession, UserRepository users,
             SessionRepository sessions, IdentityEventPublisher events, PrivacyNoticeSettings privacyNotice,
-            UserLinkGuard guard) {
+            UserLinkGuard guard, ErasureRecords erasures, Clock clock) {
         this.actors = new ActorResolver(currentSession, users, privacyNotice);
         this.users = users;
         this.sessions = sessions;
         this.events = events;
         this.guard = guard;
+        this.erasures = erasures;
+        this.clock = clock;
     }
 
     @Override
@@ -51,10 +57,10 @@ public class DeleteUserService implements DeleteUser {
         UserManagementPolicy.checkDeletion(actor, target, new LockingMembershipCounts(users));
         sessions.deleteAllOf(target.id());
         users.delete(target.id());
+        erasures.recordUser(target.id(), clock.instant());
         events.publish(new UserDeleted(target.id().value()));
         log.atInfo()
                 .addKeyValue("actorId", actor.id().value())
-                .addKeyValue("userId", target.id().value())
                 .log("Usuario borrado");
     }
 

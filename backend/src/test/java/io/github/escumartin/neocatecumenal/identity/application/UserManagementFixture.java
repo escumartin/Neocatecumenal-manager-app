@@ -13,7 +13,9 @@ import io.github.escumartin.neocatecumenal.identity.domain.Session;
 import io.github.escumartin.neocatecumenal.identity.domain.User;
 import io.github.escumartin.neocatecumenal.identity.domain.UserId;
 import io.github.escumartin.neocatecumenal.identity.domain.UserRole;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.UUID;
 
 final class UserManagementFixture {
@@ -23,6 +25,9 @@ final class UserManagementFixture {
     final Fakes.RecordingUserLinkGuard guard = new Fakes.RecordingUserLinkGuard(users);
     final Fakes.InMemorySessions sessions = new Fakes.InMemorySessions();
     final Fakes.FakeSessionContext currentSession = new Fakes.FakeSessionContext();
+    final Fakes.InMemoryErasures erasures = new Fakes.InMemoryErasures();
+    final Instant now = Instant.parse("2026-03-01T10:00:00Z");
+    final Clock clock = Clock.fixed(now, ZoneOffset.UTC);
     final Fakes.RecordingEvents events = new Fakes.RecordingEvents();
     final Fakes.FixedPrivacyNotice privacyNotice = new Fakes.FixedPrivacyNotice();
     final Community communityA = communities.save(new Community(new CommunityId(UUID.randomUUID()),

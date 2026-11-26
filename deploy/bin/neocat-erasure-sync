@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+NEOCAT_HOME="${NEOCAT_HOME:-/srv/neocatecumenal}"
+NEOCAT_CONFIG_DIR="${NEOCAT_CONFIG_DIR:-/etc/neocatecumenal}"
+NEOCAT_COMPOSE_FILE="${NEOCAT_COMPOSE_FILE:-$NEOCAT_HOME/deploy/compose.yaml}"
+NEOCAT_COMPOSE_PROJECT="${NEOCAT_COMPOSE_PROJECT:-neocatecumenal}"
+NEOCAT_ENV_FILE="${NEOCAT_ENV_FILE:-$NEOCAT_HOME/.env}"
+NEOCAT_BACKUP_DIR="${NEOCAT_BACKUP_DIR:-/mnt/neocatecumenal-backups}"
+NEOCAT_BACKUP_REQUIRE_MOUNT="${NEOCAT_BACKUP_REQUIRE_MOUNT:-true}"
+NEOCAT_RESTIC_IMAGE="${NEOCAT_RESTIC_IMAGE:-restic/restic@sha256:93999df80d4ac6cb148e82d2ef1fe6a81996f17ff535e772723538211b31555a}"
+NEOCAT_DATABASE="${NEOCAT_DATABASE:-neocatecumenal}"
+NEOCAT_BACKUP_COMMAND="${NEOCAT_BACKUP_COMMAND:-$(cd "$(dirname "$0")" && pwd)/neocat-backup}"
+
+settings_file="$NEOCAT_CONFIG_DIR/backup.env"
+
+load_setting() {
+  local name="$1" default="$2" value
+  if [ -z "${!name:-}" ]; then
+    value=""
+    [ -f "$settings_file" ] && value="$(sed -n "s/^$name=//p" "$settings_file" | tail -n 1)"
+    export "$name=${value:-$default}"
+  fi
+}
+
+load_setting RESTIC_REPOSITORY "$NEOCAT_BACKUP_DIR/restic"
+load_setting RESTIC_PASSWORD_FILE "$NEOCAT_CONFIG_DIR/restic.password"
+load_setting NEOCAT_PING_ERASURE_SYNC ""
+
+export COMPOSE_FILE="$NEOCAT_COMPOSE_FILE"
+export COMPOSE_PROJECT_NAME="$NEOCAT_COMPOSE_PROJECT"
+export NEOCAT_HOME
+
+log() {
+  printf '%s\n' "$*"
+}
+
+ping_sync() {
+  local suffix="$1" text="$2"
+  [ -n "$NEOCAT_PING_ERASURE_SYNC" ] || return 0
+  curl -s -m 10 --retry 3 -o /dev/null --data-raw "$text" "$NEOCAT_PING_ERASURE_SYNC$suffix" \
+    || log "no se pudo avisar a la comprobación de supresiones"
+}
+
+fail() {
+  log "$1"
+  ping_sync "/fail" "$1"
+  exit 1
+}
+
+compose() {
+  local env_args=()
+  [ -f "$NEOCAT_ENV_FILE" ] && env_args=(--env-file "$NEOCAT_ENV_FILE")
+  docker compose ${env_args[@]+"${env_args[@]}"} "$@"
+}
+
+restic() {
+  docker run --rm -i --network none --read-only --cap-drop ALL --security-opt no-new-privileges:true \
+    --tmpfs /tmp --user "$(id -u):$(id -g)" --hostname neocatecumenal \
+    -e TZ=UTC -e RESTIC_REPOSITORY -e RESTIC_PASSWORD_FILE=/run/secrets/restic_password -e RESTIC_CACHE_DIR=/tmp/restic-cache \
+    -v "$RESTIC_PASSWORD_FILE:/run/secrets/restic_password:ro" -v "$NEOCAT_BACKUP_DIR:$NEOCAT_BACKUP_DIR" "$NEOCAT_RESTIC_IMAGE" "$@"
+}
+
+is_mounted() {
+  local mount_point real_dir
+  [ -d "$NEOCAT_BACKUP_DIR" ] || return 1
+  mount_point="$(df -P "$NEOCAT_BACKUP_DIR" 2>/dev/null | awk 'NR==2 {print $NF}')"
+  real_dir="$(cd "$NEOCAT_BACKUP_DIR" && pwd -P)"
+  [ -n "$mount_point" ] && [ "$mount_point" = "$real_dir" ]
+}
+
+latest_snapshot_time() {
+  printf '%s' "$1" | grep -o '"time":"[^"]*"' | sed 's/^"time":"\(.*\)"$/\1/' | sort | tail -n 1
+}
+
+has_erasures_after() {
+  local since="$1" answer
+  answer="$(compose exec -T postgres sh -c \
+    'user="$(cat /run/secrets/database_username)"; exec psql -U "$user" -d "$0" -v ON_ERROR_STOP=1 -qAt -v "since=$1" -f -' \
+    "$NEOCAT_DATABASE" "$since" <<'SQL'
+select exists (select 1 from identity_erasure where erased_at > :'since'::timestamptz)
+    or exists (select 1 from community_erasure where erased_at > :'since'::timestamptz);
+SQL
+  )" || return 2
+  [ "$answer" = "t" ]
+}
+
+if [ "$NEOCAT_BACKUP_REQUIRE_MOUNT" = "true" ] && ! is_mounted; then
+  fail "partición de copias sin montar"
+fi
+
+[ -d "$NEOCAT_BACKUP_DIR" ] && [ -s "$RESTIC_PASSWORD_FILE" ] || fail "fallo de sincronización de supresiones"
+
+snapshots_json="$(restic snapshots --json 2>/dev/null)" || fail "fallo de sincronización de supresiones"
+since="$(latest_snapshot_time "$snapshots_json" | sed 's/\(\.[0-9]\{6\}\)[0-9]*/\1/')"
+[ -n "$since" ] || since="-infinity"
+
+has_erasures_after "$since"
+status=$?
+if [ "$status" -eq 2 ]; then
+  fail "fallo de sincronización de supresiones"
+fi
+
+if [ "$status" -eq 0 ]; then
+  log "hay supresiones posteriores a la última copia: lanzando una copia"
+  "$NEOCAT_BACKUP_COMMAND" >/dev/null 2>&1 || fail "fallo de copia por supresiones"
+else
+  log "sin supresiones posteriores a la última copia"
+fi
+
+ping_sync "" "sincronización correcta"

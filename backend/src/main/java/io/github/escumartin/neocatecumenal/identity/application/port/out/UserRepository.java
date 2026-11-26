@@ -26,6 +26,8 @@ public interface UserRepository {
 
     void lockCommunity(CommunityId communityId);
 
+    void lockForBootstrap();
+
     long countModerators(CommunityId communityId);
 
     List<User> findAllByCommunity(CommunityId communityId);

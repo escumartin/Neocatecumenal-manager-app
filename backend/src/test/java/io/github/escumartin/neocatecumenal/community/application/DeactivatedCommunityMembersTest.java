@@ -51,10 +51,12 @@ class DeactivatedCommunityMembersTest {
     private final RecordingCatalog catalog = new RecordingCatalog();
     private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
     private final RenameMemberService rename = new RenameMemberService(communities, members);
-    private final ChangeMemberContactService contact = new ChangeMemberContactService(communities, members, clock);
+    private final ChangeMemberContactService contact =
+            new ChangeMemberContactService(communities, members, new InMemoryErasures(), clock);
     private final LinkMemberService link = new LinkMemberService(communities, members, users);
     private final UnlinkMemberService unlink = new UnlinkMemberService(communities, members, users);
-    private final DeleteMemberService delete = new DeleteMemberService(communities, members, users);
+    private final DeleteMemberService delete =
+            new DeleteMemberService(communities, members, users, new InMemoryErasures(), clock);
     private final ExportMemberDataService export = new ExportMemberDataService(communities, members, users, clock);
     private final TransferMemberService transfer = new TransferMemberService(communities, members, users);
     private final DeactivateCommunityService deactivate = new DeactivateCommunityService(communities, users, catalog);

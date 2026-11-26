@@ -1,10 +1,6 @@
 spring:
   application:
     name: neocatecumenal-manager
-  datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/neocatecumenal}
-    username: ${DATABASE_USER:neocatecumenal}
-    password: ${DATABASE_PASSWORD:neocatecumenal}
   jpa:
     open-in-view: false
     hibernate:
@@ -17,6 +13,9 @@ spring:
       accept-float-as-int: false
 server:
   forward-headers-strategy: none
+service:
+  minimum-app-version: 1.0.0
+  revision: ${SERVICE_REVISION:0000000}
 identity:
   privacy-notice-version: v1
   allowed-origins: []

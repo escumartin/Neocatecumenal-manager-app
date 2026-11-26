@@ -390,6 +390,26 @@ class LinkTransferServicesTest {
     }
 
     @Test
+    void releaseLogsNoIdentifierOfTheUnlinkedMember() {
+        Member member = linkedMemberIn(home, ActorRole.REGISTERED);
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> appender =
+                new ch.qos.logback.core.read.ListAppender<>();
+        ch.qos.logback.classic.Logger serviceLogger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory
+                .getLogger(io.github.escumartin.neocatecumenal.community.application.service.GuardUserLinkService.class);
+        appender.start();
+        serviceLogger.addAppender(appender);
+        try {
+            guard.releaseBeforeDeletion(member.linkedUserId().orElseThrow(), home.id());
+        } finally {
+            serviceLogger.detachAppender(appender);
+        }
+
+        assertThat(appender.list).hasSize(1);
+        assertThat(appender.list.getFirst().getKeyValuePairs()).isNullOrEmpty();
+        assertThat(appender.list.getFirst().getFormattedMessage()).doesNotContain(member.id().value().toString());
+    }
+
+    @Test
     void releaseOfAUserWithoutMemberOnlyLocksTheCommunity() {
         guard.releaseBeforeDeletion(new UserId(UUID.randomUUID()), home.id());
 

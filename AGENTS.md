@@ -16,6 +16,8 @@ Cliente Expo + Expo Router + TypeScript + NativeWind + React Native Reusables. P
 | `backend/` | API en Java (Maven), un módulo Modulith por bounded context |
 | `api/` | contrato OpenAPI, fuente de verdad del backend y del cliente |
 | `app/` | cliente Expo web y móvil |
+| `deploy/` | despliegue a producción: compose, imágenes, órdenes `neocat-*`, unidades systemd y tests de shell |
+| `docs/` | `operacion.md`: runbook del servidor (puesta en marcha, despliegue, copias, rotación de secretos, builds móviles) |
 | `.specify/` | plantillas y constitución de spec-kit |
 | `.agents/agents/` | agentes especializados: diseño, crítica, tests, build y revisores |
 | `.agents/scripts/` | scripts de los hooks del harness |
@@ -35,6 +37,9 @@ Cliente Expo + Expo Router + TypeScript + NativeWind + React Native Reusables. P
 8. **Flujo `/flow`.** Orquesta spec → plan → tasks → implementación → gates → revisión con agentes. Resume tras la spec y tras el plan sin esperar OK y hace commit, push, PR y merge sin preguntar, con los gates en verde y según la regla 10.
 9. **Nada de terceros sin revisar.** Rige `../AGENTS.md` § Reglas comunes.
 10. **PRs con automerge.** Con los gates locales en verde, el asistente hace commit y push sin pedir OK, crea la PR y la mergea él mismo en cuanto sus checks están en verde, incluida la revisión automática, que falla con hallazgos bloqueantes o altos, y después actualiza `master` en local. Sustituye aquí a las reglas globales «espera mi OK antes de commitear» y «las PRs las mergeo yo».
+11. **Migraciones compatibles.** Una migración Flyway debe funcionar con la versión anterior del backend (la vuelta atrás de `neocat-update` la reutiliza): añadir antes de usar, quitar en un despliegue posterior.
+12. **Contrato aditivo.** Los cambios de `api/` solo añaden; si uno rompe a las apps ya publicadas, se sube `MINIMUM_APP_VERSION` en el mismo cambio.
+13. **Supresiones y copias.** Al cambiar columnas de `identity`, `community`, `agenda` o `spaces`, revisa `deploy/sql/apply-erasures.sql` y `deploy/tests/test-restore.sh`: la restauración reaplica las supresiones con esas columnas.
 
 ## Al empezar
 
@@ -46,5 +51,6 @@ Cliente Expo + Expo Router + TypeScript + NativeWind + React Native Reusables. P
 - Backend: `cd backend && ./mvnw -B verify` con `JAVA_HOME` en Java 25. Con Rancher Desktop, exportar antes
   `TESTCONTAINERS_RYUK_DISABLED=true` (Ryuk no arranca); en CI no hace falta.
 - App: `cd app && npm run lint && npm run typecheck && npx expo export -p web`.
+- Despliegue: cada `deploy/tests/*.sh` (Docker en marcha; puerto 8088 libre para `smoke.sh`; `NEOCAT_SMOKE_PORT` cambia el puerto de `test-update.sh`).
 
 @.agents/TOOLING-MATRIX.md

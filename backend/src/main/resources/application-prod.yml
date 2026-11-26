@@ -1,0 +1,26 @@
+spring:
+  config:
+    import: optional:configtree:/run/secrets/
+  datasource:
+    url: ${DATABASE_URL}
+identity:
+  allowed-origins: ${ALLOWED_ORIGINS}
+  privacy-notice-version: ${PRIVACY_NOTICE_VERSION}
+service:
+  minimum-app-version: ${MINIMUM_APP_VERSION}
+server:
+  forward-headers-strategy: native
+  tomcat:
+    remoteip:
+      internal-proxies: 172\.28\.250\.10
+      remote-ip-header: x-forwarded-for
+      protocol-header: x-forwarded-proto
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      show-components: never

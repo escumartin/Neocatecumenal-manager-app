@@ -1,7 +1,10 @@
+import { backupRetentionNotice } from './backup-retention';
+
 export const privacyNotice = {
   title: 'Aviso sobre tus datos',
   paragraphs: [
     'Texto legal del aviso de privacidad pendiente de redacción.',
+    backupRetentionNotice,
   ],
   accept: 'Acepto',
   reject: 'No acepto',

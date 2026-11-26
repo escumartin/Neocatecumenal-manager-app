@@ -33,6 +33,9 @@ interface UserSpringDataRepository extends JpaRepository<UserJpaEntity, UUID> {
             nativeQuery = true)
     List<UUID> lockAdministratorIds();
 
+    @Query(value = "select cast(pg_advisory_xact_lock(hashtext('identity-bootstrap')) as text)", nativeQuery = true)
+    List<String> lockBootstrap();
+
     @Query(value = "select id from identity_community where id = :id for update", nativeQuery = true)
     List<UUID> lockCommunityRow(@Param("id") UUID id);
 }

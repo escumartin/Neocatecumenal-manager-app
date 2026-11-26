@@ -12,7 +12,6 @@ public record IdentityProperties(
 
     public record Bootstrap(
             @DefaultValue("false") boolean enabled,
-            @DefaultValue List<Integer> communities,
             String administratorName,
             Integer administratorCommunity) {
     }

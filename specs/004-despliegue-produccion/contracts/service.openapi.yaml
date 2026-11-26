@@ -1,0 +1,71 @@
+openapi: 3.1.0
+info:
+  title: Neocatecumenal Manager API - Service compatibility (draft)
+  version: 0.4.0-draft
+servers:
+  - url: /
+security:
+  - bearerAuth: []
+  - cookieAuth: []
+x-merge:
+  addsTags:
+    - service
+  addsPaths:
+    - /api/compatibility
+  addsSchemas:
+    - Compatibility
+    - AppVersion
+tags:
+  - name: service
+    description: Public service metadata for clients
+paths:
+  /api/compatibility:
+    get:
+      tags: [service]
+      operationId: getCompatibility
+      summary: Minimum supported app version and the deployed service revision; public, no authentication
+      security: []
+      responses:
+        "200":
+          description: Compatibility requirements of the running service
+          headers:
+            Cache-Control:
+              description: Always no-cache so clients see a raised minimum right after a deployment
+              schema:
+                type: string
+                examples:
+                  - no-cache
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Compatibility"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: __Host-session
+  schemas:
+    AppVersion:
+      type: string
+      description: Semantic version of the store binary, major.minor.patch without prerelease or build metadata
+      pattern: '^(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})$'
+      examples:
+        - 1.0.0
+    Compatibility:
+      type: object
+      required:
+        - minimumAppVersion
+        - serviceRevision
+      properties:
+        minimumAppVersion:
+          $ref: "#/components/schemas/AppVersion"
+        serviceRevision:
+          type: string
+          description: Git commit of the main branch the running service was built from
+          pattern: '^[0-9a-f]{7,40}$'
+          examples:
+            - 86a5aa6

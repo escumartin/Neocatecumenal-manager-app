@@ -1,0 +1,192 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+NEOCAT_HOME="${NEOCAT_HOME:-/srv/neocatecumenal}"
+NEOCAT_CONFIG_DIR="${NEOCAT_CONFIG_DIR:-/etc/neocatecumenal}"
+NEOCAT_COMPOSE_FILE="${NEOCAT_COMPOSE_FILE:-$NEOCAT_HOME/deploy/compose.yaml}"
+NEOCAT_COMPOSE_PROJECT="${NEOCAT_COMPOSE_PROJECT:-neocatecumenal}"
+NEOCAT_ENV_FILE="${NEOCAT_ENV_FILE:-$NEOCAT_HOME/.env}"
+NEOCAT_BACKUP_DIR="${NEOCAT_BACKUP_DIR:-/mnt/neocatecumenal-backups}"
+NEOCAT_BACKUP_REQUIRE_MOUNT="${NEOCAT_BACKUP_REQUIRE_MOUNT:-true}"
+NEOCAT_RESTIC_IMAGE="${NEOCAT_RESTIC_IMAGE:-restic/restic@sha256:93999df80d4ac6cb148e82d2ef1fe6a81996f17ff535e772723538211b31555a}"
+NEOCAT_DATABASE="${NEOCAT_DATABASE:-neocatecumenal}"
+NEOCAT_APPLY_ERASURES_SQL="${NEOCAT_APPLY_ERASURES_SQL:-$(cd "$(dirname "$0")/.." && pwd)/sql/apply-erasures.sql}"
+
+settings_file="$NEOCAT_CONFIG_DIR/backup.env"
+
+load_setting() {
+  local name="$1" default="$2" value
+  if [ -z "${!name:-}" ]; then
+    value=""
+    [ -f "$settings_file" ] && value="$(sed -n "s/^$name=//p" "$settings_file" | tail -n 1)"
+    export "$name=${value:-$default}"
+  fi
+}
+
+load_setting RESTIC_REPOSITORY "$NEOCAT_BACKUP_DIR/restic"
+load_setting RESTIC_PASSWORD_FILE "$NEOCAT_CONFIG_DIR/restic.password"
+
+export COMPOSE_FILE="$NEOCAT_COMPOSE_FILE"
+export COMPOSE_PROJECT_NAME="$NEOCAT_COMPOSE_PROJECT"
+export NEOCAT_HOME
+
+temporary_database=""
+
+log() {
+  printf '%s\n' "$*"
+}
+
+compose() {
+  local env_args=()
+  [ -f "$NEOCAT_ENV_FILE" ] && env_args=(--env-file "$NEOCAT_ENV_FILE")
+  docker compose ${env_args[@]+"${env_args[@]}"} "$@"
+}
+
+restic() {
+  docker run --rm -i --network none --read-only --cap-drop ALL --security-opt no-new-privileges:true \
+    --tmpfs /tmp --user "$(id -u):$(id -g)" --hostname neocatecumenal \
+    -e TZ=UTC -e RESTIC_REPOSITORY -e RESTIC_PASSWORD_FILE=/run/secrets/restic_password -e RESTIC_CACHE_DIR=/tmp/restic-cache \
+    -v "$RESTIC_PASSWORD_FILE:/run/secrets/restic_password:ro" -v "$NEOCAT_BACKUP_DIR:$NEOCAT_BACKUP_DIR" "$NEOCAT_RESTIC_IMAGE" "$@"
+}
+
+in_postgres() {
+  local tool="$1" database="$2"
+  shift 2
+  compose exec -T postgres sh -c \
+    'user="$(cat /run/secrets/database_username)"; tool="$0"; database="$1"; shift 2; exec "$tool" -U "$user" -d "$database" "$@"' \
+    "$tool" "$database" "$@"
+}
+
+psql_in() {
+  local database="$1"
+  shift
+  in_postgres psql "$database" -v ON_ERROR_STOP=1 -qAt "$@"
+}
+
+is_mounted() {
+  local mount_point real_dir
+  [ -d "$NEOCAT_BACKUP_DIR" ] || return 1
+  mount_point="$(df -P "$NEOCAT_BACKUP_DIR" 2>/dev/null | awk 'NR==2 {print $NF}')"
+  real_dir="$(cd "$NEOCAT_BACKUP_DIR" && pwd -P)"
+  [ -n "$mount_point" ] && [ "$mount_point" = "$real_dir" ]
+}
+
+database_exists() {
+  [ "$(psql_in postgres -c "select count(*) from pg_database where datname = '$1'" 2>/dev/null)" = "1" ]
+}
+
+table_count() {
+  psql_in "$1" -c "select count(*) from information_schema.tables where table_schema = 'public'" 2>/dev/null
+}
+
+has_registry() {
+  database_exists "$1" && [ "$(psql_in "$1" -c "select to_regclass('public.identity_erasure') is not null" 2>/dev/null)" = "t" ]
+}
+
+drop_temporary_database() {
+  [ -n "$temporary_database" ] || return 0
+  psql_in postgres -c "drop database if exists \"$temporary_database\" with (force)" >/dev/null 2>&1
+}
+
+cleanup() {
+  drop_temporary_database
+}
+trap cleanup EXIT
+
+snapshot_id_of() {
+  restic snapshots --json "$1" 2>/dev/null | grep -o '"id":"[0-9a-f]*"' | head -n 1 | sed 's/.*:"\(.*\)"/\1/'
+}
+
+restore_into() {
+  local snapshot="$1" database="$2"
+  restic dump "$snapshot" /neocatecumenal.dump \
+    | in_postgres pg_restore "$database" --no-owner --exit-on-error >/dev/null 2>&1
+}
+
+backup_date_of() {
+  restic dump "$1" /neocatecumenal.dump 2>/dev/null \
+    | compose exec -T postgres pg_restore -l 2>/dev/null \
+    | sed -n 's/^; Archive created at //p' | head -n 1
+}
+
+source_rows() {
+  local source="$1"
+  printf 'create temp table neocat_source_identity (id uuid, user_id uuid, erased_at timestamptz);\n'
+  printf 'copy neocat_source_identity from stdin;\n'
+  psql_in "$source" -c "copy (select id, user_id, erased_at from identity_erasure) to stdout" || return 1
+  printf '\\.\n'
+  printf 'create temp table neocat_source_community (id uuid, member_id uuid, field varchar(16), erased_at timestamptz);\n'
+  printf 'copy neocat_source_community from stdin;\n'
+  psql_in "$source" -c "copy (select id, member_id, field, erased_at from community_erasure) to stdout" || return 1
+  printf '\\.\n'
+}
+
+if [ "$#" -ne 2 ]; then
+  log "uso: neocat-restore <instantánea> <base-destino>"
+  exit 1
+fi
+
+snapshot="$1"
+destination="$2"
+started_at="$(date +%s)"
+
+if ! [[ "$destination" =~ ^[a-z_][a-z0-9_]{0,62}$ ]]; then
+  log "nombre de base de destino no válido"
+  exit 1
+fi
+
+if [ "$NEOCAT_BACKUP_REQUIRE_MOUNT" = "true" ] && ! is_mounted; then
+  log "la partición de copias no está montada"
+  exit 1
+fi
+
+[ -d "$NEOCAT_BACKUP_DIR" ] || { log "no existe el directorio de copias"; exit 1; }
+[ -s "$RESTIC_PASSWORD_FILE" ] || { log "falta el fichero de contraseña de restic"; exit 1; }
+
+resolved="$(snapshot_id_of "$snapshot")"
+[ -n "$resolved" ] || { log "no se encontró la instantánea $snapshot"; exit 1; }
+latest="$(snapshot_id_of latest)"
+
+if database_exists "$destination" && [ "$(table_count "$destination")" != "0" ]; then
+  log "la base $destination ya tiene datos: elige otra base de destino"
+  exit 1
+fi
+
+backup_at="$(backup_date_of "$resolved")"
+[ -n "$backup_at" ] || { log "no se pudo leer la fecha de la copia"; exit 1; }
+
+log "restaurando la instantánea ${resolved:0:8} en la base $destination"
+log "fecha de la copia: $backup_at"
+
+database_exists "$destination" || psql_in postgres -c "create database \"$destination\"" >/dev/null \
+  || { log "no se pudo crear la base $destination"; exit 1; }
+
+if ! restore_into "$resolved" "$destination"; then
+  log "la restauración falló: la base $destination queda sin usar"
+  exit 1
+fi
+
+if [ "$destination" != "$NEOCAT_DATABASE" ] && has_registry "$NEOCAT_DATABASE"; then
+  source_database="$NEOCAT_DATABASE"
+  source_label="producción"
+elif [ "$resolved" = "$latest" ]; then
+  source_database="$destination"
+  source_label="la propia copia"
+else
+  temporary_database="${destination}_erasure_source"
+  psql_in postgres -c "create database \"$temporary_database\"" >/dev/null \
+    || { log "no se pudo crear la base temporal"; exit 1; }
+  restore_into "$latest" "$temporary_database" || { log "no se pudo leer la copia más reciente"; exit 1; }
+  source_database="$temporary_database"
+  source_label="copia más reciente"
+fi
+
+log "fuente de supresiones: $source_label"
+
+if ! { source_rows "$source_database"; cat "$NEOCAT_APPLY_ERASURES_SQL"; } \
+    | psql_in "$destination" -v "backup_at=$backup_at" 2>&1 | sed '/^$/d'; then
+  log "no se pudieron aplicar las supresiones"
+  exit 1
+fi
+
+log "tiempo de restauración: $(( $(date +%s) - started_at )) s"

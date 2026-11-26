@@ -22,7 +22,7 @@ public class AnonymizeRequesterService implements AnonymizeRequester {
     public void anonymize(UserId userId) {
         int affected = requests.anonymize(userId);
         if (affected > 0) {
-            log.atInfo().addKeyValue("userId", userId.value()).addKeyValue("requests", affected).log("Solicitudes de salón anonimizadas");
+            log.atInfo().addKeyValue("requests", affected).log("Solicitudes de salón anonimizadas");
         }
     }
 }

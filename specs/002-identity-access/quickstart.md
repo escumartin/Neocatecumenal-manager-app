@@ -66,13 +66,11 @@ con Testcontainers.
    ```bash
    cd backend && ./mvnw -B -q package -DskipTests
    java -jar target/neocatecumenal-manager-0.0.1-SNAPSHOT.jar --spring.profiles.active=bootstrap \
-     --identity.bootstrap.communities=1,2,3 \
      --identity.bootstrap.administrator-name=Admin \
      --identity.bootstrap.administrator-community=1
    ```
 
-   - `communities`: lista de números de comunidad separados por comas; las que no existen se crean. La comunidad del
-     administrador se crea también si falta.
+   - Comportamiento de la [Carga inicial](../../.agents/context/dominio.md) (definición canónica en el glosario del dominio).
    - `administrator-name` y `administrator-community` son obligatorios; sin ellos aborta antes de crear nada.
    - El perfil `bootstrap` arranca sin servidor web y con `identity.bootstrap.enabled=true`.
 

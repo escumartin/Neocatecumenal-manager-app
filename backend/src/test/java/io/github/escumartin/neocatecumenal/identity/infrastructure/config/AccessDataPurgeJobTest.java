@@ -8,6 +8,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.PurgeExpiredAccessData;
+import io.github.escumartin.neocatecumenal.identity.application.port.in.PurgeExpiredErasures;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,7 @@ class AccessDataPurgeJobTest {
             throw new IllegalStateException("database unavailable");
         };
 
-        assertThatCode(() -> new AccessDataPurgeJob(failing).purgeExpired()).doesNotThrowAnyException();
+        assertThatCode(() -> new AccessDataPurgeJob(failing, () -> { }).purgeExpired()).doesNotThrowAnyException();
 
         assertThat(appender.list).anySatisfy(event -> {
             assertThat(event.getLevel()).isEqualTo(Level.ERROR);
@@ -50,9 +51,45 @@ class AccessDataPurgeJobTest {
     void aSuccessfulPurgeRunsTheUseCaseOnceAndLogsNoError() {
         int[] runs = {0};
 
-        new AccessDataPurgeJob(() -> runs[0]++).purgeExpired();
+        new AccessDataPurgeJob(() -> runs[0]++, () -> { }).purgeExpired();
 
         assertThat(runs[0]).isEqualTo(1);
         assertThat(appender.list).noneMatch(event -> event.getLevel() == Level.ERROR);
+    }
+
+    @Test
+    void aSuccessfulRunPurgesTheExpiredErasuresOnce() {
+        int[] runs = {0};
+        PurgeExpiredErasures erasures = () -> runs[0]++;
+
+        new AccessDataPurgeJob(() -> { }, erasures).purgeExpired();
+
+        assertThat(runs[0]).isEqualTo(1);
+    }
+
+    @Test
+    void aFailingAccessDataPurgeStillPurgesTheExpiredErasures() {
+        int[] runs = {0};
+        PurgeExpiredAccessData failing = () -> {
+            throw new IllegalStateException("database unavailable");
+        };
+
+        new AccessDataPurgeJob(failing, () -> runs[0]++).purgeExpired();
+
+        assertThat(runs[0]).isEqualTo(1);
+    }
+
+    @Test
+    void aFailingErasurePurgeDoesNotEscapeTheScheduledRunAndIsLogged() {
+        PurgeExpiredErasures failing = () -> {
+            throw new IllegalStateException("database unavailable");
+        };
+
+        assertThatCode(() -> new AccessDataPurgeJob(() -> { }, failing).purgeExpired()).doesNotThrowAnyException();
+
+        assertThat(appender.list).anySatisfy(event -> {
+            assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+            assertThat(event.getFormattedMessage()).isEqualTo("Fallo al purgar el registro de supresiones caducado");
+        });
     }
 }

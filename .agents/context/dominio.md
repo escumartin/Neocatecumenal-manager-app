@@ -14,6 +14,7 @@ dos grupos coincidan en el mismo salón y franja.
 | Término | Significado |
 |---|---|
 | Comunidad | grupo de hermanos identificado por un número; nace en el estado explícito «sin responsable» y, una vez designado, siempre tiene uno |
+| Carga inicial | definición canónica: modo de un solo uso (perfil `bootstrap`, solo con consola interactiva) que crea solo la comunidad del primer administrador, si falta, y a este; sin lista de comunidades, el resto se crea desde la app; con un administrador existente aborta sin cambios y con código distinto de 0; la contraseña inicial solo sale por la consola |
 | Hermano → `Member` | persona de una comunidad: nombre, apellidos opcionales, móvil, teléfono fijo y email, cada contacto con su consentimiento; sin dirección ni sexo; puede no tener usuario |
 | Usuario | cuenta de acceso de Identidad y acceso; puede vincularse a un hermano (uno a uno, misma comunidad) sin compartir datos |
 | Lugar | salón parroquial, hotel o restaurante |

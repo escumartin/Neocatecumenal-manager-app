@@ -1,0 +1,9 @@
+services:
+  tailscale:
+    profiles: [disabled]
+  edge:
+    ports:
+      - "127.0.0.1:${NEOCAT_SMOKE_PORT:-8088}:8080"
+volumes:
+  neocatecumenal-pgdata:
+    name: neocatecumenal-smoke-pgdata

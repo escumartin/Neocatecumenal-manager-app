@@ -18,7 +18,7 @@ class LocalCorsTest {
             .withUserConfiguration(LocalCorsConfig.class)
             .withBean(IdentityProperties.class,
                     () -> new IdentityProperties("v1", List.of("http://localhost:8081"),
-                            new IdentityProperties.Bootstrap(false, List.of(), null, null)));
+                            new IdentityProperties.Bootstrap(false, null, null)));
 
     @Test
     void defaultProfileHasNoCorsFilter() {

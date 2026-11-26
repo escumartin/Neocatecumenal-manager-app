@@ -1,0 +1,9 @@
+[Unit]
+Description=Comprueba cada hora si hay supresiones posteriores a la última copia
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target

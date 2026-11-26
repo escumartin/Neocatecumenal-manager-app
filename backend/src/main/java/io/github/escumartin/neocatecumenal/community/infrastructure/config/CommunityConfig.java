@@ -17,6 +17,7 @@ import io.github.escumartin.neocatecumenal.community.application.port.in.LinkMem
 import io.github.escumartin.neocatecumenal.community.application.port.in.ListCommunities;
 import io.github.escumartin.neocatecumenal.community.application.port.in.ListMembers;
 import io.github.escumartin.neocatecumenal.community.application.port.in.ProvisionCommunity;
+import io.github.escumartin.neocatecumenal.community.application.port.in.PurgeExpiredErasures;
 import io.github.escumartin.neocatecumenal.community.application.port.in.ReactivateCommunity;
 import io.github.escumartin.neocatecumenal.community.application.port.in.RenameMember;
 import io.github.escumartin.neocatecumenal.community.application.port.in.TransferMember;
@@ -24,6 +25,7 @@ import io.github.escumartin.neocatecumenal.community.application.port.in.UnlinkM
 import io.github.escumartin.neocatecumenal.community.application.port.in.UpdateCommunity;
 import io.github.escumartin.neocatecumenal.community.application.port.out.CommunityHistory;
 import io.github.escumartin.neocatecumenal.community.application.port.out.CommunityRepository;
+import io.github.escumartin.neocatecumenal.community.application.port.out.ErasureRecords;
 import io.github.escumartin.neocatecumenal.community.application.port.out.IdentityCommunityCatalog;
 import io.github.escumartin.neocatecumenal.community.application.port.out.MemberRepository;
 import io.github.escumartin.neocatecumenal.community.application.port.out.UserDirectory;
@@ -44,6 +46,7 @@ import io.github.escumartin.neocatecumenal.community.application.service.LinkMem
 import io.github.escumartin.neocatecumenal.community.application.service.ListCommunitiesService;
 import io.github.escumartin.neocatecumenal.community.application.service.ListMembersService;
 import io.github.escumartin.neocatecumenal.community.application.service.ProvisionCommunityService;
+import io.github.escumartin.neocatecumenal.community.application.service.PurgeExpiredErasuresService;
 import io.github.escumartin.neocatecumenal.community.application.service.ReactivateCommunityService;
 import io.github.escumartin.neocatecumenal.community.application.service.RenameMemberService;
 import io.github.escumartin.neocatecumenal.community.application.service.TransferMemberService;
@@ -116,8 +119,8 @@ class CommunityConfig {
 
     @Bean
     ChangeMemberContact changeMemberContact(CommunityRepository communities, MemberRepository members,
-            Clock clock) {
-        return new ChangeMemberContactService(communities, members, clock);
+            ErasureRecords erasures, Clock clock) {
+        return new ChangeMemberContactService(communities, members, erasures, clock);
     }
 
     @Bean
@@ -137,8 +140,8 @@ class CommunityConfig {
 
     @Bean
     ChangeOwnContact changeOwnContact(CommunityRepository communities, MemberRepository members,
-            UserDirectory users, Clock clock) {
-        return new ChangeOwnContactService(communities, members, users, clock);
+            UserDirectory users, ErasureRecords erasures, Clock clock) {
+        return new ChangeOwnContactService(communities, members, users, erasures, clock);
     }
 
     @Bean
@@ -162,8 +165,14 @@ class CommunityConfig {
     }
 
     @Bean
-    DeleteMember deleteMember(CommunityRepository communities, MemberRepository members, UserDirectory users) {
-        return new DeleteMemberService(communities, members, users);
+    DeleteMember deleteMember(CommunityRepository communities, MemberRepository members, UserDirectory users,
+            ErasureRecords erasures, Clock clock) {
+        return new DeleteMemberService(communities, members, users, erasures, clock);
+    }
+
+    @Bean
+    PurgeExpiredErasures purgeExpiredMemberErasures(ErasureRecords erasures, Clock clock) {
+        return new PurgeExpiredErasuresService(erasures, clock);
     }
 
     @Bean

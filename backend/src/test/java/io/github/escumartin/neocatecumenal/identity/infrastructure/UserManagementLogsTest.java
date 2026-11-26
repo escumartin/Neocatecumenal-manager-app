@@ -11,6 +11,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.jayway.jsonpath.JsonPath;
 import io.github.escumartin.neocatecumenal.identity.TestUsers;
+import io.github.escumartin.neocatecumenal.identity.application.port.in.PurgeExpiredErasures;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.CommunityRepository;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.IssuedSessionToken;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.SessionRepository;
@@ -78,6 +79,9 @@ class UserManagementLogsTest {
 
     @Autowired
     private JdbcTemplate jdbc;
+
+    @Autowired
+    private PurgeExpiredErasures purgeExpiredErasures;
 
     private final ListAppender<ILoggingEvent> appender = new ListAppender<>();
     private Logger rootLogger;
@@ -175,5 +179,26 @@ class UserManagementLogsTest {
         mockMvc.perform(delete("/api/users/" + UUID.randomUUID()).header(HttpHeaders.AUTHORIZATION, bearer));
 
         assertThat(everythingLogged()).doesNotContain(CREATED_NAME).doesNotContain(ACTOR_NAME);
+    }
+
+    @Test
+    void deletionAndPurgeOfTheErasureRegistryLogNoRegisteredUserId() throws Exception {
+        jdbc.update("delete from identity_erasure");
+        User target = users.save(TestUsers.newUser(new UserId(UUID.randomUUID()), new AccessId(424242),
+                new DisplayName(CREATED_NAME), UserRole.REGISTERED, community.id(), new PasswordHash("{argon2}h"),
+                false, new PrivacyConsent("v1", Instant.now())));
+        UUID expired = UUID.randomUUID();
+        jdbc.update("insert into identity_erasure (id, user_id, erased_at) "
+                + "values (?, ?, now() - interval '40 days')", UUID.randomUUID(), expired);
+
+        mockMvc.perform(delete("/api/users/" + target.id().value()).header(HttpHeaders.AUTHORIZATION, bearer));
+        purgeExpiredErasures.purge();
+
+        assertThat(jdbc.queryForList("select user_id::text from identity_erasure", String.class))
+                .containsExactly(target.id().value().toString());
+        assertThat(everythingLogged())
+                .contains("Usuario borrado")
+                .doesNotContain(target.id().value().toString())
+                .doesNotContain(expired.toString());
     }
 }

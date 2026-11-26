@@ -78,7 +78,8 @@ class ContactChangeLogTest {
         ContactChange change = ContactChange.of(Map.of(ContactField.MOBILE, FieldChange.share("600000001"),
                 ContactField.EMAIL, FieldChange.share("ana.test@example.com")));
 
-        new ChangeMemberContactService(communities, members, clock).change(moderator, member.id(), change,
+        new ChangeMemberContactService(communities, members, new InMemoryErasures(), clock).change(moderator,
+                member.id(), change,
                 Optional.of(new OnBehalfConsent(ConsentChannel.VERBAL, true)));
 
         assertThat(appender.list).filteredOn(event -> event.getFormattedMessage().equals(
@@ -93,7 +94,8 @@ class ContactChangeLogTest {
     void managedContactChangeWithoutNewConsentLogsConsentNotRecorded() {
         Member member = member(Optional.empty());
 
-        new ChangeMemberContactService(communities, members, clock).change(moderator, member.id(),
+        new ChangeMemberContactService(communities, members, new InMemoryErasures(), clock).change(moderator,
+                member.id(),
                 ContactChange.of(Map.of(ContactField.MOBILE, FieldChange.withdraw())), Optional.empty());
 
         assertThat(appender.list).filteredOn(event -> event.getFormattedMessage().equals(
@@ -108,7 +110,7 @@ class ContactChangeLogTest {
         member(Optional.of(ownUser));
         Actor actor = new Actor(ownUser, ActorRole.REGISTERED, home.id());
 
-        new ChangeOwnContactService(communities, members, users, clock).change(actor,
+        new ChangeOwnContactService(communities, members, users, new InMemoryErasures(), clock).change(actor,
                 ContactChange.of(Map.of(ContactField.LANDLINE, FieldChange.share("600000002"))));
 
         assertThat(appender.list).filteredOn(event -> event.getFormattedMessage().equals(

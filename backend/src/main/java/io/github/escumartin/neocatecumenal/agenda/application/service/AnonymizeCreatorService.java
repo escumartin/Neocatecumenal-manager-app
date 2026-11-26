@@ -22,7 +22,7 @@ public class AnonymizeCreatorService implements AnonymizeCreator {
     public void anonymize(UserId userId) {
         int affected = events.anonymize(userId);
         if (affected > 0) {
-            log.atInfo().addKeyValue("userId", userId.value()).addKeyValue("events", affected).log("Eventos anonimizados");
+            log.atInfo().addKeyValue("events", affected).log("Eventos anonimizados");
         }
     }
 }

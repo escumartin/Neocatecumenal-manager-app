@@ -8,8 +8,9 @@ import io.github.escumartin.neocatecumenal.identity.application.Fakes.FixedIniti
 import io.github.escumartin.neocatecumenal.identity.application.Fakes.InMemoryCommunities;
 import io.github.escumartin.neocatecumenal.identity.application.Fakes.InMemoryUsers;
 import io.github.escumartin.neocatecumenal.identity.application.Fakes.SequenceAccessIds;
+import io.github.escumartin.neocatecumenal.identity.application.port.in.AdministratorAlreadyExistsException;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.BootstrapCommand;
-import io.github.escumartin.neocatecumenal.identity.application.port.in.BootstrapOutcome;
+import io.github.escumartin.neocatecumenal.identity.application.port.in.CreatedAdministrator;
 import io.github.escumartin.neocatecumenal.identity.application.service.BootstrapIdentityService;
 import io.github.escumartin.neocatecumenal.identity.domain.AccessId;
 import io.github.escumartin.neocatecumenal.identity.domain.CommunityNumber;
@@ -18,8 +19,6 @@ import io.github.escumartin.neocatecumenal.identity.domain.PlainPassword;
 import io.github.escumartin.neocatecumenal.identity.domain.User;
 import io.github.escumartin.neocatecumenal.identity.domain.UserId;
 import io.github.escumartin.neocatecumenal.identity.domain.UserRole;
-import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -31,49 +30,35 @@ class BootstrapIdentityServiceTest {
     private final Fakes.InMemoryProvisioner provisioner = new Fakes.InMemoryProvisioner(communities);
 
     private BootstrapIdentityService service(Integer... accessIds) {
-        return new BootstrapIdentityService(users, communities, hasher, new SequenceAccessIds(accessIds),
+        return new BootstrapIdentityService(users, hasher, new SequenceAccessIds(accessIds),
                 new FixedInitialPassword(), provisioner);
     }
 
-    private static BootstrapCommand command(int administratorCommunity, int... numbers) {
-        return new BootstrapCommand(
-                Arrays.stream(numbers).mapToObj(CommunityNumber::new).toList(),
-                new DisplayName("Test Admin"),
-                new CommunityNumber(administratorCommunity));
+    private static BootstrapCommand command(int administratorCommunity) {
+        return new BootstrapCommand(new DisplayName("Test Admin"), new CommunityNumber(administratorCommunity));
+    }
+
+    private void addExistingRegisteredUser(int accessId) {
+        users.save(User.register(new UserId(UUID.randomUUID()),
+                new AccessId(accessId), new DisplayName("Existing"), UserRole.REGISTERED,
+                communities.findByNumber(new CommunityNumber(1)).orElseThrow().id(),
+                hasher.hash(new PlainPassword("irrelevant"))));
     }
 
     @Test
-    void createsEveryCommunityOfTheList() {
-        BootstrapOutcome outcome = service(111111).run(command(1, 1, 2, 3));
+    void createsExactlyOneCommunityAndTheAdministratorWhenThereIsNoAdministrator() {
+        service(123456).run(command(2));
 
-        assertThat(communities.findAll()).extracting(community -> community.number().value()).containsExactly(1, 2, 3);
-        assertThat(outcome.createdCommunities()).isEqualTo(3);
+        assertThat(communities.findAll()).extracting(community -> community.number().value()).containsExactly(2);
+        assertThat(users.users).hasSize(1);
     }
 
     @Test
-    void createsTheAdministratorCommunityEvenWhenItIsNotInTheList() {
-        service(111111).run(command(9, 1, 2));
+    void createsTheAdministratorWithGeneratedCredentialsThatMustBeChanged() {
+        CreatedAdministrator created = service(123456).run(command(2));
 
-        assertThat(communities.findByNumber(new CommunityNumber(9))).isPresent();
-    }
-
-    @Test
-    void createsOnlyTheMissingCommunities() {
-        service(111111).run(command(1, 1, 2));
-
-        BootstrapOutcome outcome = service(222222).run(command(1, 1, 2, 3));
-
-        assertThat(communities.findAll()).hasSize(3);
-        assertThat(outcome.createdCommunities()).isEqualTo(1);
-    }
-
-    @Test
-    void createsAnAdministratorWithGeneratedCredentialsThatMustBeChanged() {
-        BootstrapOutcome outcome = service(123456).run(command(2, 1, 2));
-
-        assertThat(outcome.administrator()).isPresent();
-        assertThat(outcome.administrator().get().accessId()).isEqualTo(new AccessId(123456));
-        assertThat(outcome.administrator().get().initialPassword().value()).isEqualTo("initialpass");
+        assertThat(created.accessId()).isEqualTo(new AccessId(123456));
+        assertThat(created.initialPassword().value()).isEqualTo("initialpass");
         User administrator = users.findByAccessId(new AccessId(123456)).orElseThrow();
         assertThat(administrator.role()).isEqualTo(UserRole.ADMINISTRATOR);
         assertThat(administrator.name()).isEqualTo(new DisplayName("Test Admin"));
@@ -84,66 +69,68 @@ class BootstrapIdentityServiceTest {
     }
 
     @Test
-    void doesNotCreateAnotherAdministratorWhenOneExists() {
-        service(123456).run(command(1, 1));
+    void failsWithoutTouchingAnythingWhenAnAdministratorAlreadyExists() {
+        service(123456).run(command(1));
+        int savesBefore = users.saves;
+        provisioner.requested.clear();
 
-        BootstrapOutcome outcome = service(654321).run(command(1, 1));
+        assertThatThrownBy(() -> service(654321).run(command(7)))
+                .isInstanceOf(AdministratorAlreadyExistsException.class);
 
-        assertThat(outcome.administrator()).isEmpty();
+        assertThat(provisioner.requested).isEmpty();
+        assertThat(users.saves).isEqualTo(savesBefore);
         assertThat(users.users).hasSize(1);
+        assertThat(communities.findByNumber(new CommunityNumber(7))).isEmpty();
+    }
+
+    @Test
+    void takesTheBootstrapLockBeforeCheckingForAnAdministrator() {
+        service(123456).run(command(1));
+
+        assertThat(users.calls).containsSubsequence("lockForBootstrap", "existsAdministrator");
+    }
+
+    @Test
+    void requestsTheCommunityOfTheAdministratorOnlyOnce() {
+        service(111111).run(command(2));
+
+        assertThat(provisioner.requested).containsExactly(2);
+    }
+
+    @Test
+    void rejectsACommandWithoutAdministratorCommunityAndCreatesNothing() {
+        assertThatThrownBy(() -> new BootstrapCommand(new DisplayName("Test Admin"), null))
+                .isInstanceOf(NullPointerException.class);
+
+        assertThat(communities.findAll()).isEmpty();
+        assertThat(users.users).isEmpty();
+    }
+
+    @Test
+    void rejectsACommandWithoutAdministratorName() {
+        assertThatThrownBy(() -> new BootstrapCommand(null, new CommunityNumber(1)))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void retriesWhenTheGeneratedAccessIdIsTaken() {
-        service(123456).run(command(1, 1));
+        service(123456).run(command(1));
         users.users.clear();
-        users.save(User.register(new UserId(UUID.randomUUID()),
-                new AccessId(111111), new DisplayName("Existing"), UserRole.REGISTERED,
-                communities.findByNumber(new CommunityNumber(1)).orElseThrow().id(),
-                hasher.hash(new PlainPassword("irrelevant"))));
+        addExistingRegisteredUser(111111);
 
-        BootstrapOutcome outcome = service(111111, 111111, 222222).run(command(1, 1));
+        CreatedAdministrator created = service(111111, 111111, 222222).run(command(1));
 
-        assertThat(outcome.administrator().orElseThrow().accessId()).isEqualTo(new AccessId(222222));
+        assertThat(created.accessId()).isEqualTo(new AccessId(222222));
     }
 
     @Test
     void givesUpAfterFiveTakenAccessIds() {
-        service(123456).run(command(1, 1));
+        service(123456).run(command(1));
         users.users.clear();
-        users.save(User.register(new UserId(UUID.randomUUID()),
-                new AccessId(111111), new DisplayName("Existing"), UserRole.REGISTERED,
-                communities.findByNumber(new CommunityNumber(1)).orElseThrow().id(),
-                hasher.hash(new PlainPassword("irrelevant"))));
+        addExistingRegisteredUser(111111);
 
-        assertThatThrownBy(() -> service(111111, 111111, 111111, 111111, 111111).run(command(1, 1)))
+        assertThatThrownBy(() -> service(111111, 111111, 111111, 111111, 111111).run(command(1)))
                 .isInstanceOf(IllegalStateException.class);
         assertThat(users.existsAdministrator()).isFalse();
-    }
-
-    @Test
-    void emptyCommunityListStillCreatesTheAdministratorCommunity() {
-        BootstrapOutcome outcome = service(123456).run(new BootstrapCommand(List.of(), new DisplayName("Test Admin"),
-                new CommunityNumber(4)));
-
-        assertThat(outcome.createdCommunities()).isEqualTo(1);
-        assertThat(outcome.administrator()).isPresent();
-    }
-
-    @Test
-    void asksTheProvisionerOncePerDistinctCommunityNumber() {
-        service(111111).run(command(2, 1, 2, 3));
-
-        assertThat(provisioner.requested).containsExactly(1, 2, 3);
-    }
-
-    @Test
-    void createsTheAdministratorInTheCommunityTheProvisionerReturns() {
-        BootstrapOutcome outcome = service(123456).run(command(5, 5));
-
-        User administrator = users.findByAccessId(new AccessId(123456)).orElseThrow();
-        assertThat(outcome.administrator()).isPresent();
-        assertThat(administrator.communityId())
-                .isEqualTo(communities.findByNumber(new CommunityNumber(5)).orElseThrow().id());
     }
 }

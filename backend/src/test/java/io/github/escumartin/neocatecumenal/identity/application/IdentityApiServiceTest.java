@@ -32,7 +32,9 @@ import io.github.escumartin.neocatecumenal.identity.domain.PrivacyConsent;
 import io.github.escumartin.neocatecumenal.identity.domain.User;
 import io.github.escumartin.neocatecumenal.identity.domain.UserId;
 import io.github.escumartin.neocatecumenal.identity.domain.UserRole;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +47,8 @@ class IdentityApiServiceTest {
     private final FakeSessionContext sessionContext = new FakeSessionContext();
     private final InMemorySessions sessions = new InMemorySessions();
     private final RecordingEvents events = new RecordingEvents();
+    private final Fakes.InMemoryErasures erasures = new Fakes.InMemoryErasures();
+    private final Clock clock = Clock.fixed(Instant.parse("2026-03-01T10:00:00Z"), ZoneOffset.UTC);
     private final RecordingUserLinkGuard guard = new RecordingUserLinkGuard(users);
     private IdentityApiService api;
     private Community community;
@@ -54,7 +58,7 @@ class IdentityApiServiceTest {
         FixedPrivacyNotice privacyNotice = new FixedPrivacyNotice();
         api = new IdentityApiService(sessionContext, users, communities, privacyNotice,
                 new UpdateUserService(sessionContext, users, communities, privacyNotice, guard),
-                new DeleteUserService(sessionContext, users, sessions, events, privacyNotice, guard));
+                new DeleteUserService(sessionContext, users, sessions, events, privacyNotice, guard, erasures, clock));
         community = communities.save(new Community(new CommunityId(UUID.randomUUID()), new CommunityNumber(7)));
     }
 

@@ -39,6 +39,7 @@ public class IdentitySecurityConfig {
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/sessions").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
+                        .requestMatchers("/api/compatibility").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health/liveness",
                                 "/actuator/health/readiness").permitAll()
                         .anyRequest().authenticated())

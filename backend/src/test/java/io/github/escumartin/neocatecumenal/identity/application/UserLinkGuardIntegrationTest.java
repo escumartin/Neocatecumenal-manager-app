@@ -29,7 +29,7 @@ class UserLinkGuardIntegrationTest {
 
     private DeleteUserService deleteService() {
         return new DeleteUserService(fixture.currentSession, fixture.users, fixture.sessions, fixture.events,
-                fixture.privacyNotice, fixture.guard);
+                fixture.privacyNotice, fixture.guard, fixture.erasures, fixture.clock);
     }
 
     private static UpdateUserCommand move(User target, Community destination) {

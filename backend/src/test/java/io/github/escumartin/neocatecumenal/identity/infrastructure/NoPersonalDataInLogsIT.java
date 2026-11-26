@@ -41,7 +41,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SpringBootTest(properties = {
     "identity.allowed-origins=https://app.example.test",
     "identity.bootstrap.enabled=true",
-    "identity.bootstrap.communities=1,2",
     "identity.bootstrap.administrator-name=Zzyzx Bootstrapper",
     "identity.bootstrap.administrator-community=1"
 })

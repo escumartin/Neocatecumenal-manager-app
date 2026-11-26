@@ -45,7 +45,8 @@ class DeleteExportServicesTest {
     private final InMemoryCommunities communities = new InMemoryCommunities();
     private final FakeMembers members = new FakeMembers();
     private final FakeUserDirectory users = new FakeUserDirectory();
-    private final DeleteMemberService delete = new DeleteMemberService(communities, members, users);
+    private final DeleteMemberService delete = new DeleteMemberService(communities, members, users,
+            new InMemoryErasures(), Clock.fixed(NOW, ZoneOffset.UTC));
     private final ExportMemberDataService export = new ExportMemberDataService(communities, members, users,
             Clock.fixed(NOW, ZoneOffset.UTC));
     private final Community home = community();

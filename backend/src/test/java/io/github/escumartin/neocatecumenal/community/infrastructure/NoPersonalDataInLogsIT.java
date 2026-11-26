@@ -12,6 +12,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.ThrowableProxyUtil;
 import ch.qos.logback.core.read.ListAppender;
 import com.jayway.jsonpath.JsonPath;
+import io.github.escumartin.neocatecumenal.community.application.port.in.PurgeExpiredErasures;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.SessionRepository;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.SessionTokenIssuer;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.UserRepository;
@@ -64,6 +65,9 @@ class NoPersonalDataInLogsIT {
 
     @Autowired
     private SessionTokenIssuer tokens;
+
+    @Autowired
+    private PurgeExpiredErasures purgeExpiredErasures;
 
     private final ListAppender<ILoggingEvent> appender = new ListAppender<>();
     private Logger rootLogger;
@@ -184,5 +188,25 @@ class NoPersonalDataInLogsIT {
 
         assertThat(appender.list).isNotEmpty();
         assertThat(everythingLogged()).doesNotContain(PERSONAL_DATA);
+    }
+
+    @Test
+    void erasuresAndTheirPurgeLogNoRegisteredMemberId() throws Exception {
+        UUID withdrawn = fixture.member(home, "Zenobia");
+        jdbc.update("update community_member set mobile = '600000101' where id = ?", withdrawn);
+        UUID deleted = fixture.member(home, "Hermenegilda");
+        UUID expired = UUID.randomUUID();
+        jdbc.update("insert into community_erasure (id, member_id, field, erased_at) "
+                + "values (?, ?, null, now() - interval '40 days')", UUID.randomUUID(), expired);
+
+        mockMvc.perform(as(put("/api/members/" + withdrawn + "/contact"), moderator,
+                contactWithConsent(null, null, null))).andExpect(status().isOk());
+        mockMvc.perform(as(delete("/api/members/" + deleted), moderator, null)).andExpect(status().isNoContent());
+        purgeExpiredErasures.purge();
+
+        List<String> registered = jdbc.queryForList("select member_id::text from community_erasure", String.class);
+        assertThat(registered).containsExactlyInAnyOrder(withdrawn.toString(), deleted.toString());
+        assertThat(appender.list).isNotEmpty();
+        assertThat(everythingLogged()).doesNotContain(withdrawn.toString(), deleted.toString(), expired.toString());
     }
 }

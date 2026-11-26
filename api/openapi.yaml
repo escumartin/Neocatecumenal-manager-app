@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Neocatecumenal Manager API
-  version: 0.3.0
+  version: 0.4.0
 servers:
   - url: /
 security:
@@ -26,6 +26,8 @@ tags:
     description: Members of a community, their consented contact details and the link to an app user
   - name: my-member
     description: The member linked to the current user and its own contact details
+  - name: service
+    description: Public service metadata for clients
 paths:
   /api/health:
     get:
@@ -1202,6 +1204,26 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/BookingNotFound"
+  /api/compatibility:
+    get:
+      tags: [service]
+      operationId: getCompatibility
+      summary: Minimum supported app version and the deployed service revision; public, no authentication
+      security: []
+      responses:
+        "200":
+          description: Compatibility requirements of the running service
+          headers:
+            Cache-Control:
+              description: Always no-cache so clients see a raised minimum right after a deployment
+              schema:
+                type: string
+                examples:
+                  - no-cache
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Compatibility"
 components:
   securitySchemes:
     bearerAuth:
@@ -2142,3 +2164,23 @@ components:
         exportedAt:
           type: string
           format: date-time
+    AppVersion:
+      type: string
+      description: Semantic version of the store binary, major.minor.patch without prerelease or build metadata
+      pattern: '^(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})\.(0|[1-9][0-9]{0,3})$'
+      examples:
+        - 1.0.0
+    Compatibility:
+      type: object
+      required:
+        - minimumAppVersion
+        - serviceRevision
+      properties:
+        minimumAppVersion:
+          $ref: "#/components/schemas/AppVersion"
+        serviceRevision:
+          type: string
+          description: Git commit of the main branch the running service was built from
+          pattern: '^[0-9a-f]{7,40}$'
+          examples:
+            - 86a5aa6

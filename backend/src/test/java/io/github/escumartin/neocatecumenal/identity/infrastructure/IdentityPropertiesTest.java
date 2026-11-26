@@ -28,7 +28,6 @@ class IdentityPropertiesTest {
     void bootstrapDataIsEmptyWhenNothingIsConfigured() {
         runner.run(context -> {
             IdentityProperties.Bootstrap bootstrap = context.getBean(IdentityProperties.class).bootstrap();
-            assertThat(bootstrap.communities()).isEmpty();
             assertThat(bootstrap.administratorName()).isNull();
             assertThat(bootstrap.administratorCommunity()).isNull();
         });
@@ -37,15 +36,20 @@ class IdentityPropertiesTest {
     @Test
     void bootstrapDataIsBound() {
         runner.withPropertyValues(
-                        "identity.bootstrap.communities=1,2,3",
                         "identity.bootstrap.administrator-name=Test Admin",
                         "identity.bootstrap.administrator-community=2")
                 .run(context -> {
                     IdentityProperties.Bootstrap bootstrap = context.getBean(IdentityProperties.class).bootstrap();
-                    assertThat(bootstrap.communities()).containsExactly(1, 2, 3);
                     assertThat(bootstrap.administratorName()).isEqualTo("Test Admin");
                     assertThat(bootstrap.administratorCommunity()).isEqualTo(2);
                 });
+    }
+
+    @Test
+    void bootstrapNoLongerAcceptsACommunityList() {
+        assertThat(IdentityProperties.Bootstrap.class.getRecordComponents())
+                .extracting(java.lang.reflect.RecordComponent::getName)
+                .containsExactly("enabled", "administratorName", "administratorCommunity");
     }
 
     @Test
