@@ -421,3 +421,19 @@ Fuentes: `spec.md` (30 FR), `.specify/memory/constitution.md` 1.0.0, `.agents/co
   longitud se cuenta en puntos de código.
 - **Migración V6**: copia el estado con `active` y añade el `check` de sintaxis de `email`.
 - **Constitution Check**: VIII PASS.
+
+## R19. Borrado de comunidad frente a historial concurrente (FR-004)
+
+- **Problema**: `booking_request` y `event` guardan `community_id` sin FK. Entre `history.hasHistory` y el borrado, una
+  solicitud o un evento creados para esa comunidad dejaban un `community_id` huérfano.
+- **Decisión**: candado de fila sobre `identity_community`, sin FK entre módulos.
+  - Crear solicitud (`RequestBookingService`) y crear evento (`CreateEventService`) toman `FOR SHARE` con
+    `IdentityApi.lockCommunityForShare(id)`; si la comunidad ya no existe responden `422 COMMUNITY_NOT_FOUND`. La
+    solicitud que nace de un evento queda cubierta por el candado del evento, en la misma transacción.
+  - `DeleteCommunityService` toma `FOR UPDATE` con `CommunityCatalog.lockForRemoval(id)` después del candado de
+    `community` y antes de `checkDeletable`: o espera a las transacciones de creación y ve su historial (`409
+    COMMUNITY_HAS_HISTORY`), o estas esperan al borrado y fallan al no encontrar la fila.
+  - Orden global intacto: community, member, identity; spaces y agenda solo dependen de `identity`.
+- **Descartada la FK `ON DELETE RESTRICT`** hacia `identity_community`: acopla el esquema de `spaces` y `agenda` a una
+  tabla de `identity`, exige traducir la violación de FK en dos sitios (borrado y alta) y pierde el mensaje de dominio.
+- **Pruebas**: `DeleteCommunityVsHistoryRaceIT` (entrelazado determinista y rondas simultáneas, sin `40P01`).

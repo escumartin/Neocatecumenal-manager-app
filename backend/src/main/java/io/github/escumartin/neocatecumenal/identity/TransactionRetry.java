@@ -1,18 +1,17 @@
-package io.github.escumartin.neocatecumenal.identity.infrastructure.in.rest;
+package io.github.escumartin.neocatecumenal.identity;
 
-import io.github.escumartin.neocatecumenal.identity.StaleLockOrderException;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-class TransactionRetry {
+public class TransactionRetry {
 
     private static final Logger log = LoggerFactory.getLogger(TransactionRetry.class);
     private static final int MAX_CALLS = 3;
 
-    <T> T execute(Supplier<T> action) {
+    public <T> T execute(Supplier<T> action) {
         StaleLockOrderException last = null;
         for (int call = 1; call <= MAX_CALLS; call++) {
             try {
@@ -26,7 +25,7 @@ class TransactionRetry {
         throw last;
     }
 
-    void run(Runnable action) {
+    public void run(Runnable action) {
         execute(() -> {
             action.run();
             return null;

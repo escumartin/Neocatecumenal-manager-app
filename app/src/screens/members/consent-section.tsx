@@ -1,7 +1,9 @@
 import { ListSection } from '@/components/ui/list-section';
 import { RadioSection } from '@/components/ui/radio-section';
 import { SwitchRow } from '@/components/ui/switch-row';
+import { Text } from '@/components/ui/text';
 import { membersText } from '@/i18n/es/members';
+import { ContactNotice } from './contact-notice';
 
 export type ConsentChannelChoice = 'VERBAL' | 'WRITTEN';
 
@@ -15,6 +17,8 @@ type Props = {
 export function ConsentSection({ channel, noticeGiven, onChannel, onNoticeGiven }: Props) {
   return (
     <>
+      <Text>{membersText.consent.readNotice}</Text>
+      <ContactNotice />
       <RadioSection
         title={membersText.consent.title}
         value={channel}

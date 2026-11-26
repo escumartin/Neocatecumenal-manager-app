@@ -2,8 +2,10 @@ package io.github.escumartin.neocatecumenal.agenda.application.service;
 
 import io.github.escumartin.neocatecumenal.agenda.application.port.in.CreateEvent;
 import io.github.escumartin.neocatecumenal.agenda.application.port.in.EventDetails;
+import io.github.escumartin.neocatecumenal.agenda.application.port.out.CommunityLock;
 import io.github.escumartin.neocatecumenal.agenda.application.port.out.EventRepository;
 import io.github.escumartin.neocatecumenal.agenda.domain.Actor;
+import io.github.escumartin.neocatecumenal.agenda.domain.AgendaFieldInvalid;
 import io.github.escumartin.neocatecumenal.agenda.domain.BookingRequestId;
 import io.github.escumartin.neocatecumenal.agenda.domain.CommunityId;
 import io.github.escumartin.neocatecumenal.agenda.domain.Conflict;
@@ -38,11 +40,13 @@ public class CreateEventService implements CreateEvent {
 
     private final SpacesApi spaces;
     private final EventRepository events;
+    private final CommunityLock communities;
     private final Clock clock;
 
-    public CreateEventService(SpacesApi spaces, EventRepository events, Clock clock) {
+    public CreateEventService(SpacesApi spaces, EventRepository events, CommunityLock communities, Clock clock) {
         this.spaces = spaces;
         this.events = events;
+        this.communities = communities;
         this.clock = clock;
     }
 
@@ -53,6 +57,9 @@ public class CreateEventService implements CreateEvent {
         CommunityId community = EventPolicy.actingCommunity(actor, requestedCommunity);
         LocalDateTime now = LocalDateTime.now(clock);
         Event.requireStartInFuture(date, slot, now);
+        if (!communities.lockForShare(community)) {
+            throw new AgendaFieldInvalid("communityId", "COMMUNITY_NOT_FOUND");
+        }
         EventId id = new EventId(UUID.randomUUID());
         EventBookingResult result = spaces.requestForEvent(new EventBookingCommand(id.value(), roomId.value(),
                 community.value(), actor.userId().value(), date, slot.start(), slot.end(), title.value()));

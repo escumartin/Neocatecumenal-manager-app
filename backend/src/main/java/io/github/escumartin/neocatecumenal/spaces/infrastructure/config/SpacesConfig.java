@@ -19,6 +19,7 @@ import io.github.escumartin.neocatecumenal.spaces.application.port.in.RenameRoom
 import io.github.escumartin.neocatecumenal.spaces.application.port.in.RequestBooking;
 import io.github.escumartin.neocatecumenal.spaces.application.port.out.BookingCounter;
 import io.github.escumartin.neocatecumenal.spaces.application.port.out.BookingRequestRepository;
+import io.github.escumartin.neocatecumenal.spaces.application.port.out.CommunityLock;
 import io.github.escumartin.neocatecumenal.spaces.application.port.out.RoomOccupancyQuery;
 import io.github.escumartin.neocatecumenal.spaces.application.port.out.RoomRepository;
 import io.github.escumartin.neocatecumenal.spaces.application.service.AnonymizeRequesterService;
@@ -73,8 +74,8 @@ public class SpacesConfig {
 
     @Bean
     RequestBooking requestBooking(RoomRepository rooms, BookingRequestRepository requests,
-            SpacesServiceClock clock) {
-        return new RequestBookingService(rooms, requests, clock.clock());
+            CommunityLock communities, SpacesServiceClock clock) {
+        return new RequestBookingService(rooms, requests, communities, clock.clock());
     }
 
     @Bean

@@ -46,5 +46,8 @@ export function dataExportText(data: MemberDataExport): string {
     '',
     ...(data.consentRecords.length > 0 ? [text.consentsTitle] : []),
     ...consents,
+    '',
+    membersText.contact.notice.title,
+    ...membersText.contact.notice.paragraphs,
   ].join('\n');
 }

@@ -20,6 +20,7 @@ import io.github.escumartin.neocatecumenal.identity.domain.UserId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 public class IdentityApiService implements IdentityApi {
@@ -64,6 +65,12 @@ public class IdentityApiService implements IdentityApi {
     public Optional<CommunityRef> community(UUID id) {
         return communities.findById(new CommunityId(id))
                 .map(community -> new CommunityRef(community.id().value(), community.number().value(), community.active()));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean lockCommunityForShare(UUID id) {
+        return communities.lockForShare(new CommunityId(id)).isPresent();
     }
 
     @Override

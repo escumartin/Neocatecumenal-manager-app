@@ -11,5 +11,7 @@ public interface IdentityCommunityCatalog {
 
     void setActive(CommunityId id, boolean active);
 
+    void lockForRemoval(CommunityId id);
+
     void remove(CommunityId id);
 }

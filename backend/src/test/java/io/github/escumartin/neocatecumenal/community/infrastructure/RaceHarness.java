@@ -22,6 +22,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 final class RaceHarness {
 
     private static final String LOCK_COMMUNITY = "select id from community where id = ? for update";
+    private static final String SHARE_IDENTITY_COMMUNITY = "select id from identity_community where id = ? for share";
+    private static final String LOCK_IDENTITY_COMMUNITY = "select id from identity_community where id = ? for update";
     private static final String LOCK_USER = "select id from identity_user where id = ? for update";
     private static final long TIMEOUT_SECONDS = 30;
 
@@ -94,6 +96,33 @@ final class RaceHarness {
     List<Response> queuedBehindCommunity(UUID community, Consumer<JdbcTemplate> whileHeld,
             List<Callable<Response>> arrivalOrder) throws Exception {
         return queuedBehind(LOCK_COMMUNITY, community, whileHeld, arrivalOrder);
+    }
+
+    List<Response> queuedBehindIdentityCommunity(UUID identityCommunity, List<Callable<Response>> arrivalOrder)
+            throws Exception {
+        return queuedBehind(LOCK_IDENTITY_COMMUNITY, identityCommunity, jdbc -> { }, arrivalOrder);
+    }
+
+    List<Response> blockedWhileAnotherRuns(UUID identityCommunity, Callable<Response> blocked,
+            Callable<Response> concurrent) throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        List<Future<Response>> futures = new ArrayList<>();
+        try {
+            transaction.executeWithoutResult(status -> {
+                jdbc.queryForList(SHARE_IDENTITY_COMMUNITY, identityCommunity);
+                futures.add(executor.submit(blocked));
+                awaitWaiters(1);
+                futures.add(executor.submit(concurrent));
+                try {
+                    futures.get(1).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                } catch (InterruptedException | ExecutionException | java.util.concurrent.TimeoutException failure) {
+                    throw new IllegalStateException(failure);
+                }
+            });
+            return collect(futures);
+        } finally {
+            stop(executor);
+        }
     }
 
     private List<Response> queuedBehind(String lockSql, UUID id, Consumer<JdbcTemplate> whileHeld,

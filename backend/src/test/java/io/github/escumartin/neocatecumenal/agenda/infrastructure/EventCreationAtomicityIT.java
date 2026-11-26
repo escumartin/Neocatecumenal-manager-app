@@ -62,6 +62,8 @@ class EventCreationAtomicityIT {
     @BeforeEach
     void setUp() {
         jdbc.execute("truncate event, booking_status_change, booking, booking_request, room cascade");
+        jdbc.update("insert into identity_community (id, number, active) values (?, 1, true) "
+                + "on conflict (id) do nothing", COMMUNITY.value());
         room = new RoomId(UUID.randomUUID());
         jdbc.update("insert into room (id, name, active, version, created_at) values (?, 'Main hall', true, 0, now())",
                 room.value());

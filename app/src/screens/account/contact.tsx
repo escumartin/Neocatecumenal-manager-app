@@ -20,6 +20,7 @@ import {
   type ContactDraftErrors,
 } from '@/lib/members/contact-form';
 import type { ContactFieldName } from '@/lib/members/contact-validation';
+import { ContactNotice } from '@/screens/members/contact-notice';
 import { ContactFields, contactMessages } from '@/screens/members/contact-fields';
 import { fullNameOf } from '@/screens/members/member-name';
 
@@ -128,7 +129,7 @@ function ContactForm({ myMember, save }: FormProps) {
           trailing={me ? communitiesText.option(me.communityNumber) : undefined}
         />
       </ListSection>
-      <Text>{membersText.contact.notice}</Text>
+      <ContactNotice />
       <Text>{membersText.own.hideNote}</Text>
       <ContactFields
         draft={draft}

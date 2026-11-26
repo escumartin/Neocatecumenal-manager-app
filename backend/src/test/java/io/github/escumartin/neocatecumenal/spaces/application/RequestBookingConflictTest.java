@@ -42,6 +42,7 @@ class RequestBookingConflictTest {
 
     private final InMemoryRooms rooms = new InMemoryRooms();
     private final InMemoryBookingRequests requests = new InMemoryBookingRequests();
+    private final FakeCommunityLock communityLock = new FakeCommunityLock();
     private final Actor moderator = new Actor(new UserId(UUID.randomUUID()), ActorRole.MODERATOR, OWN);
     private final Actor administrator = new Actor(new UserId(UUID.randomUUID()), ActorRole.ADMINISTRATOR, OWN);
 
@@ -54,7 +55,7 @@ class RequestBookingConflictTest {
 
     @BeforeEach
     void setUp() {
-        service = new RequestBookingService(rooms, requests, CLOCK);
+        service = new RequestBookingService(rooms, requests, communityLock, CLOCK);
         room = rooms.save(Room.create(administrator, new RoomName("Main hall")));
         service.request(moderator, room.id(), null, TOMORROW, EXISTING, new Reason("Catechesis"));
     }

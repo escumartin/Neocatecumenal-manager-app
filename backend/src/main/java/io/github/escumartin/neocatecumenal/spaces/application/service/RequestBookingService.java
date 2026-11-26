@@ -2,6 +2,7 @@ package io.github.escumartin.neocatecumenal.spaces.application.service;
 
 import io.github.escumartin.neocatecumenal.spaces.application.port.in.RequestBooking;
 import io.github.escumartin.neocatecumenal.spaces.application.port.out.BookingRequestRepository;
+import io.github.escumartin.neocatecumenal.spaces.application.port.out.CommunityLock;
 import io.github.escumartin.neocatecumenal.spaces.application.port.out.RoomRepository;
 import io.github.escumartin.neocatecumenal.spaces.domain.Actor;
 import io.github.escumartin.neocatecumenal.spaces.domain.Booking;
@@ -14,6 +15,7 @@ import io.github.escumartin.neocatecumenal.spaces.domain.Room;
 import io.github.escumartin.neocatecumenal.spaces.domain.RoomId;
 import io.github.escumartin.neocatecumenal.spaces.domain.RoomNotFound;
 import io.github.escumartin.neocatecumenal.spaces.domain.RoomOccupied;
+import io.github.escumartin.neocatecumenal.spaces.domain.SpacesFieldInvalid;
 import io.github.escumartin.neocatecumenal.spaces.domain.TimeSlot;
 import io.github.escumartin.neocatecumenal.spaces.domain.WeeklyRecurrence;
 import java.time.Clock;
@@ -30,11 +32,14 @@ public class RequestBookingService implements RequestBooking {
 
     private final RoomRepository rooms;
     private final BookingRequestRepository requests;
+    private final CommunityLock communities;
     private final Clock clock;
 
-    public RequestBookingService(RoomRepository rooms, BookingRequestRepository requests, Clock clock) {
+    public RequestBookingService(RoomRepository rooms, BookingRequestRepository requests,
+            CommunityLock communities, Clock clock) {
         this.rooms = rooms;
         this.requests = requests;
+        this.communities = communities;
         this.clock = clock;
     }
 
@@ -50,6 +55,9 @@ public class RequestBookingService implements RequestBooking {
     public BookingRequest request(Actor actor, RoomId roomId, CommunityId requestedCommunity, LocalDate date,
             TimeSlot slot, Reason reason, WeeklyRecurrence recurrence) {
         CommunityId community = BookingPolicy.actingCommunity(actor, requestedCommunity);
+        if (!communities.lockForShare(community)) {
+            throw new SpacesFieldInvalid("communityId", "COMMUNITY_NOT_FOUND");
+        }
         Room room = rooms.findByIdForShare(roomId).orElseThrow(RoomNotFound::new);
         room.requireActive();
         BookingRequest request = BookingRequest.request(actor, room.id(), community, date, slot, reason,

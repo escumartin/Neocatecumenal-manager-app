@@ -119,7 +119,6 @@ function ContactForm({ member, api, onSaved }: FormProps) {
     <FormScroll>
       <Text variant="title">{membersText.contact.title}</Text>
       <Text variant="strong">{fullNameOf(member)}</Text>
-      <Text>{membersText.contact.notice}</Text>
       {linked ? <Text>{membersText.contact.linkedNotice}</Text> : null}
       <ContactFields
         draft={draft}

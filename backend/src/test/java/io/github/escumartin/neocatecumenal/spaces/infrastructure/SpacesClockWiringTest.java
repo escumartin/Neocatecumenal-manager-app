@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import io.github.escumartin.neocatecumenal.ClockConfig;
 import io.github.escumartin.neocatecumenal.spaces.application.port.out.BookingCounter;
 import io.github.escumartin.neocatecumenal.spaces.application.port.out.BookingRequestRepository;
+import io.github.escumartin.neocatecumenal.spaces.application.port.out.CommunityLock;
 import io.github.escumartin.neocatecumenal.spaces.application.port.out.RoomOccupancyQuery;
 import io.github.escumartin.neocatecumenal.spaces.application.port.out.RoomRepository;
 import io.github.escumartin.neocatecumenal.spaces.infrastructure.config.SpacesConfig;
@@ -24,7 +25,8 @@ class SpacesClockWiringTest {
                     .withBean(RoomRepository.class, () -> mock(RoomRepository.class))
                     .withBean(RoomOccupancyQuery.class, () -> mock(RoomOccupancyQuery.class))
                     .withBean(BookingCounter.class, () -> mock(BookingCounter.class))
-                    .withBean(BookingRequestRepository.class, () -> mock(BookingRequestRepository.class));
+                    .withBean(BookingRequestRepository.class, () -> mock(BookingRequestRepository.class))
+                    .withBean(CommunityLock.class, () -> mock(CommunityLock.class));
 
     @Test
     void contextKeepsASingleClockBean() {

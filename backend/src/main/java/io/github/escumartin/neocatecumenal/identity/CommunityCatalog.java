@@ -10,5 +10,7 @@ public interface CommunityCatalog {
 
     void setActive(UUID id, boolean active);
 
+    void lockForRemoval(UUID id);
+
     void remove(UUID id);
 }

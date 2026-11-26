@@ -79,6 +79,20 @@ class CommunityQueriesAndDeleteTest {
     }
 
     @Test
+    void deleteLocksTheProjectionBeforeCheckingTheHistory() {
+        Community community = existing(12);
+        List<Boolean> lockedWhenHistoryWasChecked = new java.util.ArrayList<>();
+        DeleteCommunityService checking = new DeleteCommunityService(communities, members, users, id -> {
+            lockedWhenHistoryWasChecked.add(catalog.lockedForRemoval.contains(id));
+            return false;
+        }, catalog);
+
+        checking.delete(administrator, community.id());
+
+        assertThat(lockedWhenHistoryWasChecked).containsExactly(true);
+    }
+
+    @Test
     void deleteEvaluatesMembersUsersAndHistoryOfTheLockedCommunity() {
         Community community = existing(12);
 

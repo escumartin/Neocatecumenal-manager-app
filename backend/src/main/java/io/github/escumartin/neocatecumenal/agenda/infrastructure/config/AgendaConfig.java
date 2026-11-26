@@ -5,6 +5,7 @@ import io.github.escumartin.neocatecumenal.agenda.application.port.in.AnonymizeC
 import io.github.escumartin.neocatecumenal.agenda.application.port.in.CreateEvent;
 import io.github.escumartin.neocatecumenal.agenda.application.port.in.GetEvent;
 import io.github.escumartin.neocatecumenal.agenda.application.port.in.PurgeExpiredEvents;
+import io.github.escumartin.neocatecumenal.agenda.application.port.out.CommunityLock;
 import io.github.escumartin.neocatecumenal.agenda.application.port.out.EventRepository;
 import io.github.escumartin.neocatecumenal.agenda.application.service.AgendaApiAdapter;
 import io.github.escumartin.neocatecumenal.agenda.application.service.AnonymizeCreatorService;
@@ -31,8 +32,9 @@ public class AgendaConfig {
     }
 
     @Bean
-    CreateEvent createEvent(SpacesApi spaces, EventRepository events, AgendaServiceClock clock) {
-        return new CreateEventService(spaces, events, clock.clock());
+    CreateEvent createEvent(SpacesApi spaces, EventRepository events, CommunityLock communities,
+            AgendaServiceClock clock) {
+        return new CreateEventService(spaces, events, communities, clock.clock());
     }
 
     @Bean

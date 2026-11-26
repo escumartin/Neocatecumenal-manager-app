@@ -1,7 +1,17 @@
+import { membersText } from '@/i18n/es/members';
 import { dataExportText } from '../data-export-text';
 import { ana, exportOf } from '@/screens/members/support/test-support';
 
 describe('data export text', () => {
+  it('ends with the contact data notice, its title and every paragraph', () => {
+    const text = dataExportText(exportOf(ana));
+
+    expect(text).toContain(membersText.contact.notice.title);
+    for (const paragraph of membersText.contact.notice.paragraphs) {
+      expect(text).toContain(paragraph);
+    }
+  });
+
   it('names the member, the community and the date of the copy', () => {
     const text = dataExportText(exportOf(ana));
 

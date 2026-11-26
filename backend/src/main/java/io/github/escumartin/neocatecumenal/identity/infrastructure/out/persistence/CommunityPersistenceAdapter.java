@@ -38,6 +38,16 @@ public class CommunityPersistenceAdapter implements CommunityRepository {
     }
 
     @Override
+    public Optional<Community> lockForShare(CommunityId id) {
+        return repository.findByIdForShare(id.value()).map(CommunityPersistenceAdapter::toDomain);
+    }
+
+    @Override
+    public Optional<Community> lockForUpdate(CommunityId id) {
+        return repository.findByIdForUpdate(id.value()).map(CommunityPersistenceAdapter::toDomain);
+    }
+
+    @Override
     public Optional<Community> findByNumber(CommunityNumber number) {
         return repository.findByNumber(number.value()).map(CommunityPersistenceAdapter::toDomain);
     }

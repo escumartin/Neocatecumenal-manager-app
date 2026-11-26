@@ -1,5 +1,6 @@
 package io.github.escumartin.neocatecumenal.community.infrastructure.in.rest;
 
+import io.github.escumartin.neocatecumenal.identity.TransactionRetry;
 import io.github.escumartin.neocatecumenal.generated.api.CommunitiesApi;
 import io.github.escumartin.neocatecumenal.generated.model.Community;
 import io.github.escumartin.neocatecumenal.generated.model.CommunityDeactivation;

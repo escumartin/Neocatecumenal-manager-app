@@ -48,6 +48,7 @@ class CancelServicesTest {
 
     private final RoomServicesTest.InMemoryRooms rooms = new RoomServicesTest.InMemoryRooms();
     private final InMemoryBookingRequests requests = new InMemoryBookingRequests();
+    private final FakeCommunityLock communityLock = new FakeCommunityLock();
     private final Actor moderatorA = new Actor(new UserId(UUID.randomUUID()), ActorRole.MODERATOR, COMMUNITY_A);
     private final Actor moderatorB = new Actor(new UserId(UUID.randomUUID()), ActorRole.MODERATOR, COMMUNITY_B);
     private final Actor administrator = new Actor(new UserId(UUID.randomUUID()), ActorRole.ADMINISTRATOR, COMMUNITY_A);
@@ -142,7 +143,7 @@ class CancelServicesTest {
     @Test
     void aCancelledSlotAcceptsANewRequest() {
         cancelRequest.cancel(moderatorA, approvedOfA.id());
-        RequestBookingService request = new RequestBookingService(rooms, requests, CLOCK);
+        RequestBookingService request = new RequestBookingService(rooms, requests, communityLock, CLOCK);
 
         BookingRequest created = request.request(moderatorB, room, null, LocalDate.of(2030, 5, 12), SLOT,
                 new Reason("Rehearsal"));

@@ -214,6 +214,17 @@ class IdentityApiServiceTest {
     }
 
     @Test
+    void lockCommunityForShareIsTrueAfterTakingTheSharedLock() {
+        assertThat(api.lockCommunityForShare(community.id().value())).isTrue();
+        assertThat(users.calls).contains("communityLockForShare");
+    }
+
+    @Test
+    void lockCommunityForShareIsFalseWhenTheCommunityDoesNotExist() {
+        assertThat(api.lockCommunityForShare(UUID.randomUUID())).isFalse();
+    }
+
+    @Test
     void usersOfListsTheCommunityOrderedByName() {
         User zoe = storeNamed("Zoe Test", UserRole.REGISTERED, community);
         User ana = storeNamed("Ana Test", UserRole.MODERATOR, community);

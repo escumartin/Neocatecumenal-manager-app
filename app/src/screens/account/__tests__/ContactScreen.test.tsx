@@ -115,7 +115,8 @@ describe('own contact screen', () => {
   it('shows the data notice, the name and the community without letting them be edited', async () => {
     await show(fakeApi());
 
-    expect(await screen.findByText(membersText.contact.notice)).toBeOnTheScreen();
+    expect(await screen.findByText(membersText.contact.notice.title)).toBeOnTheScreen();
+    expect(screen.getByText(membersText.contact.notice.paragraphs[5])).toBeOnTheScreen();
     expect(screen.getByText('Ana Pérez')).toBeOnTheScreen();
     expect(screen.getByText(communitiesText.option(twelve.number))).toBeOnTheScreen();
     expect(screen.queryByLabelText(membersText.form.givenName)).not.toBeOnTheScreen();

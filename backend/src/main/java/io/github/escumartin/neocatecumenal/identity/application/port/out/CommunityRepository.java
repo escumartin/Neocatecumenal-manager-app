@@ -12,6 +12,10 @@ public interface CommunityRepository {
 
     Optional<Community> findById(CommunityId id);
 
+    Optional<Community> lockForShare(CommunityId id);
+
+    Optional<Community> lockForUpdate(CommunityId id);
+
     Optional<Community> findByNumber(CommunityNumber number);
 
     List<Community> findAll();

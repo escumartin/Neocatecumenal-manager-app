@@ -38,6 +38,7 @@ public class DeleteCommunityService implements DeleteCommunity {
     public void delete(Actor actor, CommunityId id) {
         MemberAccessPolicy.requireCanManageCommunities(actor);
         Community community = CommunityLocks.lock(communities, id);
+        catalog.lockForRemoval(id);
         community.checkDeletable(members.countIn(id), users.usersOf(id).size(), history.hasHistory(id));
         communities.delete(id);
         catalog.remove(id);

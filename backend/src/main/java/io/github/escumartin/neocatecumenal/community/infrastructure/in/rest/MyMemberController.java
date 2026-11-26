@@ -1,5 +1,6 @@
 package io.github.escumartin.neocatecumenal.community.infrastructure.in.rest;
 
+import io.github.escumartin.neocatecumenal.identity.TransactionRetry;
 import io.github.escumartin.neocatecumenal.community.application.port.in.ChangeOwnContact;
 import io.github.escumartin.neocatecumenal.community.application.port.in.GetOwnMember;
 import io.github.escumartin.neocatecumenal.community.application.port.in.OwnMemberView;

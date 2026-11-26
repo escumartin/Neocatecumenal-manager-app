@@ -6,6 +6,7 @@ import io.github.escumartin.neocatecumenal.identity.domain.Community;
 import io.github.escumartin.neocatecumenal.identity.domain.CommunityId;
 import io.github.escumartin.neocatecumenal.identity.domain.CommunityNumber;
 import java.util.UUID;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 public class CommunityCatalogService implements CommunityCatalog {
@@ -32,6 +33,12 @@ public class CommunityCatalogService implements CommunityCatalog {
     @Transactional
     public void setActive(UUID id, boolean active) {
         communities.setActive(new CommunityId(id), active);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void lockForRemoval(UUID id) {
+        communities.lockForUpdate(new CommunityId(id));
     }
 
     @Override
