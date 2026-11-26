@@ -14,13 +14,12 @@ set -a
 . "$deploy/env/smoke.env"
 set +a
 
+exec 3>&2
+
 work="$(mktemp -d)"
 export NEOCAT_HOME="$work/home"
-mkdir -p "$NEOCAT_HOME/secrets"
-chmod 700 "$NEOCAT_HOME" "$NEOCAT_HOME/secrets"
-printf '%s' "neocatecumenal" >"$NEOCAT_HOME/secrets/spring.datasource.username"
-printf '%s' "$(openssl rand -hex 16)" >"$NEOCAT_HOME/secrets/spring.datasource.password"
-chmod 600 "$NEOCAT_HOME"/secrets/*
+mkdir -p "$NEOCAT_HOME"
+create_database_secrets "$NEOCAT_HOME" "$(openssl rand -hex 16)"
 
 compose() {
   docker compose -p "$project" -f "$deploy/compose.yaml" -f "$deploy/compose.smoke.yaml" "$@"
@@ -44,8 +43,21 @@ ensure_images() {
   fi
 }
 
+dump_stack_state() {
+  compose ps -a >&3
+  local service
+  for service in postgres backend edge; do
+    echo "--- logs de $service" >&3
+    compose logs --no-color --tail 40 "$service" >&3
+  done
+}
+
 stack_comes_up_healthy() {
-  compose up -d --wait --wait-timeout 240
+  if compose up -d --wait --wait-timeout 240; then
+    return 0
+  fi
+  dump_stack_state
+  return 1
 }
 
 health_is_up() {

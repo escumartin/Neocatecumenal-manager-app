@@ -14,6 +14,7 @@ export NEOCAT_HOME="$work/home"
 export ALLOWED_ORIGINS="https://isolation.example.test"
 export PRIVACY_NOTICE_VERSION="v1"
 export MINIMUM_APP_VERSION="1.0.0"
+export NEOCAT_SECRETS_GID="1900"
 
 render() {
   docker compose --profile ops "$@" config --format json
@@ -49,6 +50,13 @@ def memory_limited(service):
 
 
 def run():
+    if rule == "secret-readers-share-the-secrets-group":
+        readers = [s for s in services.values() if s.get("secrets")]
+        return len(readers) >= 5 and all(
+            "1900" in [str(g) for g in s.get("group_add", [])]
+            and all(not ({"uid", "gid", "mode"} & set(ref)) for ref in s["secrets"])
+            for s in readers
+        )
     if rule == "core-services-present":
         return expected_core <= set(services)
     if rule == "no-published-ports":
@@ -156,6 +164,7 @@ if [ -f "$deploy/compose.smoke.yaml" ]; then
   check "con compose.smoke.yaml solo edge publica, en 127.0.0.1:8088" assert smoke-only-edge-ports
   check "compose.smoke.yaml no levanta tailscale" assert smoke-without-tailscale
 fi
+check "los servicios con secretos entran en el grupo compartido y no declaran uid, gid ni modo" assert secret-readers-share-the-secrets-group
 check "compose.yaml define edge y tailscale" assert edge-services-present
 check "solo backend y edge están en edge-net" assert edge-net-members
 check "solo edge y tailscale están en tailscale-net" assert tailscale-net-members

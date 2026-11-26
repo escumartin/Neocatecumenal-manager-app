@@ -7,7 +7,7 @@ Runbook del mantenedor (FR-015). Nombres de servicios, variables y órdenes: `sp
 | Ruta | Contenido |
 |---|---|
 | `$NEOCAT_HOME/deploy/` | copia de `deploy/` del repo: `compose.yaml`, `bin/`, `sql/`, `systemd/`, `env/` (por defecto `NEOCAT_HOME=/srv/neocatecumenal`) |
-| `$NEOCAT_HOME/secrets/` | `700`; ficheros `600`: `spring.datasource.username`, `spring.datasource.password`, `tailscale.authkey` |
+| `$NEOCAT_HOME/secrets/` | `750`, `root:neocat-secrets`; ficheros `440`, `root:neocat-secrets`: `spring.datasource.username`, `spring.datasource.password`, `tailscale.authkey` |
 | `$NEOCAT_HOME/.env` | `600`; `ALLOWED_ORIGINS`, `PRIVACY_NOTICE_VERSION`, `MINIMUM_APP_VERSION` (plantilla `deploy/env/neocatecumenal.env.example`) |
 | `$NEOCAT_HOME/state/` | `700`; `current.env`, `previous.env` y `failed.env` del actualizador y `migrate.log` (últimas líneas de la última migración fallida, sin secretos) |
 | `$NEOCAT_CONFIG_DIR` | `/etc/neocatecumenal`; `backup.env` y `deploy.env` (`600`) y `restic.password` (`400`), root; `docker/` con el `config.json` de `docker login` si GHCR es privado (las unidades fijan `DOCKER_CONFIG` ahí) |
@@ -26,7 +26,7 @@ Riesgo aceptado: con TPM2 el arranque es desatendido; si roban el equipo entero,
 ## 3. Puesta en marcha desde cero
 
 1. Instalar Docker con `docker compose` y Tailscale; nodo con etiqueta `tag:neocatecumenal` y una ACL sin acceso saliente a otros nodos.
-2. Copiar `deploy/` a `$NEOCAT_HOME/deploy/`; crear `secrets/` (`700`) con los tres ficheros (`600`) y `.env` (`600`).
+2. Copiar `deploy/` a `$NEOCAT_HOME/deploy/`; crear el grupo `neocat-secrets` (`groupadd --system neocat-secrets`; su gid, en `NEOCAT_SECRETS_GID` del `.env`), `secrets/` (`750`) con los tres ficheros (`440`), todo `root:neocat-secrets`, y `.env` (`600`). Los contenedores leen los secretos como miembros de ese grupo (`group_add`); sin él, PostgreSQL (uid 999) y la app (uid 10001) no pueden leer ficheros `600` de root en Linux.
 3. Crear `backup.env` y `deploy.env` en `$NEOCAT_CONFIG_DIR` desde sus `.example` (`600`, root) y `restic.password` (`400`, root, solo la contraseña; las órdenes lo montan de solo lectura en el contenedor de restic). Crear `$NEOCAT_HOME/state` (`700`): las unidades solo pueden escribir ahí.
 4. Paquetes de GHCR en público (o `docker login ghcr.io` como root con un token `read:packages`).
 5. Enlazar `deploy/bin/*` en `/usr/local/bin` y copiar `deploy/systemd/*` a `/etc/systemd/system/`.
@@ -92,5 +92,5 @@ El administrador crea desde la app una comunidad propia y una cuenta de revisor 
 - `docker network inspect`: `db-net` (solo `postgres`, `backend`, `migrate` y `bootstrap`) y `edge-net` (solo `backend` y `edge`) con `internal: true`; `tailscale-net` solo con `edge` y `tailscale`. El `backend` no tiene salida a Internet.
 - La ACL de Tailscale impide alcanzar otros nodos.
 - `docker pull` de las imágenes sin credenciales (o con el token `read:packages`).
-- `secrets/` en `700`; `$NEOCAT_CONFIG_DIR/*.env` en `600`.
+- `secrets/` en `750` y sus ficheros en `440`, `root:neocat-secrets`; `$NEOCAT_CONFIG_DIR/*.env` en `600`.
 - Secret scanning y push protection activos.
