@@ -56,7 +56,7 @@ class MemberServicesTest {
     private final CreateMemberService create = new CreateMemberService(communities, members, clock);
     private final RenameMemberService rename = new RenameMemberService(communities, members);
     private final ChangeMemberContactService changeContact =
-            new ChangeMemberContactService(communities, members, clock);
+            new ChangeMemberContactService(communities, members, new InMemoryErasures(), clock);
     private final GetMemberService get = new GetMemberService(communities, members);
     private final ListMembersService list = new ListMembersService(communities, members);
     private final Community own = community(CommunityStatus.ACTIVE);

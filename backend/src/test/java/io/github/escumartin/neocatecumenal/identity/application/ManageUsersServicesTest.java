@@ -34,7 +34,7 @@ class ManageUsersServicesTest {
 
     private DeleteUserService deleteService() {
         return new DeleteUserService(fixture.currentSession, fixture.users, fixture.sessions, fixture.events,
-                fixture.privacyNotice, fixture.guard);
+                fixture.privacyNotice, fixture.guard, fixture.erasures, fixture.clock);
     }
 
     private ListUsersService listService() {

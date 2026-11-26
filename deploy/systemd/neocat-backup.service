@@ -1,0 +1,15 @@
+[Unit]
+Description=Copia de seguridad de Neocatecumenal
+Wants=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/neocat-backup
+TimeoutStartSec=1800
+Environment=DOCKER_CONFIG=/etc/neocatecumenal/docker
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+ReadWritePaths=-/mnt/neocatecumenal-backups

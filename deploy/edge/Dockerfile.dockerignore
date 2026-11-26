@@ -1,0 +1,6 @@
+**
+!app
+!deploy/edge/nginx.conf
+app/node_modules
+app/dist
+app/.expo

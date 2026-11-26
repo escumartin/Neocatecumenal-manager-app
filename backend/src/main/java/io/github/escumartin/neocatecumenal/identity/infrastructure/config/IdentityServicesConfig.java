@@ -15,6 +15,9 @@ import io.github.escumartin.neocatecumenal.identity.application.port.in.UpdateUs
 import io.github.escumartin.neocatecumenal.identity.application.port.in.LogIn;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.LogOut;
 import io.github.escumartin.neocatecumenal.identity.application.port.in.PurgeExpiredAccessData;
+import io.github.escumartin.neocatecumenal.identity.application.port.in.PurgeExpiredErasures;
+import io.github.escumartin.neocatecumenal.identity.application.port.out.ErasureRecords;
+import io.github.escumartin.neocatecumenal.identity.application.service.PurgeExpiredErasuresService;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.AccessIdGenerator;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.CommunityRepository;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.CurrentSessionContext;
@@ -111,8 +114,9 @@ class IdentityServicesConfig {
 
     @Bean
     DeleteUser deleteUser(CurrentSessionContext currentSession, UserRepository users, SessionRepository sessions,
-            IdentityEventPublisher events, PrivacyNoticeSettings privacyNotice, UserLinkGuard guard) {
-        return new DeleteUserService(currentSession, users, sessions, events, privacyNotice, guard);
+            IdentityEventPublisher events, PrivacyNoticeSettings privacyNotice, UserLinkGuard guard,
+            ErasureRecords erasures, Clock clock) {
+        return new DeleteUserService(currentSession, users, sessions, events, privacyNotice, guard, erasures, clock);
     }
 
     @Bean
@@ -166,9 +170,13 @@ class IdentityServicesConfig {
     }
 
     @Bean
-    BootstrapIdentity bootstrapIdentity(UserRepository users, CommunityRepository communities,
-            PasswordHasher hasher, AccessIdGenerator accessIds, InitialPasswordGenerator passwords,
-            CommunityProvisioner provisioner) {
-        return new BootstrapIdentityService(users, communities, hasher, accessIds, passwords, provisioner);
+    PurgeExpiredErasures purgeExpiredUserErasures(ErasureRecords erasures, Clock clock) {
+        return new PurgeExpiredErasuresService(erasures, clock);
+    }
+
+    @Bean
+    BootstrapIdentity bootstrapIdentity(UserRepository users, PasswordHasher hasher, AccessIdGenerator accessIds,
+            InitialPasswordGenerator passwords, CommunityProvisioner provisioner) {
+        return new BootstrapIdentityService(users, hasher, accessIds, passwords, provisioner);
     }
 }

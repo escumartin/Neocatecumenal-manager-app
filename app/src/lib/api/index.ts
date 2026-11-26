@@ -8,6 +8,7 @@ import { createCommunitiesApi } from './communities-api';
 import { createEventsApi } from './events-api';
 import { createMembersApi, createMyMemberApi } from './members-api';
 import { createRoomsApi } from './rooms-api';
+import { createServiceApi } from './service-api';
 import { createSessionApi } from './session-api';
 import { createUsersApi } from './users-api';
 
@@ -40,3 +41,5 @@ export const eventsApi = createEventsApi(apiClient);
 export const membersApi = createMembersApi(apiClient);
 
 export const myMemberApi = createMyMemberApi(apiClient);
+
+export const serviceApi = createServiceApi(apiClient);

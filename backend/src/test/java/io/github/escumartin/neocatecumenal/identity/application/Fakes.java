@@ -11,6 +11,7 @@ import io.github.escumartin.neocatecumenal.identity.application.port.out.Identit
 import io.github.escumartin.neocatecumenal.identity.application.port.out.CommunityRepository;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.CurrentSession;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.CurrentSessionContext;
+import io.github.escumartin.neocatecumenal.identity.application.port.out.ErasureRecords;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.InitialPasswordGenerator;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.IssuedSessionToken;
 import io.github.escumartin.neocatecumenal.identity.application.port.out.LoginThrottleStore;
@@ -84,6 +85,11 @@ final class Fakes {
         }
 
         @Override
+        public void lockForBootstrap() {
+            calls.add("lockForBootstrap");
+        }
+
+        @Override
         public long countModerators(CommunityId communityId) {
             calls.add("countModerators");
             return users.values().stream()
@@ -138,6 +144,7 @@ final class Fakes {
 
         @Override
         public boolean existsAdministrator() {
+            calls.add("existsAdministrator");
             return users.values().stream().anyMatch(user -> user.role() == UserRole.ADMINISTRATOR);
         }
     }
@@ -280,6 +287,26 @@ final class Fakes {
         @Override
         public void clear(UserId userId) {
             failures.remove(userId);
+        }
+    }
+
+    static final class InMemoryErasures implements ErasureRecords {
+
+        record Entry(UserId userId, Instant erasedAt) {
+        }
+
+        final List<Entry> entries = new ArrayList<>();
+
+        @Override
+        public void recordUser(UserId userId, Instant erasedAt) {
+            entries.add(new Entry(userId, erasedAt));
+        }
+
+        @Override
+        public int purgeBefore(Instant cutoff) {
+            int before = entries.size();
+            entries.removeIf(entry -> entry.erasedAt().isBefore(cutoff));
+            return before - entries.size();
         }
     }
 

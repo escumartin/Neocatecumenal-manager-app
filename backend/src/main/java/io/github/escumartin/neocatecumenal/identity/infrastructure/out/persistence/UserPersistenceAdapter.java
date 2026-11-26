@@ -93,6 +93,11 @@ public class UserPersistenceAdapter implements UserRepository {
     }
 
     @Override
+    public void lockForBootstrap() {
+        repository.lockBootstrap();
+    }
+
+    @Override
     public void lockCommunity(CommunityId communityId) {
         repository.lockCommunityRow(communityId.value());
     }

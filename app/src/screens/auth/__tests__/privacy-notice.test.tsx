@@ -14,6 +14,14 @@ describe('privacy notice', () => {
     expect(screen.getByText(privacyNotice.paragraphs[0])).toBeOnTheScreen();
   });
 
+  it('states that deleted data disappears from the backups after 30 days', async () => {
+    await renderWithSession(<PrivacyNotice />, pending);
+
+    const retention = privacyNotice.paragraphs.find((paragraph) => /30 días/.test(paragraph) && /copias/.test(paragraph));
+    expect(retention).toBeDefined();
+    expect(await screen.findByText(retention as string)).toBeOnTheScreen();
+  });
+
   it('records the acceptance of the current version', async () => {
     const { api } = await renderWithSession(<PrivacyNotice />, pending);
 

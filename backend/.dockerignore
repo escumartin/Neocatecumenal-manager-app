@@ -1,0 +1,12 @@
+target/
+.mvn/wrapper/maven-wrapper.jar
+.git/
+.idea/
+*.iml
+.vscode/
+.DS_Store
+.env
+.env.*
+**/application-local.yml
+Dockerfile
+.dockerignore

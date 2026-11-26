@@ -53,7 +53,7 @@ public class GuardUserLinkService implements GuardUserLink {
         }
         member.unlink();
         members.save(member);
-        log.atInfo().addKeyValue("memberId", member.id().value()).log("Hermano desvinculado antes de borrar su usuario");
+        log.atInfo().log("Hermano desvinculado antes de borrar su usuario");
     }
 
     private List<CommunityId> lock(CommunityId first, CommunityId second) {

@@ -1,0 +1,189 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+NEOCAT_HOME="${NEOCAT_HOME:-/srv/neocatecumenal}"
+NEOCAT_CONFIG_DIR="${NEOCAT_CONFIG_DIR:-/etc/neocatecumenal}"
+NEOCAT_COMPOSE_FILE="${NEOCAT_COMPOSE_FILE:-$NEOCAT_HOME/deploy/compose.yaml}"
+NEOCAT_COMPOSE_PROJECT="${NEOCAT_COMPOSE_PROJECT:-neocatecumenal}"
+NEOCAT_ENV_FILE="${NEOCAT_ENV_FILE:-$NEOCAT_HOME/.env}"
+NEOCAT_HEALTH_TIMEOUT="${NEOCAT_HEALTH_TIMEOUT:-180}"
+NEOCAT_BACKEND_REPOSITORY="${NEOCAT_BACKEND_REPOSITORY:-ghcr.io/escumartin/neocatecumenal-backend}"
+NEOCAT_WEB_REPOSITORY="${NEOCAT_WEB_REPOSITORY:-ghcr.io/escumartin/neocatecumenal-web}"
+NEOCAT_CHANNEL="${NEOCAT_CHANNEL:-production}"
+
+state_dir="$NEOCAT_HOME/state"
+ping_url=""
+
+if [ -f "$NEOCAT_CONFIG_DIR/deploy.env" ]; then
+  ping_url="$(sed -n 's/^NEOCAT_PING_DEPLOY=//p' "$NEOCAT_CONFIG_DIR/deploy.env" | tail -n 1)"
+fi
+
+export COMPOSE_FILE="$NEOCAT_COMPOSE_FILE"
+export COMPOSE_PROJECT_NAME="$NEOCAT_COMPOSE_PROJECT"
+export NEOCAT_HOME
+
+log() {
+  printf '%s\n' "$*"
+}
+
+ping_deploy() {
+  local suffix="$1" text="$2"
+  [ -n "$ping_url" ] || return 0
+  curl -s -m 10 --retry 3 -o /dev/null --data-raw "$text" "$ping_url$suffix" \
+    || log "no se pudo avisar a la comprobación de despliegue"
+}
+
+fail() {
+  log "$1"
+  ping_deploy "/fail" "$1"
+  exit 1
+}
+
+compose() {
+  local env_args=()
+  [ -f "$NEOCAT_ENV_FILE" ] && env_args=(--env-file "$NEOCAT_ENV_FILE")
+  docker compose ${env_args[@]+"${env_args[@]}"} "$@"
+}
+
+image_id() {
+  docker image inspect -f '{{.Id}}' "$1" 2>/dev/null
+}
+
+running_image_id() {
+  local container
+  container="$(compose ps -q "$1" 2>/dev/null | head -n 1)"
+  [ -n "$container" ] || return 1
+  docker inspect -f '{{.Image}}' "$container" 2>/dev/null
+}
+
+resolve_digest_ref() {
+  local repository="$1" digest
+  docker pull -q "$repository:$NEOCAT_CHANNEL" >/dev/null || return 1
+  digest="$(docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}' "$repository:$NEOCAT_CHANNEL" \
+    | grep "^$repository@" | head -n 1)"
+  [ -n "$digest" ] || return 1
+  printf '%s' "$digest"
+}
+
+write_state() {
+  local name="$1" backend_ref="$2" web_ref="$3" temporary
+  temporary="$(mktemp "$state_dir/$name.XXXXXX")"
+  printf 'BACKEND_IMAGE=%s\nWEB_IMAGE=%s\n' "$backend_ref" "$web_ref" >"$temporary"
+  chmod 600 "$temporary"
+  mv "$temporary" "$state_dir/$name.env"
+}
+
+state_value() {
+  sed -n "s/^$2=//p" "$state_dir/$1.env" | tail -n 1
+}
+
+bring_up() {
+  BACKEND_IMAGE="$1" WEB_IMAGE="$2" compose up -d --wait --wait-timeout "$NEOCAT_HEALTH_TIMEOUT" backend edge \
+    >/dev/null 2>&1 || return 1
+  if compose config --services 2>/dev/null | grep -qx tailscale; then
+    BACKEND_IMAGE="$1" WEB_IMAGE="$2" compose up -d tailscale >/dev/null 2>&1 \
+      || log "no se pudo levantar tailscale: el servicio no es accesible desde fuera"
+  fi
+}
+
+failed_matches() {
+  [ -f "$state_dir/failed.env" ] \
+    && [ "$(state_value failed BACKEND_IMAGE)" = "$1" ] \
+    && [ "$(state_value failed WEB_IMAGE)" = "$2" ]
+}
+
+remember_failure() {
+  [ "$scheduled" = "true" ] && write_state failed "$backend_ref" "$web_ref"
+  return 0
+}
+
+clear_failure() {
+  [ "$scheduled" = "true" ] && rm -f "$state_dir/failed.env"
+  return 0
+}
+
+keep_migration_tail() {
+  local temporary
+  temporary="$(mktemp "$state_dir/migrate.log.XXXXXX")"
+  tail -n 40 "$1" >"$temporary"
+  chmod 600 "$temporary"
+  mv "$temporary" "$state_dir/migrate.log"
+}
+
+mkdir -p "$state_dir"
+chmod 700 "$state_dir"
+
+if [ "${1:-}" = "apply" ]; then
+  [ "$#" -eq 3 ] || fail "uso: neocat-update apply <imagen-backend> <imagen-web>"
+  backend_ref="$2"
+  web_ref="$3"
+  scheduled=false
+elif [ "$#" -eq 0 ]; then
+  scheduled=true
+  backend_ref="$(resolve_digest_ref "$NEOCAT_BACKEND_REPOSITORY")" \
+    || fail "no se pudo resolver la imagen del backend en el registro"
+  web_ref="$(resolve_digest_ref "$NEOCAT_WEB_REPOSITORY")" \
+    || fail "no se pudo resolver la imagen de la web en el registro"
+else
+  fail "uso: neocat-update [apply <imagen-backend> <imagen-web>]"
+fi
+
+if [ "$scheduled" = "true" ] && failed_matches "$backend_ref" "$web_ref"; then
+  log "esta versión de $NEOCAT_CHANNEL ya falló: se espera a que cambie"
+  exit 0
+fi
+
+target_backend_id="$(image_id "$backend_ref")" || fail "la imagen del backend no está disponible"
+target_web_id="$(image_id "$web_ref")" || fail "la imagen de la web no está disponible"
+
+running_backend_id="$(running_image_id backend)"
+running_web_id="$(running_image_id edge)"
+
+if [ "$running_backend_id" = "$target_backend_id" ] && [ "$running_web_id" = "$target_web_id" ]; then
+  bring_up "$backend_ref" "$web_ref" || fail "el servicio no está sano con la versión actual"
+  [ -f "$state_dir/current.env" ] || write_state current "$backend_ref" "$web_ref"
+  clear_failure
+  log "sin cambios: el servicio ya ejecuta la versión indicada"
+  ping_deploy "" "despliegue correcto sin cambios"
+  exit 0
+fi
+
+log "versión nueva: migrando el esquema"
+migrate_output="$(mktemp)"
+trap 'rm -f "$migrate_output"' EXIT
+if ! BACKEND_IMAGE="$backend_ref" WEB_IMAGE="$web_ref" compose --profile ops run --rm -T migrate >"$migrate_output" 2>&1; then
+  keep_migration_tail "$migrate_output"
+  remember_failure
+  fail "la migración falló: sigue la versión anterior; últimas líneas en $state_dir/migrate.log"
+fi
+
+if [ -n "$running_backend_id" ] && [ -n "$running_web_id" ]; then
+  docker tag "$running_backend_id" neocatecumenal-backend:previous
+  docker tag "$running_web_id" neocatecumenal-web:previous
+  write_state previous neocatecumenal-backend:previous neocatecumenal-web:previous
+fi
+
+write_state current "$backend_ref" "$web_ref"
+
+log "cambiando de contenedor y esperando a que esté sano"
+if bring_up "$backend_ref" "$web_ref"; then
+  clear_failure
+  log "versión desplegada"
+  ping_deploy "" "despliegue correcto"
+  exit 0
+fi
+
+if [ -f "$state_dir/previous.env" ] && [ -n "$running_backend_id" ]; then
+  remember_failure
+  log "la versión nueva no llegó a estar sana: volviendo a la anterior"
+  previous_backend="$(state_value previous BACKEND_IMAGE)"
+  previous_web="$(state_value previous WEB_IMAGE)"
+  if bring_up "$previous_backend" "$previous_web"; then
+    write_state current "$previous_backend" "$previous_web"
+    fail "la versión nueva no llegó a estar sana: se ha vuelto a la anterior"
+  fi
+  fail "la versión nueva no llegó a estar sana y la vuelta atrás también falló"
+fi
+
+remember_failure
+fail "la versión nueva no llegó a estar sana y no hay versión anterior"

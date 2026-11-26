@@ -1,7 +1,6 @@
 package io.github.escumartin.neocatecumenal.agenda.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -82,7 +81,7 @@ class AnonymizeCreatorServiceTest {
     }
 
     @Test
-    void logsTheDeletedUserIdWhenSomethingIsAnonymized() {
+    void logsOnlyTheAmountWhenSomethingIsAnonymized() {
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         Logger serviceLogger = (Logger) LoggerFactory.getLogger(AnonymizeCreatorService.class);
         appender.start();
@@ -95,7 +94,8 @@ class AnonymizeCreatorServiceTest {
         }
 
         assertThat(appender.list).hasSize(1);
-        assertThat(appender.list.getFirst().getKeyValuePairs()).extracting(pair -> pair.key, pair -> pair.value)
-                .contains(tuple("userId", deleted.value()));
+        assertThat(appender.list.getFirst().getKeyValuePairs()).extracting(pair -> pair.key)
+                .containsExactly("events");
+        assertThat(appender.list.getFirst().getFormattedMessage()).doesNotContain(deleted.value().toString());
     }
 }

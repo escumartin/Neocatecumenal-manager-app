@@ -1,0 +1,35 @@
+name: Mobile update
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: Update message
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (actions/checkout 4.4.0)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Set up Node (actions/setup-node 4.4.0)
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "24"
+      - name: Set up EAS (expo/expo-github-action 9.0.2)
+        uses: expo/expo-github-action@5273c2136bd09c2a341fe3340d3e767ce5a13015
+        with:
+          eas-version: 27.11.0
+          token: ${{ secrets.EXPO_TOKEN }}
+      - run: npm ci --ignore-scripts
+        working-directory: app
+      - run: eas update --channel production --message "$UPDATE_MESSAGE" --non-interactive
+        working-directory: app
+        env:
+          UPDATE_MESSAGE: ${{ inputs.message }}
+          EXPO_PUBLIC_API_URL: ${{ vars.EXPO_PUBLIC_API_URL }}

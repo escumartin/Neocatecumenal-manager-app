@@ -287,8 +287,8 @@ NEEDS CLARIFICATION.
      `ApplicationRunner` que obtiene `System.console()` antes de tocar nada. Sin consola (entrada o salida no son un
      terminal, como ocurre cuando se redirigen a un recolector), aborta con código de salida distinto de 0, sin crear
      comunidades ni administrador y con un único log sin datos («carga inicial cancelada: hace falta una consola
-     interactiva»). Con consola, crea las comunidades que falten a partir de una lista de números y, si no hay ningún
-     administrador, crea uno con nombre y comunidad dados por argumentos; muestra identificador y contraseña inicial
+     interactiva»). Con consola, aplica la [Carga inicial](../../.agents/context/dominio.md) (definición canónica en el
+     glosario; 004 R7 quitó la lista de comunidades) con nombre y comunidad dados por argumentos; muestra identificador y contraseña inicial
      solo con `Console.writer()`, nunca por `System.out` ni por el logger, y termina sin levantar el servidor HTTP.
      Pros: nada sensible en el repo, en variables de entorno ni en logs; idempotente. Contras: un paso manual en un
      terminal del servidor.

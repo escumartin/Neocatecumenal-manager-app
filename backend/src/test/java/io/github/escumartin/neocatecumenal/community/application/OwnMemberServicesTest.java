@@ -49,7 +49,8 @@ class OwnMemberServicesTest {
     private final FakeUserDirectory users = new FakeUserDirectory();
     private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
     private final GetOwnMemberService get = new GetOwnMemberService(communities, members, users);
-    private final ChangeOwnContactService change = new ChangeOwnContactService(communities, members, users, clock);
+    private final ChangeOwnContactService change =
+            new ChangeOwnContactService(communities, members, users, new InMemoryErasures(), clock);
     private final Community home = communities.add(Community.restore(new CommunityId(UUID.randomUUID()),
             new CommunityNumber(12), Optional.empty(), CommunityStatus.ACTIVE, Optional.empty()));
     private final UserId ownUser = new UserId(UUID.randomUUID());

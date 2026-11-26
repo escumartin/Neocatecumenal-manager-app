@@ -24,6 +24,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -45,7 +49,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 class BootstrapRunnerIT {
 
-    private static final Pattern ACCESS_ID = Pattern.compile("(\\d{6})");
     private static final Pattern PASSWORD = Pattern.compile("Contraseña inicial: (\\S+)");
 
     @Container
@@ -123,7 +126,6 @@ class BootstrapRunnerIT {
     private static String[] bootstrapArgs() {
         return new String[] {
             "--identity.bootstrap.enabled=true",
-            "--identity.bootstrap.communities=1,2,3",
             "--identity.bootstrap.administrator-name=Test Admin",
             "--identity.bootstrap.administrator-community=2"
         };
@@ -178,7 +180,7 @@ class BootstrapRunnerIT {
         long accessId = scalar("select access_id from identity_user");
         assertThat(console.toString()).contains(String.valueOf(accessId));
         assertThat(scalar("select count(*) from identity_user where role = 'ADMINISTRATOR'")).isEqualTo(1);
-        assertThat(count("identity_community")).isEqualTo(3);
+        assertThat(count("identity_community")).isEqualTo(1);
         assertThat(terminations.get()).isEqualTo(1);
         String elsewhere = logsAndStandardOutput();
         assertThat(elsewhere).doesNotContain(password.group(1)).doesNotContain(String.valueOf(accessId))
@@ -186,16 +188,25 @@ class BootstrapRunnerIT {
     }
 
     @Test
-    void repeatingItDoesNotCreateAnotherAdministratorNorPrintACredential() throws SQLException {
+    void repeatingItAbortsWithANonZeroExitCodeWithoutWritingAnything() throws SQLException {
         start(consoleInto(new StringWriter()), true, bootstrapArgs()).close();
+        long usersBefore = count("identity_user");
+        long communitiesBefore = count("identity_community");
+        terminations.set(0);
         StringWriter secondConsole = new StringWriter();
 
-        start(consoleInto(secondConsole), true, bootstrapArgs()).close();
+        Throwable failure = catchThrowable(() -> start(consoleInto(secondConsole), true,
+                "--identity.bootstrap.enabled=true",
+                "--identity.bootstrap.administrator-name=Other Admin",
+                "--identity.bootstrap.administrator-community=9").close());
 
-        assertThat(count("identity_user")).isEqualTo(1);
-        assertThat(count("identity_community")).isEqualTo(3);
-        assertThat(secondConsole.toString()).doesNotContain("Contraseña inicial");
-        assertThat(ACCESS_ID.matcher(secondConsole.toString()).find()).isFalse();
+        Throwable aborted = rootOfType(failure, BootstrapAbortedException.class);
+        assertThat(((ExitCodeGenerator) aborted).getExitCode()).isNotZero();
+        assertThat(count("identity_user")).isEqualTo(usersBefore);
+        assertThat(count("identity_community")).isEqualTo(communitiesBefore);
+        assertThat(terminations.get()).isZero();
+        assertThat(secondConsole.toString()).isEmpty();
+        assertThat(logsAndStandardOutput()).contains("ya existe un administrador");
     }
 
     @Test
@@ -203,7 +214,7 @@ class BootstrapRunnerIT {
         StringWriter console = new StringWriter();
 
         Throwable failure = catchThrowable(() -> start(consoleInto(console), true,
-                "--identity.bootstrap.enabled=true", "--identity.bootstrap.communities=1,2").close());
+                "--identity.bootstrap.enabled=true").close());
 
         assertThat(rootOfType(failure, BootstrapAbortedException.class)).isNotNull();
         assertThat(count("identity_community")).isZero();
@@ -212,10 +223,67 @@ class BootstrapRunnerIT {
     }
 
     @Test
+    void missingCommunityAbortsWithoutCreatingAnything() throws SQLException {
+        Throwable failure = catchThrowable(() -> start(consoleInto(new StringWriter()), true,
+                "--identity.bootstrap.enabled=true",
+                "--identity.bootstrap.administrator-name=Test Admin").close());
+
+        assertThat(rootOfType(failure, BootstrapAbortedException.class)).isNotNull();
+        assertThat(count("identity_community")).isZero();
+        assertThat(count("identity_user")).isZero();
+    }
+
+    @Test
+    void passwordNeverReachesTheLogs() throws SQLException {
+        StringWriter console = new StringWriter();
+
+        start(consoleInto(console), true, bootstrapArgs()).close();
+
+        Matcher password = PASSWORD.matcher(console.toString());
+        assertThat(password.find()).isTrue();
+        assertThat(logsAndStandardOutput()).doesNotContain(password.group(1));
+    }
+
+    @Test
+    void waitsForTheBootstrapAdvisoryLockBeforeCheckingForAnAdministrator() throws Exception {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try (Connection holder = connection()) {
+            holder.setAutoCommit(false);
+            try (Statement statement = holder.createStatement()) {
+                statement.execute("select pg_advisory_xact_lock(hashtext('identity-bootstrap'))");
+            }
+            Future<Throwable> run = executor.submit(() -> catchThrowable(
+                    () -> start(consoleInto(new StringWriter()), true, bootstrapArgs()).close()));
+
+            awaitBlockedOnAdvisoryLock();
+            assertThat(run.isDone()).isFalse();
+            assertThat(count("identity_user")).isZero();
+
+            holder.commit();
+            assertThat(run.get(60, TimeUnit.SECONDS)).isNull();
+        } finally {
+            executor.shutdownNow();
+        }
+
+        assertThat(scalar("select count(*) from identity_user where role = 'ADMINISTRATOR'")).isEqualTo(1);
+    }
+
+    private static void awaitBlockedOnAdvisoryLock() throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(90);
+        while (System.nanoTime() < deadline) {
+            if (scalar("select count(*) from pg_stat_activity where wait_event_type = 'Lock'"
+                    + " and wait_event = 'advisory'") > 0) {
+                return;
+            }
+            Thread.sleep(200);
+        }
+        throw new AssertionError("la carga inicial no esperó al bloqueo consultivo");
+    }
+
+    @Test
     void bootstrapProfileStartsWithoutAWebServer() {
         String[] args = {
             "--spring.profiles.active=bootstrap",
-            "--identity.bootstrap.communities=1",
             "--identity.bootstrap.administrator-name=Test Admin",
             "--identity.bootstrap.administrator-community=1"
         };
