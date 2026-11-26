@@ -75,6 +75,8 @@ class RoomDeactivationVsRequestIT {
     void setUp() {
         executor = Executors.newFixedThreadPool(2);
         jdbc.execute("truncate booking_status_change, booking, booking_request, room cascade");
+        jdbc.update("insert into identity_community (id, number, active) values (?, 1, true) "
+                + "on conflict (id) do nothing", COMMUNITY.value());
         room = rooms.save(Room.create(administrator, new RoomName("Main hall")));
     }
 

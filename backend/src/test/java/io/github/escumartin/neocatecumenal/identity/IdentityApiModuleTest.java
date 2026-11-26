@@ -1,6 +1,7 @@
 package io.github.escumartin.neocatecumenal.identity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import io.github.escumartin.neocatecumenal.identity.application.port.out.CommunityRepository;
@@ -30,6 +31,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.core.ApplicationModules;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.IllegalTransactionStateException;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -48,6 +50,9 @@ class IdentityApiModuleTest {
 
     @MockitoBean
     private CurrentSessionContext currentSession;
+
+    @Autowired
+    private CommunityCatalog communityCatalog;
 
     @Autowired
     private UserRepository users;
@@ -76,6 +81,22 @@ class IdentityApiModuleTest {
 
     private void signIn(User user) {
         when(currentSession.current()).thenReturn(Optional.of(new CurrentSession(UUID.randomUUID(), user.id())));
+    }
+
+    @Test
+    void lockingACommunityForShareOutsideATransactionFails() {
+        Community stored = community(4);
+
+        assertThatThrownBy(() -> identityApi.lockCommunityForShare(stored.id().value()))
+                .isInstanceOf(IllegalTransactionStateException.class);
+    }
+
+    @Test
+    void lockingACommunityForRemovalOutsideATransactionFails() {
+        Community stored = community(4);
+
+        assertThatThrownBy(() -> communityCatalog.lockForRemoval(stored.id().value()))
+                .isInstanceOf(IllegalTransactionStateException.class);
     }
 
     @Test
@@ -133,6 +154,7 @@ class IdentityApiModuleTest {
                 IdentityApi.class.getName(), CurrentUser.class.getName(), Role.class.getName(),
                 CommunityRef.class.getName(), UserDeleted.class.getName(), UserRef.class.getName(),
                 IdentityRuleViolation.class.getName(), StaleLockOrderException.class.getName(),
+                TransactionRetry.class.getName(),
                 CommunityCatalog.class.getName(), UserLinkGuard.class.getName(),
                 CommunityProvisioner.class.getName());
     }

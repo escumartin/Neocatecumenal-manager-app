@@ -35,6 +35,11 @@ public class IdentityCommunityCatalogAdapter implements IdentityCommunityCatalog
     }
 
     @Override
+    public void lockForRemoval(CommunityId id) {
+        catalog.lockForRemoval(id.value());
+    }
+
+    @Override
     public void remove(CommunityId id) {
         try {
             catalog.remove(id.value());

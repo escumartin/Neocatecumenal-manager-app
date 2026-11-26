@@ -47,6 +47,7 @@ class CreateEventServiceTest {
 
     private final FakeSpaces spaces = new FakeSpaces();
     private final InMemoryEvents events = new InMemoryEvents();
+    private final FakeCommunityLock communityLock = new FakeCommunityLock();
     private final Actor moderator = new Actor(new UserId(UUID.randomUUID()), ActorRole.MODERATOR, OWN);
     private final Actor administrator = new Actor(new UserId(UUID.randomUUID()), ActorRole.ADMINISTRATOR, OWN);
     private final Actor registered = new Actor(new UserId(UUID.randomUUID()), ActorRole.REGISTERED, OWN);
@@ -55,7 +56,7 @@ class CreateEventServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CreateEventService(spaces, events, CLOCK);
+        service = new CreateEventService(spaces, events, communityLock, CLOCK);
     }
 
     private EventDetails create(Actor actor, CommunityId community) {
@@ -95,6 +96,35 @@ class CreateEventServiceTest {
 
         assertThat(created.event().communityId()).isEqualTo(OTHER);
         assertThat(spaces.commands.get(0).communityId()).isEqualTo(OTHER.value());
+    }
+
+    @Test
+    void theCommunityIsLockedForShareBeforeTheBookingIsRequested() {
+        create(administrator, OTHER);
+
+        assertThat(communityLock.locked).containsExactly(OTHER);
+    }
+
+    @Test
+    void nothingIsBookedOrSavedBeforeTheCommunityIsLocked() {
+        communityLock.workDone = () -> !spaces.commands.isEmpty() || !events.stored.isEmpty();
+
+        create(administrator, OTHER);
+
+        assertThat(communityLock.workDoneWhenLocked).containsExactly(false);
+    }
+
+    @Test
+    void aCommunityDeletedMeanwhileIsRejectedWithoutBookingOrSaving() {
+        communityLock.missing.add(OTHER);
+
+        assertThatThrownBy(() -> create(administrator, OTHER)).isInstanceOfSatisfying(AgendaFieldInvalid.class,
+                failure -> {
+                    assertThat(failure.field()).isEqualTo("communityId");
+                    assertThat(failure.code()).isEqualTo("COMMUNITY_NOT_FOUND");
+                });
+        assertThat(spaces.commands).isEmpty();
+        assertThat(events.stored).isEmpty();
     }
 
     @Test

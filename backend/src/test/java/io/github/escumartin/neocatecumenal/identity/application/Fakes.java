@@ -190,6 +190,18 @@ final class Fakes {
         }
 
         @Override
+        public Optional<Community> lockForShare(CommunityId id) {
+            usersOfTheCommunities.calls.add("communityLockForShare");
+            return Optional.ofNullable(communities.get(id));
+        }
+
+        @Override
+        public Optional<Community> lockForUpdate(CommunityId id) {
+            usersOfTheCommunities.calls.add("communityLockForUpdate");
+            return Optional.ofNullable(communities.get(id));
+        }
+
+        @Override
         public Optional<Community> findByNumber(CommunityNumber number) {
             return communities.values().stream().filter(community -> community.number().equals(number)).findFirst();
         }

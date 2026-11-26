@@ -1,5 +1,6 @@
 package io.github.escumartin.neocatecumenal.identity.infrastructure.in.rest;
 
+import io.github.escumartin.neocatecumenal.identity.TransactionRetry;
 import io.github.escumartin.neocatecumenal.generated.api.UsersApi;
 import io.github.escumartin.neocatecumenal.generated.model.CreatedUser;
 import io.github.escumartin.neocatecumenal.generated.model.InitialPassword;

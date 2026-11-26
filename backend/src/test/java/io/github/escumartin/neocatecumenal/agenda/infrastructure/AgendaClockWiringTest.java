@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.github.escumartin.neocatecumenal.ClockConfig;
+import io.github.escumartin.neocatecumenal.agenda.application.port.out.CommunityLock;
 import io.github.escumartin.neocatecumenal.agenda.application.port.out.EventRepository;
 import io.github.escumartin.neocatecumenal.agenda.infrastructure.config.AgendaConfig;
 import io.github.escumartin.neocatecumenal.agenda.infrastructure.config.AgendaServiceClock;
@@ -20,7 +21,8 @@ class AgendaClockWiringTest {
             new ApplicationContextRunner()
                     .withUserConfiguration(ClockConfig.class, AgendaConfig.class)
                     .withBean(SpacesApi.class, () -> mock(SpacesApi.class))
-                    .withBean(EventRepository.class, () -> mock(EventRepository.class));
+                    .withBean(EventRepository.class, () -> mock(EventRepository.class))
+                    .withBean(CommunityLock.class, () -> mock(CommunityLock.class));
 
     @Test
     void contextKeepsASingleClockBean() {

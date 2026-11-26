@@ -40,6 +40,7 @@ class RequestBookingServiceTest {
 
     private final InMemoryRooms rooms = new InMemoryRooms();
     private final InMemoryBookingRequests requests = new InMemoryBookingRequests();
+    private final FakeCommunityLock communityLock = new FakeCommunityLock();
     private final Actor moderator = new Actor(new UserId(UUID.randomUUID()), ActorRole.MODERATOR, OWN);
     private final Actor administrator = new Actor(new UserId(UUID.randomUUID()), ActorRole.ADMINISTRATOR, OWN);
     private final Actor registered = new Actor(new UserId(UUID.randomUUID()), ActorRole.REGISTERED, OWN);
@@ -49,7 +50,7 @@ class RequestBookingServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new RequestBookingService(rooms, requests, CLOCK);
+        service = new RequestBookingService(rooms, requests, communityLock, CLOCK);
         room = rooms.save(Room.create(administrator, new RoomName("Main hall")));
     }
 
@@ -71,6 +72,35 @@ class RequestBookingServiceTest {
 
         assertThat(created.communityId()).isEqualTo(OTHER);
         assertThat(requests.stored.get(created.id()).communityId()).isEqualTo(OTHER);
+    }
+
+    @Test
+    void theCommunityIsLockedForShareBeforeSaving() {
+        service.request(administrator, room.id(), OTHER, TOMORROW, SLOT, new Reason("Catechesis"));
+
+        assertThat(communityLock.locked).containsExactly(OTHER);
+    }
+
+    @Test
+    void nothingIsSavedBeforeTheCommunityIsLocked() {
+        communityLock.workDone = () -> !requests.stored.isEmpty();
+
+        service.request(administrator, room.id(), OTHER, TOMORROW, SLOT, new Reason("Catechesis"));
+
+        assertThat(communityLock.workDoneWhenLocked).containsExactly(false);
+    }
+
+    @Test
+    void aCommunityDeletedMeanwhileIsRejectedAndNothingIsSaved() {
+        communityLock.missing.add(OTHER);
+
+        assertThatThrownBy(() -> service.request(administrator, room.id(), OTHER, TOMORROW, SLOT,
+                new Reason("Catechesis")))
+                .isInstanceOfSatisfying(SpacesFieldInvalid.class, failure -> {
+                    assertThat(failure.field()).isEqualTo("communityId");
+                    assertThat(failure.code()).isEqualTo("COMMUNITY_NOT_FOUND");
+                });
+        assertThat(requests.stored).isEmpty();
     }
 
     @Test

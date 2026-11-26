@@ -49,6 +49,13 @@ final class CommunityApiFixture {
         return id;
     }
 
+    UUID room() {
+        UUID id = UUID.randomUUID();
+        jdbc.update("insert into room (id, name, active, version, created_at) values (?, ?, true, 0, now())", id,
+                "Hall " + id);
+        return id;
+    }
+
     UUID member(UUID communityId, String givenName) {
         UUID id = UUID.randomUUID();
         jdbc.update("insert into community_member (id, community_id, given_name, version) values (?, ?, ?, 0)", id,

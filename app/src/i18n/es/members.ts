@@ -64,8 +64,18 @@ export const membersText = {
   },
   contact: {
     title: 'Datos de contacto',
-    notice:
-      'Aviso de datos: el móvil, el fijo y el correo solo se guardan si el hermano da su consentimiento para cada uno. Los verán los hermanos de su comunidad. Puede retirarlo cuando quiera y el dato se borra.',
+    notice: {
+      title: 'Aviso sobre tus datos de contacto',
+      paragraphs: [
+        'Qué datos: tu móvil, tu teléfono fijo y tu correo electrónico. Cada uno se guarda solo si das tu consentimiento para ese dato.',
+        'Para qué: para que los hermanos de tu comunidad puedan ponerse en contacto contigo en lo relacionado con la vida de la comunidad. No se usan para nada más.',
+        'Quién los ve: los hermanos de tu comunidad, sus moderadores y los administradores de la app. No se ceden a terceros.',
+        'Base legal: tu consentimiento. Puedes retirarlo cuando quieras para cada dato; al retirarlo, el dato se borra.',
+        'Cuánto tiempo: mientras pertenezcas a la comunidad y mantengas tu consentimiento. Si te borran de la comunidad, tus datos se borran con tu ficha.',
+        'Tus derechos: puedes ver, corregir, borrar o pedir una copia de tus datos desde «Mis datos de contacto» o a través de tu moderador. También puedes oponerte o pedir que se limite su uso. Si crees que no se respetan tus derechos, puedes reclamar ante la Agencia Española de Protección de Datos (aepd.es).',
+        'Responsable: la parroquia que usa esta app para organizar sus comunidades. Para ejercer tus derechos, habla con tu moderador o con el administrador.',
+      ],
+    },
     linkedNotice:
       'Este hermano tiene usuario y decide él mismo qué comparte. Aquí solo puedes corregir los datos que ya comparte.',
     save: 'Guardar contacto',
@@ -166,6 +176,7 @@ export const membersText = {
     title: 'Consentimiento del hermano',
     channel: { VERBAL: 'De palabra', WRITTEN: 'Por escrito' },
     noticeGiven: 'He informado al hermano',
+    readNotice: 'Antes de guardar, lee o entrega este aviso al hermano.',
   },
   fieldErrors: {
     givenName: {

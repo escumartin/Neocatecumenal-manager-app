@@ -298,7 +298,6 @@ function MemberFields({
         </>
       ) : (
         <>
-          <Text>{membersText.contact.notice}</Text>
           <ContactFields
             draft={draft}
             messages={messages}

@@ -204,11 +204,12 @@ describe('new member form', () => {
     expect(screen.getByLabelText(membersText.form.surnames).props.maxLength).toBe(100);
   });
 
-  it('shows the data notice and one share switch per contact field, all off', async () => {
+  it('shows one share switch per contact field, all off, and no notice yet', async () => {
     const { element } = form();
     await renderAs('MODERATOR', element);
 
-    expect(await screen.findByText(membersText.contact.notice)).toBeOnTheScreen();
+    expect(await screen.findByRole('switch', { name: membersText.contact.share.mobile })).toBeOnTheScreen();
+    expect(screen.queryByText(membersText.contact.notice.title)).not.toBeOnTheScreen();
     for (const label of [membersText.contact.share.mobile, membersText.contact.share.landline, membersText.contact.share.email]) {
       expect(screen.getByRole('switch', { name: label })).not.toBeChecked();
     }
@@ -239,6 +240,17 @@ describe('new member form', () => {
     expect(screen.getByRole('radio', { name: membersText.consent.channel.VERBAL })).toBeOnTheScreen();
     expect(screen.getByRole('radio', { name: membersText.consent.channel.WRITTEN })).toBeOnTheScreen();
     expect(screen.getByRole('switch', { name: membersText.consent.noticeGiven })).toBeOnTheScreen();
+  });
+
+  it('shows the notice and the line to read it once something is shared', async () => {
+    const { element } = form();
+    await renderAs('MODERATOR', element);
+
+    await share(membersText.contact.share.mobile);
+
+    expect(await screen.findByText(membersText.contact.notice.title)).toBeOnTheScreen();
+    expect(screen.getByText(membersText.contact.notice.paragraphs[5])).toBeOnTheScreen();
+    expect(screen.getByText(membersText.consent.readNotice)).toBeOnTheScreen();
   });
 
   it('stores nothing and explains why when no consent channel is chosen', async () => {
@@ -482,6 +494,21 @@ describe('member contact', () => {
       landline: { shared: false },
       email: { shared: false },
     });
+  });
+
+  it('shows the notice with a heading, preceded by the line to read it, when consent is needed', async () => {
+    const { element } = contactEdit();
+    await renderAs('MODERATOR', element);
+
+    await share(membersText.contact.share.mobile);
+
+    expect(await screen.findByRole('heading', { name: membersText.contact.notice.title })).toBeOnTheScreen();
+    expect(screen.getByText(membersText.contact.notice.paragraphs[5])).toBeOnTheScreen();
+    const rendered = JSON.stringify(screen.toJSON());
+    expect(rendered.indexOf(membersText.consent.readNotice)).toBeGreaterThan(-1);
+    expect(rendered.indexOf(membersText.consent.readNotice)).toBeLessThan(
+      rendered.indexOf(membersText.contact.notice.title),
+    );
   });
 
   it('asks for consent with notice when a field stops being shared and sends the withdrawal', async () => {

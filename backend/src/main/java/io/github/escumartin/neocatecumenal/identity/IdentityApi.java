@@ -12,6 +12,8 @@ public interface IdentityApi {
 
     Optional<CommunityRef> community(UUID id);
 
+    boolean lockCommunityForShare(UUID id);
+
     Optional<UserRef> user(UUID id);
 
     Optional<UserRef> lockUser(UUID id);

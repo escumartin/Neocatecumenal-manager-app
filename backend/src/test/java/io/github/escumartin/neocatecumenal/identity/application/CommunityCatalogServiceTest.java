@@ -62,6 +62,16 @@ class CommunityCatalogServiceTest {
     }
 
     @Test
+    void lockForRemovalTakesTheExclusiveLockOnTheProjection() {
+        UUID id = UUID.randomUUID();
+        catalog.register(id, 12);
+
+        catalog.lockForRemoval(id);
+
+        assertThat(users.calls).contains("communityLockForUpdate");
+    }
+
+    @Test
     void removeDeletesAnEmptyCommunity() {
         UUID id = UUID.randomUUID();
         catalog.register(id, 12);

@@ -9,6 +9,7 @@ import java.util.List;
 final class RecordingCatalog implements IdentityCommunityCatalog {
 
     final List<String> calls = new ArrayList<>();
+    final List<CommunityId> lockedForRemoval = new ArrayList<>();
     RuntimeException failure;
 
     private void record(String call) {
@@ -31,6 +32,11 @@ final class RecordingCatalog implements IdentityCommunityCatalog {
     @Override
     public void setActive(CommunityId id, boolean active) {
         record("setActive:" + id.value() + ":" + active);
+    }
+
+    @Override
+    public void lockForRemoval(CommunityId id) {
+        lockedForRemoval.add(id);
     }
 
     @Override
