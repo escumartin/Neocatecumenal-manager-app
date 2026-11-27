@@ -48,3 +48,21 @@ from community c,
      ) as v (n, given_name, surnames)
 where c.number = 5
 on conflict (id) do nothing;
+
+insert into identity_user (id, access_id, name, role, community_id, password_hash, password_change_required,
+                           privacy_notice_version, privacy_notice_accepted_at, failed_password_changes, version)
+select md5('quinta-comunidad-moderator')::uuid, 100005, 'Antonio García Ruiz', 'MODERATOR', ic.id,
+       '{argon2}$argon2id$v=19$m=19456,t=2,p=1$tcfSel2PV1dWkuLWMGgM+Q$/4dtj389SPa2b9Fx3IZi/E5UguFTK2r5zmuG2/2QM10',
+       false, 'v1', now(), 0, 0
+from identity_community ic
+where ic.number = 5
+on conflict do nothing;
+
+update community_member m
+set user_id = md5('quinta-comunidad-moderator')::uuid
+from community c
+where m.community_id = c.id
+  and c.number = 5
+  and m.id = md5('quinta-comunidad-member-1')::uuid
+  and m.user_id is null
+  and exists (select 1 from identity_user u where u.id = md5('quinta-comunidad-moderator')::uuid);
