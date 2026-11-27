@@ -31,7 +31,7 @@ cd app && npm ci && npm run web
 
 `.env.example` define las variables de la base de datos (`POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`); ajusta sus valores en tu `.env`.
 
-`scripts/local-run.sh` hace los tres pasos a la vez (`--device` para probar en un móvil en la misma red). También hay `npm run android` y `npm run ios`.
+`scripts/local-run.sh` hace los tres pasos a la vez (`--device` para probar en un móvil en la misma red; `--tunnel` si el cortafuegos del Mac bloquea las conexiones entrantes a `node`: Metro sale por un túnel de Expo, el backend sigue por la red local y hace falta `npm install -g @expo/ngrok`). También hay `npm run android` y `npm run ios`.
 
 ## Tests
 

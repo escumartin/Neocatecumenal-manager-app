@@ -16,7 +16,8 @@ mode="web"
 case "${1:-}" in
   "") ;;
   --device) mode="device" ;;
-  *) echo "usage: $0 [--device]" >&2; exit 2 ;;
+  --tunnel) mode="tunnel" ;;
+  *) echo "usage: $0 [--device|--tunnel]" >&2; exit 2 ;;
 esac
 
 lan_ip() {
@@ -31,7 +32,7 @@ lan_ip() {
   return 1
 }
 
-if [ "$mode" = "device" ]; then
+if [ "$mode" = "device" ] || [ "$mode" = "tunnel" ]; then
   if ! host_ip="$(lan_ip)"; then
     echo "no LAN IP found on en0 or en1; connect to Wi-Fi or Ethernet" >&2
     exit 1
@@ -62,6 +63,8 @@ echo "backend up on http://localhost:8080 (log: $log_dir/backend.log)"
 cd "$root/app"
 if [ "$mode" = "device" ]; then
   npx expo start --lan
+elif [ "$mode" = "tunnel" ]; then
+  npx expo start --tunnel
 else
   npm run web
 fi
