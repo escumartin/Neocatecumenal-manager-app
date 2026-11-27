@@ -3,6 +3,8 @@ spring:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/neocatecumenal}
     username: ${DATABASE_USER:neocatecumenal}
     password: ${DATABASE_PASSWORD:neocatecumenal}
+  flyway:
+    locations: classpath:db/migration,classpath:db/dev
 identity:
   allowed-origins:
     - http://localhost:8081
